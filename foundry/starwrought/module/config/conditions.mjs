@@ -17,8 +17,9 @@
  *
  *   A BUILT-IN keeps its id, its `name` (an i18n key: `${name}Hint` and the English word that
  *   ends it are still read), its static status id and its `numeric`, whatever a row says. A row
- *   gives it a `label` (the name as the sheet prints it), a `description`, what it `includes`,
- *   its `rules` and, when the cell is filled, its icon.
+ *   gives it a `label` (the name as the sheet prints it), its `effect` and `flavor` (the sheet's
+ *   Effect and Description columns, 0.35.0), what it `includes`, its `rules` and, when the cell
+ *   is filled, its icon.
  *   A NEW CONDITION takes its id from its name (letters and digits, lower-cased), is numeric when
  *   its row's Takes is N, and gets a static status id from a hash of its id alone, so adding a
  *   row never moves another's.
@@ -106,7 +107,11 @@ const BUILT_INS = Object.freeze({
 export const RESERVED_CONDITION_NAMES = Object.freeze([
   "bind", "spell", "spells", "shield", "shieldraised", "raisedshield", "rigid", "freehand", "handfree", "holding",
   "weapon", "meleeweapon", "rangedweapon", "foe", "ally", "creature", "encounter", "effect", "effects",
-  "and", "or", "not", "self", "target", "mine", "used", "with", "na", "n/a", "none", "exposed"
+  "and", "or", "not", "self", "target", "mine", "used", "with", "na", "n/a", "none", "exposed",
+  // 0.35.0: the two words `IMMUNE:` reads that are no Condition. A row named "Expose" would take
+  // the id the `prevent` kind keeps for an Exposed Zone (an open hole through 0.34.0), and one
+  // named "Trait" the id it keeps for immunity to a trait.
+  "expose", "trait"
 ]);
 
 /**
@@ -139,7 +144,10 @@ export const CONDITION_TAKES = Object.freeze(["", "n", "zone", "x"]);
 /**
  * The Conditions, keyed by id: the live registry (the header, THE REGISTRY). Each record is frozen:
  * `{ id, name, label, img, numeric, zone, rulesPage, statusId, system, aliases, builtIn, takes,
- * description, includes: [{ id, against }], rules, listed }`.
+ * effect, flavor, includes: [{ id, against }], rules, listed }`. `effect` is the rules text players
+ * read and `flavor` the row's one line of flavor (0.35.0; the sheet's Effect and Description
+ * columns). There is no `description` on a record: through 0.34.0 that word meant the rules text,
+ * and a reader left on it should find nothing rather than the flavor line.
  * @type {Object<string, object>}
  */
 export const CONDITIONS = {};
@@ -186,7 +194,7 @@ function builtInRecord(record) {
     numeric: record.numeric === true, zone: record.zone ?? null, rulesPage: record.rulesPage ?? null,
     statusId: record.statusId ?? null, system: record.system === true,
     aliases: [...(record.aliases ?? [])], builtIn: true,
-    takes: record.numeric ? "n" : (record.zone ? "zone" : ""), description: "", includes: [], rules: [], listed: true
+    takes: record.numeric ? "n" : (record.zone ? "zone" : ""), effect: "", flavor: "", includes: [], rules: [], listed: true
   };
 }
 
@@ -248,7 +256,9 @@ export function readInclude(entry) {
  * it cannot take (no name, a reserved name, two rows for one Condition, an Includes that names no
  * Condition); nothing is changed when it throws.
  *
- * A row: `{ name, takes?, description?, includes?, rules?, system?, icon?, listed?, statusId? }`.
+ * A row: `{ name, takes?, effect?, description?, includes?, rules?, system?, icon?, listed?,
+ * statusId? }`. `effect` is the rules text and `description` the flavor line (0.35.0); a row with
+ * no `effect` key was built before then, when `description` was the rules, and is read so.
  * `includes` is a list of names (or `{ name, against }`), `rules` the parsed Automation lines.
  *
  * @param {Array<object>} rows
@@ -272,7 +282,10 @@ export function registerConditions(rows) {
     const key = squeeze(label);
     const takes = squeeze(row.takes);
     if (!CONDITION_TAKES.includes(takes)) throw new Error(`"${label}": Takes is blank, N, Zone or X, not "${row.takes}"`);
-    const description = String(row.description ?? "").trim();
+    // Two texts since 0.35.0. A row with no `effect` key is the older shape (one text, the rules).
+    const older = !Object.hasOwn(row, "effect");
+    const effect = String((older ? row.description : row.effect) ?? "").trim();
+    const flavor = older ? "" : String(row.description ?? "").trim();
     const rules = Array.isArray(row.rules) ? row.rules : [];
     const icon = String(row.icon ?? "").trim();
     const listed = row.listed !== false;
@@ -283,7 +296,7 @@ export function registerConditions(rows) {
       if (seen.has("exposed")) throw new Error(`two rows describe the Condition "${label}"`);
       seen.add("exposed");
       for (const id of EXPOSED_IDS) {
-        next[id] = { ...next[id], description, listed, ...(icon ? { img: icon } : {}) };
+        next[id] = { ...next[id], effect, flavor, listed, ...(icon ? { img: icon } : {}) };
         matched.push(id);
       }
       continue;
@@ -293,7 +306,7 @@ export function registerConditions(rows) {
     if (builtIn && next[builtIn]?.builtIn) {
       if (seen.has(builtIn)) throw new Error(`two rows describe the Condition "${label}"`);
       seen.add(builtIn);
-      next[builtIn] = { ...next[builtIn], label, takes: takes || next[builtIn].takes, description, rules, listed, ...(icon ? { img: icon } : {}) };
+      next[builtIn] = { ...next[builtIn], label, takes: takes || next[builtIn].takes, effect, flavor, rules, listed, ...(icon ? { img: icon } : {}) };
       words.set(key, builtIn);
       matched.push(builtIn);
       pending.push({ id: builtIn, label, includes });
@@ -306,7 +319,9 @@ export function registerConditions(rows) {
     }
     const id = newConditionId(label);
     if (!id || !/^[a-z]/.test(id)) throw new Error(`"${label}" cannot name a Condition: a name begins with a letter`);
-    if (!conditionNameFree(label)) {
+    // Asked of the name AND of the id it makes: the id drops every mark, so "Trai't" would
+    // otherwise take the word `trait`, and "Expo'se" the kind's own `expose` (the review of 0.35.0).
+    if (!conditionNameFree(label) || !conditionNameFree(id)) {
       throw new Error(`"${label}" cannot name a Condition: the word already means something else where a Condition is read`);
     }
     if (takes === "zone") throw new Error(`"${label}": only the system's own Conditions take a Zone`);
@@ -324,7 +339,7 @@ export function registerConditions(rows) {
       id, name: label, label, img: icon || DEFAULT_CONDITION_ICON,
       numeric: takes === "n", zone: null, rulesPage: null,
       statusId: String(row.statusId ?? "").trim() || newStatusId(id), system: false,
-      aliases: [], builtIn: false, takes, description, includes: [], rules, listed
+      aliases: [], builtIn: false, takes, effect, flavor, includes: [], rules, listed
     };
     words.set(key, id);
     words.set(id, id);
@@ -407,11 +422,18 @@ export function conditionNameKey(id) {
 }
 
 /**
- * The text players read for a Condition: its row's Description, or "" when the workbook gives
- * none (a caller may then fall back to the built-in's `${name}Hint` string).
+ * The rules text players read for a Condition: its row's Effect, or "" when the workbook gives
+ * none (a caller may then fall back to the built-in's `${name}Hint` string). `conditionDescription`
+ * through 0.34.0, when the sheet's one text column was headed Description; retired by name in
+ * 0.35.0, so that a caller left on the old word fails at import instead of showing flavor as rules.
  */
-export function conditionDescription(id) {
-  return String(CONDITIONS[id]?.description ?? "");
+export function conditionEffect(id) {
+  return String(CONDITIONS[id]?.effect ?? "");
+}
+
+/** A Condition's one line of flavor: its row's Description (0.35.0), or "". */
+export function conditionFlavor(id) {
+  return String(CONDITIONS[id]?.flavor ?? "");
 }
 
 /** The names a cell may write a Condition by, in order, for a message: "prone, grabbed, ...". */

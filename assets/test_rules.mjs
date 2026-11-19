@@ -30,6 +30,9 @@ import {
   isNotApplicable, isNotApplicableCell, NOT_APPLICABLE_WITH_RULES
 } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
+import { ruleTraitImmunity } from "../foundry/starwrought/module/rules/engine.mjs";
+import { traitGroups, traitKeysOf, coveredGroup, joinNames, immunityWords } from "../foundry/starwrought/module/rules/immunity.mjs";
+import { TRAIT as TRAIT_IMMUNITY } from "../foundry/starwrought/module/rules/kinds/prevent.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, ruleApplies, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
 // 0.32.0: what a Maneuver puts on a creature. The lines, the record, the window and the build's census are pure.
 import { linesFor, needsCost, appliedWindow, appliedRecord, isAppliedRecord, sameApplication, settleApplied, appliedBy, effectWords, lineWords, wordsToSay, effectCensus } from "../foundry/starwrought/module/rules/applied.mjs";
@@ -103,8 +106,8 @@ import { closeConditions, conditionSetOf, holdsCondition, heldIds, heldIdsFor } 
 import { conditionCarriers, conditionModifiers, isConditionCarrier, CONDITION_CARRIER_TYPE } from "../foundry/starwrought/module/rules/engine.mjs";
 import { conditionIdsFor, conditionOfRef } from "../foundry/starwrought/module/rules/effect-list.mjs";
 // The build's reading of the Conditions workbook's staged rows (pure Node, no file is touched).
-import { buildConditions, registryRows, listedName } from "./lib/conditions_build.mjs";
-import { conditionNameFree, conditionNameKey, conditionDescription, conditionHasRow } from "../foundry/starwrought/module/config.mjs";
+import { buildConditions, registryRows, listedName, listedRows, listedText, textsOf, pageRows } from "./lib/conditions_build.mjs";
+import { conditionNameFree, conditionNameKey, conditionEffect, conditionFlavor, conditionHasRow } from "../foundry/starwrought/module/config.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -1205,6 +1208,12 @@ check("prevent: the refusals", () => {
   must(bonusError("[EFFECT IMMUNE: prone; IF: CLAIM(when wet)]") === "IMMUNE does not take IF: CLAIM(...)", "a component it lacks");
   // The 0.13.0 "prevent does not take VISIBLE" has no twin: VISIBLE is no component; the whole line is the retired form.
   must(bonusError("prevent: Prone, VISIBLE") === LEGACY_REFUSAL, "the retired line is refused whole");
+  // Immunity to a trait (0.35.0) is read on a Condition's row alone: on a Talent, a Maneuver and a
+  // custom effect it is refused, and told where it is read.
+  for (const itemType of ["talent", "action", "effect"]) {
+    must(/`IMMUNE: TRAIT\(\.\.\.\)` is read on a Condition's row for now .*a Talent's immunity to a trait is not read yet/.test(bonusError("[EFFECT IMMUNE: TRAIT(Visual)]", { resolve, itemType })), `IMMUNE: TRAIT(...) on a ${itemType}`);
+  }
+  same(bonusRule("[EFFECT IMMUNE: prone; LIMIT: encounter]", { resolve, itemType: "talent" }).trait, undefined, "and a Condition's line carries no trait field: its stored rule is what it was");
 });
 
 check("rulePreventers: Stubborn Footing stops Prone once an encounter on its owner, and nothing else", () => {
@@ -4736,13 +4745,14 @@ function seedRows() {
     { name: "Frightened N", takes: "N", rules: conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]") },
     { name: "Fatigued N", takes: "N", rules: conditionCell("Fatigued", "n", "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]") },
     { name: "Prone", includes: ["Off-Guard"], rules: conditionCell("Prone", "", PRONE_CELL) },
-    { name: "Supine", includes: ["Off-Guard"], description: "On your back.", rules: conditionCell("Supine", "", PRONE_CELL) },
+    { name: "Supine", includes: ["Off-Guard"], effect: "On your back.", description: "The sky is all you see.", rules: conditionCell("Supine", "", PRONE_CELL) },
     { name: "Grabbed", includes: ["Off-Guard"] },
     { name: "Restrained", includes: ["Grabbed"] },
-    { name: "Blind", includes: ["Off-Guard"] },
+    { name: "Blinded", includes: ["Off-Guard"] },
     { name: "Unconscious", includes: ["Prone"] },
     { name: "Wrong-Footed [X]", takes: "X", includes: ["Off-Guard against X"] },
-    { name: "Exposed [Zone]", takes: "Zone", system: true, description: EXPOSED_TEXT },
+    { name: "Exposed [Zone]", takes: "Zone", system: true, effect: EXPOSED_TEXT, description: "An opening." },
+    // A row built before 0.35.0: one text, `description`, and it is the rules.
     { name: "Dying", system: true, description: "At death's door." },
     { name: "Dead", system: true, listed: false }
   ];
@@ -4791,18 +4801,22 @@ check("conditions: a row lays over the built-in it names, and a row that names n
     must(answer.missing.includes("heedless") && answer.missing.includes("stunned") && !answer.missing.includes("exposed") && !answer.missing.includes("prone"), "and the built-ins no row describes, for the build to refuse");
     must(conditionsRegistered(), "registered");
     const supine = CONDITION_REGISTRY.supine;
-    same([supine.id, supine.name, supine.label, supine.builtIn, supine.numeric, supine.system, supine.img, supine.description, supine.statusId],
-      ["supine", "Supine", "Supine", false, false, false, DEFAULT_CONDITION_ICON, "On your back.", newStatusId("supine")], "the new Condition's record");
+    same([supine.id, supine.name, supine.label, supine.builtIn, supine.numeric, supine.system, supine.img, supine.effect, supine.flavor, supine.statusId],
+      ["supine", "Supine", "Supine", false, false, false, DEFAULT_CONDITION_ICON, "On your back.", "The sky is all you see.", newStatusId("supine")], "the new Condition's record, with its two texts");
+    must(!("description" in supine), "no record carries `description`: the word meant the rules text through 0.34.0, and a reader left on it finds nothing");
     must(/^sw[0-9a-z]{14}$/.test(statusEffectId("supine")), `a static status id of its own: ${statusEffectId("supine")}`);
     same([conditionIdOf("Supine"), conditionIdOf("SUPINE"), conditionIdOf("Blind"), conditionIdOf("blinded"), conditionLabel("blinded"), conditionLabel("supine")],
-      ["supine", "supine", "blinded", "blinded", "Blind", "Supine"], "read by name; a built-in is printed as its row names it");
+      ["supine", "supine", "blinded", "blinded", "Blinded", "Supine"], "read by name; a built-in is printed as its row names it");
     same([CONDITION_REGISTRY.frightened.label, CONDITION_REGISTRY.frightened.numeric, CONDITION_REGISTRY.wrongFooted.label, CONDITION_REGISTRY.wrongFooted.takes],
       ["Frightened", true, "Wrong-Footed", "x"], "the suffix the table prints is no part of the name");
-    same([CONDITION_REGISTRY.dying.numeric, CONDITION_REGISTRY.dying.statusId, CONDITION_REGISTRY.dying.id, CONDITION_REGISTRY.dying.description], [true, null, "dying", "At death's door."],
-      "a built-in keeps its id, its status id and its value, whatever its row's Takes says");
+    same([CONDITION_REGISTRY.dying.numeric, CONDITION_REGISTRY.dying.statusId, CONDITION_REGISTRY.dying.id, CONDITION_REGISTRY.dying.effect, CONDITION_REGISTRY.dying.flavor], [true, null, "dying", "At death's door.", ""],
+      "a built-in keeps its id, its status id and its value, whatever its row's Takes says; a row of the older shape is its rules text and no flavor");
     same([CONDITION_REGISTRY.wrongFooted.includes, CONDITION_REGISTRY.restrained.includes, CONDITION_REGISTRY.unconscious.includes, CONDITION_REGISTRY.offGuard.includes],
       [[{ id: "offGuard", against: true }], [{ id: "grabbed", against: false }], [{ id: "prone", against: false }], []], "Includes, by id, with `against X`");
-    same([CONDITION_REGISTRY.exposedHead.description, CONDITION_REGISTRY.exposedLegs.description, CONDITION_REGISTRY.dead.listed, CONDITION_REGISTRY.prone.listed], [EXPOSED_TEXT, EXPOSED_TEXT, false, true], "the one Exposed row describes the four; Listed? is kept");
+    same([CONDITION_REGISTRY.exposedHead.effect, CONDITION_REGISTRY.exposedLegs.effect, CONDITION_REGISTRY.exposedArms.flavor, CONDITION_REGISTRY.dead.listed, CONDITION_REGISTRY.prone.listed], [EXPOSED_TEXT, EXPOSED_TEXT, "An opening.", false, true], "the one Exposed row describes the four; Listed? is kept");
+    same([conditionEffect("supine"), conditionFlavor("supine"), conditionEffect("dying"), conditionFlavor("dying"), conditionEffect("grabbed"), conditionFlavor("nothing")], ["On your back.", "The sky is all you see.", "At death's door.", "", "", ""], "the two texts, by id");
+    // The alias still reads, and a row written by it names the Condition as written.
+    same([conditionIdOf("blind"), conditionIdOf("Blind")], ["blinded", "blinded"], "`blind` stays a word a cell can write");
     same([conditionHasRules("offGuard"), conditionHasRules("frightened"), conditionHasRules("grabbed"), conditionHasRules("supine")], [true, true, false, true], "which Conditions the workbook gives lines");
     // The fallback is keyed on the ROW, not on its lines (ruling 329; the review): a row whose
     // cell is N/A means the Condition changes no number, for a character and an adversary alike.
@@ -4812,6 +4826,7 @@ check("conditions: a row lays over the built-in it names, and a row that names n
   });
   // Put back: the system as it shipped.
   same([conditionsRegistered(), conditionIdOf("supine"), CONDITION_REGISTRY.supine, conditionLabel("blinded"), Object.keys(CONDITION_REGISTRY).length], [false, null, undefined, "Blinded", 28], "a registration REBUILDS: with no rows, the built-ins alone");
+  seeded(() => same([conditionLabel("blinded"), conditionNameKey("blinded")], ["Blind", "Blind"], "a row named by the alias prints as it is named"), [{ name: "Blind" }]);
   // A row deleted from the sheet is gone at the next registration.
   seeded(() => must(!("supine" in CONDITION_REGISTRY) && (conditionIdOf("supine") === null) && conditionHasRules("prone"), "Supine's row deleted, Supine gone"), seedRows().filter(r => r.name !== "Supine"));
 });
@@ -4823,6 +4838,15 @@ check("conditions: a row the registry cannot take is refused in words, and nothi
   refused([{ name: "Weapon Bound" }], /already means something else/, "a phrase REQUIRES reads as a weapon");
   refused([{ name: "Foe Sworn" }], /already means something else/, "a phrase REQUIRES reads as who is near");
   refused([{ name: "Exposed Flank" }], /already means something else/, "Exposed is a Zone's own");
+  // The two words IMMUNE reads that are no Condition (0.35.0): a row of either name would take
+  // the id the prevent kind keeps for it.
+  refused([{ name: "Expose" }], /already means something else/, "Expose is IMMUNE's word for an Exposed Zone");
+  refused([{ name: "Trait" }], /already means something else/, "Trait is IMMUNE's word for a trait");
+  // And by the id the name makes, which drops every mark (the review of 0.35.0).
+  refused([{ name: "Trai't" }], /already means something else/, "a mark the id drops does not get round the reserve");
+  refused([{ name: "Expo'se" }], /already means something else/, "nor for Expose");
+  refused([{ name: "Eff'ect" }], /already means something else/, "nor for a word REQUIRES reads");
+  same(TRAIT_IMMUNITY, "trait", "the word the hook is asked with");
   refused([{ name: "Prone" }, { name: "prone" }], /two rows describe the Condition "prone"/, "two rows for one built-in");
   refused([{ name: "Dazed" }, { name: "DAZED" }], /two rows describe/, "two rows for one new Condition");
   refused([{ name: "Blind" }, { name: "Blinded" }], /two rows describe/, "an alias and the name are one Condition");
@@ -4859,7 +4883,7 @@ check("conditions: a row the registry cannot take is refused in words, and nothi
 });
 
 check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` for its own value (ruling 326)", () => {
-  same(CONDITION_ROW_TAGS, ["check", "atk", "def", "init"], "the tags a row may carry");
+  same(CONDITION_ROW_TAGS, ["check", "atk", "def", "init", "immune"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone)");
   const frightened = conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]\n[EFFECT INIT: N situation]");
   same(frightened.map(r => [r.kind, r.value, r.scale, r.type, r.to.slug]), [["bonus", -1, "N", "condition", "defenses"], ["bonus", -1, "N", "condition", "checks"], ["bonus", -1, "N", "condition", "attacks"], ["bonus", 1, "N", "situation", "initiative"]], "N is stored as a sign and a scale");
   same(frightened.map(summarize), ["-N Condition penalty to Defenses", "-N Condition penalty to Checks", "-N Condition penalty to Attacks", "+N Situation bonus to Initiative"], "and said as N");
@@ -4882,8 +4906,38 @@ check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` f
     const message = conditionRowError(cell);
     must(/on a Condition's row does not take/.test(message) && message.includes(what), `${what} is refused on a Condition's row: ${message}`);
   }
-  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
-  must(/is not read on a Condition's row yet/.test(conditionRowError("[EFFECT IMMUNE: prone]")), "and another");
+  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT, IMMUNE$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
+  // IMMUNE on a Condition's row (0.35.0): a trait, alone.
+  const immune = conditionCell("Blinded", "", "[EFFECT IMMUNE: TRAIT(Visual)]");
+  same(immune, [{ effect: "trait", trait: "visual", name: "Visual", kind: "prevent", line: 1, text: "[EFFECT IMMUNE: TRAIT(Visual)]" }], "the stored rule: the trait's key and its name as written");
+  same(summarize(immune[0]), "immune to anything with the Visual trait", "As read");
+  same(conditionCell("Deafened", "", "[EFFECT IMMUNE: trait( auditory )]")[0], { effect: "trait", trait: "auditory", name: "Auditory", kind: "prevent", line: 1, text: "[EFFECT IMMUNE: trait( auditory )]" }, "case and spaces are forgiven, and the name prints with its capital");
+  same(conditionCell("Bound", "", "[EFFECT IMMUNE: TRAIT(Two-Handed)]")[0].trait, "two-handed", "a hyphenated trait is one word");
+  same(conditionCell("Blinded", "", "[EFFECT IMMUNE: TRAIT(Visual)]\n[EFFECT IMMUNE: TRAIT(Auditory)]").map(r => r.trait), ["visual", "auditory"], "two immunities are two lines");
+  must(/immunity to a Condition or an Expose is not read on a Condition's row yet/.test(conditionRowError("[EFFECT IMMUNE: prone]")), "a Condition's name there is not read yet");
+  must(/immunity to a Condition or an Expose is not read on a Condition's row yet/.test(conditionRowError("[EFFECT IMMUNE: expose]")), "nor an Expose");
+  for (const cell of ["[EFFECT IMMUNE: TRAIT(Visual, Auditory)]", "[EFFECT IMMUNE: TRAIT(Auditory or Visual)]", "[EFFECT IMMUNE: TRAIT(Visual), TRAIT(Auditory)]", "[EFFECT IMMUNE: TRAIT(Visual), prone]", "[EFFECT IMMUNE: TRAIT(Visual or)]", "[EFFECT IMMUNE: TRAIT(or Visual)]", "[EFFECT IMMUNE: TRAIT(Sight and Sound)]"]) {
+    must(/^IMMUNE names one trait to a line: write `\[EFFECT IMMUNE: TRAIT\(Visual\)\]` and a second line for a second trait$/.test(conditionRowError(cell)), `two traits in one line: ${cell}: ${conditionRowError(cell)}`);
+  }
+  for (const cell of ["[EFFECT IMMUNE: TRAIT()]", "[EFFECT IMMUNE: trait]", "[EFFECT IMMUNE: TRAIT( )]"]) {
+    must(/^TRAIT\(\.\.\.\) names a trait, as in/.test(conditionRowError(cell)), `no trait at all: ${cell}: ${conditionRowError(cell)}`);
+  }
+  must(/"Vis\$ual" is not a trait's name/.test(conditionRowError("[EFFECT IMMUNE: TRAIT(Vis$ual)]")), "a name with a mark in it");
+  // One word (the review of 0.35.0): the key is a trait's first word, so a second word was stored
+  // in the name and never compared ("visual effects" printed "immune to visual effects effects").
+  for (const [cell, name] of [["[EFFECT IMMUNE: TRAIT(visual effects)]", "visual effects"], ["[EFFECT IMMUNE: TRAIT(Reach 5)]", "Reach 5"]]) {
+    const said = conditionRowError(cell);
+    must(said.startsWith(`"${name}" is not a trait's name: one word`) && /Reach, not Reach 5/.test(said), `${cell}: ${said}`);
+  }
+  for (const cell of ["[EFFECT IMMUNE: TRAIT(Visual); LIMIT: encounter]", "[EFFECT IMMUNE: TRAIT(Visual); FOR: allies 15]", "[EFFECT IMMUNE: TRAIT(Visual); IF: RANK(Origin >= expert)]", "[EFFECT IMMUNE: TRAIT(Visual); IF: SEEN]", "[EFFECT IMMUNE: TRAIT(Visual); IFT: BLOW]", "[EFFECT IMMUNE: TRAIT(Visual); IFT: TRAIT(Fear)]"]) {
+    const said = conditionRowError(cell);
+    must(said.startsWith("`IMMUNE: TRAIT(...)` takes nothing after it on a Condition's row yet") && /written alone/.test(said), `${cell}: ${said}`);
+  }
+  // Off a Condition's row every shape of the form is told where it is read, before anything else.
+  for (const cell of ["[EFFECT IMMUNE: TRAIT(Visual), TRAIT(Auditory)]", "[EFFECT IMMUNE: TRAIT(Visual, Auditory)]", "[EFFECT IMMUNE: trait]", "[EFFECT IMMUNE: TRAIT(Visual); LIMIT: encounter]"]) {
+    must(/is read on a Condition's row for now/.test(bonusError(cell, { resolve, itemType: "talent" })), `on a Talent: ${cell}: ${bonusError(cell, { resolve, itemType: "talent" })}`);
+  }
+  same(bonusError("[EFFECT IMMUNE: prone, frightened]", { resolve, itemType: "talent" }), "IMMUNE is written `IMMUNE: <Condition or expose>`, as in `IMMUNE: prone` (2 descriptors given, 1 wanted)", "two Conditions on a Talent is still told its own shape");
   must(/a Condition's row takes `\[EFFECT \.\.\.\]` lines/.test(conditionRowError("[SPEED +1]")), "a feature block");
   // N/A is a row that needs none, as on any sheet.
   same(parseAutomation("N/A", onConditionRow("Heedless")), { rules: [], errors: [], warnings: [] }, "N/A");
@@ -5029,18 +5083,18 @@ check("conditions: a name stored before a row made it a Condition means the Cond
 
 check("conditions: the build reads the staged rows, refuses a sheet with a slip, and builds both outputs together", () => {
   // The whole sheet as the converter stages it: every Condition the system has, and Supine.
-  const row = (name, extra = {}) => ({ name, takes: "", description: `${name}.`, includes: [], automation: "N/A", system: false, listed: true, icon: "", notes: "", row: 2, workbook: "conditions.xlsx", ...extra });
+  const row = (name, extra = {}) => ({ name, takes: "", description: "", effect: `${name}.`, includes: [], automation: "N/A", system: false, listed: true, icon: "", notes: "", row: 2, workbook: "conditions.xlsx", ...extra });
   const cells = {
     "Off-Guard": { automation: "[EFFECT DEF: -2 situation, evade]\n[EFFECT DEF: -2 situation, guard]" },
     Frightened: { takes: "N", automation: "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]" },
     Fatigued: { takes: "N", automation: "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]" },
-    Prone: { includes: ["Off-Guard"], automation: PRONE_CELL, description: "Off-Guard.\nStand to clear." },
+    Prone: { includes: ["Off-Guard"], automation: PRONE_CELL, effect: "Off-Guard.\nStand to clear.", description: "Face in the dirt." },
     "Wrong-Footed": { takes: "X", includes: ["Off-Guard against X"] },
     Stunned: { takes: "N" }, Slowed: { takes: "N" }, Dying: { system: true }, Wounded: { takes: "Zone", system: true },
     Dead: { system: true, listed: false }, Concealed: { listed: false }
   };
   const sheet = (change = rows => rows) => {
-    const names = builtInConditionIds().filter(id => !CONDITION_REGISTRY[id].zone).map(id => (id === "blinded") ? "Blind" : conditionLabel(id));
+    const names = builtInConditionIds().filter(id => !CONDITION_REGISTRY[id].zone).map(id => conditionLabel(id));
     const rows = [...names.map(n => row(n, cells[n] ?? {})), row("Exposed", { takes: "Zone", system: true }), row("Supine", { includes: ["Off-Guard"], automation: PRONE_CELL, icon: "icons/svg/sleep.svg" })];
     return { source: ["conditions.xlsx"], conditions: change(rows) };
   };
@@ -5049,18 +5103,37 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     same([built.errors, built.warnings, built.created, built.rules, built.cells], [[], [], ["Supine"], 11, 5], `the seed sheet reads: ${built.errors.join(" | ")}`);
     same(built.json.conditions.length, 26, "every row is written");
     const byName = Object.fromEntries(built.json.conditions.map(c => [c.name, c]));
-    same([byName.Supine.id, byName.Supine.builtIn, byName.Supine.statusId, byName.Blind.id, byName.Blind.builtIn, "statusId" in byName.Blind, byName.Exposed.id, byName.Frightened.rules.length, byName.Grabbed.rules, byName.Prone.includes],
+    same([byName.Supine.id, byName.Supine.builtIn, byName.Supine.statusId, byName.Blinded.id, byName.Blinded.builtIn, "statusId" in byName.Blinded, byName.Exposed.id, byName.Frightened.rules.length, byName.Grabbed.rules, byName.Prone.includes],
       ["supine", false, newStatusId("supine"), "blinded", true, false, "exposed", 3, [], [{ name: "Off-Guard", against: false }]], "what each record carries: a new Condition's status id is fixed by the build");
     // The roster's block: the Listed rows alone, named as the tables print them, paragraphs kept apart.
     const block = Object.fromEntries(built.block);
     same([built.block.length, "Frightened N" in block, "Exposed [Zone]" in block, "Wrong-Footed [X]" in block, "Wounded [Zone]" in block, "Dead" in block, "Concealed" in block, block.Prone, block.Supine],
       [24, true, true, true, true, false, false, "Off-Guard.\n\nStand to clear.", "Supine."], "the reference tables' rows");
     same([listedName("Bound", "x"), listedName("Prone", ""), listedName("Slowed", "N")], ["Bound [X]", "Prone", "Slowed N"], "the suffix a table prints");
+    // Two texts (0.35.0): a record carries the flavor line and the rules text, and the block's
+    // second slot is the rules text, as it always was (four readers take it by position).
+    same([byName.Prone.effect, byName.Prone.description, byName.Supine.effect, byName.Supine.description], ["Off-Guard.\nStand to clear.", "Face in the dirt.", "Supine.", ""], "what each record says");
+    same(built.block.find(r => r[0] === "Supine"), ["Supine", "Supine."], "the block's second slot is the Effect, never the flavor");
+    must(built.block.every(r => r.length === 2), "two slots, never three");
+    // The journal's Conditions page (0.35.0): the block's rows, with the flavor in italics above.
+    const page = Object.fromEntries(pageRows(built.json.conditions));
+    same([pageRows(built.json.conditions).length, page.Prone, page.Supine], [24, "<em>Face in the dirt.</em><br>Off-Guard.\n\nStand to clear.", "Supine."], "a row with flavor carries it in italics above its Effect; a row with none is exactly its block row");
+    same(pageRows([{ name: "Dazed", takes: "", effect: "You see <stars> & more.", description: "A <b>blow</b> & a ringing." }, { name: "Gone", listed: false, effect: "x", description: "y" }]),
+      [["Dazed", "<em>A &lt;b&gt;blow&lt;/b&gt; &amp; a ringing.</em><br>You see <stars> & more."]], "the flavor is escaped once, the Effect printed as the tables always printed it, and an unlisted row left out");
+    // A file built before 0.35.0 (one text, `description`, the rules) reads as an Effect with no flavor.
+    const older = { conditions: built.json.conditions.map(({ effect, description, ...rest }) => ({ ...rest, description: effect })) };
+    same([registryRows(older).find(r => r.name === "Prone").effect, registryRows(older).find(r => r.name === "Prone").description, listedRows(older.conditions), pageRows(older.conditions)], ["Off-Guard.\nStand to clear.", "", built.block, built.block], "an older conditions.json: the block and the journal page print what they printed");
+    same([textsOf({ effect: " a ", description: " b " }), textsOf({ description: "rules" }), textsOf({ effect: "" }), textsOf(null)], [{ effect: "a", description: "b" }, { effect: "rules", description: "" }, { effect: "", description: "" }, { effect: "", description: "" }], "a row's two texts, whatever shape it was written in");
+    same(listedText("One.\n\n Two. \nThree."), "One.\n\nTwo.\n\nThree.", "paragraphs, a blank line between");
+    // A staged row of the older shape builds the same way.
+    const stagedOld = buildConditions({ staged: sheet(rows => rows.map(({ effect, description, ...rest }) => ({ ...rest, description: effect }))) });
+    same([stagedOld.errors, stagedOld.block], [[], built.block], "and an older staged row");
+    must(buildConditions({ staged: sheet() }).errors.length === 0, "the registry holds the sheet again");
     // The registry is left holding the sheet, and what the client is handed registers the same.
     must(conditionsRegistered() && (conditionIdOf("supine") === "supine"), "a sheet that reads is registered");
     const again = registerConditions(registryRows(built.json));
-    same([again.created, again.missing, CONDITION_REGISTRY.supine.statusId, CONDITION_REGISTRY.supine.img, conditionNameKey("blinded"), conditionNameKey("exposedHead"), conditionDescription("prone"), conditionDescription("exposedArms")],
-      [["supine"], [], newStatusId("supine"), "icons/svg/sleep.svg", "Blind", "STARWROUGHT.Condition.exposedHead", "Off-Guard.\nStand to clear.", "Exposed."], "conditions.json registers as the build did");
+    same([again.created, again.missing, CONDITION_REGISTRY.supine.statusId, CONDITION_REGISTRY.supine.img, conditionNameKey("blinded"), conditionNameKey("exposedHead"), conditionEffect("prone"), conditionFlavor("prone"), conditionEffect("exposedArms")],
+      [["supine"], [], newStatusId("supine"), "icons/svg/sleep.svg", "Blinded", "STARWROUGHT.Condition.exposedHead", "Off-Guard.\nStand to clear.", "Face in the dirt.", "Exposed."], "conditions.json registers as the build did");
 
     // A sheet with a slip: said, nothing built, and the registry put back to the system's own,
     // whatever it held before (it is made to hold the good sheet first, each time, so the
@@ -5079,7 +5152,13 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     bad(rows => rows.map(r => (r.name === "Exposed") ? { ...r, automation: "[EFFECT DEF: -2 situation]" } : r), /the Exposed row describes the four Zones' statuses together and carries no lines/, "lines on the Exposed row");
     bad(rows => rows.map(r => (r.name === "Heedless") ? { ...r, includes: ["Reeling"] } : r), /includes "Reeling", which is no Condition/, "an Includes that names none");
     bad(rows => [...rows, row("Weapon Bound")], /cannot name a Condition/, "a name REQUIRES reads as something else");
-    bad(rows => rows.map(r => (r.name === "Prone") ? { ...r, automation: "[EFFECT IMMUNE: frightened]" } : r), /is not read on a Condition's row yet/, "another tag on a row");
+    bad(rows => rows.map(r => (r.name === "Prone") ? { ...r, automation: "[EFFECT IMMUNE: frightened]" } : r), /immunity to a Condition or an Expose is not read on a Condition's row yet/, "immunity to a Condition on a row");
+    bad(rows => rows.map(r => (r.name === "Prone") ? { ...r, automation: "[EFFECT APPLY: frightened]" } : r), /is not read on a Condition's row yet/, "another tag on a row");
+    bad(rows => [...rows, row("Trait")], /cannot name a Condition/, "a row named Trait");
+    // The sheet as Mike saved it: Blinded's line reads, and is one more rule in one more cell.
+    const withImmune = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Blinded") ? { ...r, includes: ["Off-Guard"], automation: "[EFFECT IMMUNE: TRAIT(Visual)]" } : r)) });
+    same([withImmune.errors, withImmune.warnings, withImmune.rules, withImmune.cells, withImmune.json.conditions.find(c => c.name === "Blinded").rules.map(r => [r.kind, r.effect, r.trait, r.name])],
+      [[], [], 12, 6, [["prevent", "trait", "visual", "Visual"]]], "Blinded's IMMUNE line builds");
     // The author's traps are warnings, and the sheet still builds.
     const trapped = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT CHECK: -N condition]\n[EFFECT INIT: -N condition]\n[EFFECT DEF: -N condition]\n[EFFECT DEF: -N condition, evade]" } : r)) });
     same([trapped.errors, trapped.warnings.length], [[], 2], "two lines of one row that both reach one roll");
@@ -5354,6 +5433,74 @@ check("check request: an adversary's Maneuver is read from the other side, again
   same([adversaryCheck(14, -2), adversaryCheck(null, -2), adversaryCheck(0, 3)], [{ base: 14, threshold: 12, shift: -2 }, { base: 10, threshold: 8, shift: -2 }, { base: 0, threshold: 3, shift: 3 }], "its Conditions move the number in effect, never the one typed");
   // The card kinds the render pass and the socket of nothing read: two words, never the same.
   must(CHECK_REQUEST !== CHECK_ANSWER, "a request and an answer are different cards");
+});
+
+/* -------------------------------------------- */
+/*  Immunity to a trait (0.35.0)                */
+/* -------------------------------------------- */
+
+console.log("\nImmunity to a trait (0.35.0)");
+
+/** The workbook's rows with Blinded's and Deafened's lines, as the Conditions sheet carries them. */
+const immuneRows = () => [
+  ...seedRows().map(r => (r.name === "Blinded") ? { ...r, rules: conditionCell("Blinded", "", "[EFFECT IMMUNE: TRAIT(Visual)]") } : r),
+  { name: "Deafened", rules: conditionCell("Deafened", "", "[EFFECT IMMUNE: TRAIT(Auditory)]") }
+];
+
+check("immunity: a thing's traits are groups of alternatives (ruling 357)", () => {
+  same(traitGroups(["Auditory or Visual", "Emotion", "Reach 5", "Visual OR Visual", "", null, 7]), [["auditory", "visual"], ["emotion"], ["reach"], ["visual"]], "one group for each trait written; `or` inside one is alternatives; only the first word is the key");
+  same([traitGroups("Visual"), traitGroups(null), traitGroups([])], [[], [], []], "no list is no group");
+  same(traitKeysOf(["Auditory or Visual", "Visual", "Emotion"]), ["auditory", "visual", "emotion"], "every key once, for the asking");
+  const blind = new Map([["visual", { name: "Visual", by: "Blinded" }]]);
+  const both = new Map([...blind, ["auditory", { name: "Auditory", by: "Deafened" }]]);
+  // Calm Animal: Auditory and Visual, two traits. Immune to either is immune.
+  same(coveredGroup(["Auditory", "Concentrate", "Visual"], blind), [{ trait: "visual", name: "Visual", by: "Blinded" }], "separate traits: one is enough");
+  // Captivate's exact trait string: it works through either sense, so it takes both gone.
+  const captivate = ["Auditory or Visual", "Emotion", "Mental"];
+  same(coveredGroup(captivate, blind), null, "\"Auditory or Visual\": a Blinded creature that can hear is still Captivated");
+  same(coveredGroup(captivate, both), [{ trait: "auditory", name: "Auditory", by: "Deafened" }, { trait: "visual", name: "Visual", by: "Blinded" }], "and one that is both is immune");
+  same([coveredGroup(["Emotion"], both), coveredGroup([], both), coveredGroup(null, both), coveredGroup(["Visual"], new Map())], [null, null, null, null], "a thing with none of the traits, or no traits, is immune to nothing");
+  same([coveredGroup(["Visual"], new Set(["visual"])), coveredGroup(["Visual"], ["visual"])], [[{ trait: "visual", name: "Visual", by: "" }], [{ trait: "visual", name: "Visual", by: "" }]], "a plain set of keys answers too");
+  same([joinNames([]), joinNames(["A"]), joinNames(["A", "B"]), joinNames(["A", "B", "C"]), joinNames(["A", "A", " "])], ["", "A", "A and B", "A, B and C", "A"], "the names in a sentence");
+  same(immunityWords(coveredGroup(captivate, both)), { traits: "Auditory and Visual", by: "Deafened and Blinded" }, "which traits, and what makes the creature immune");
+});
+
+check("immunity: a Blinded creature is immune to Visual and to nothing else, character and adversary (rulings 353 and 356)", () => {
+  seeded(() => {
+    const blinded = creature({ statuses: ["blinded"] });
+    same(ruleTraitImmunity(blinded, ["Visual"]), { covered: [{ trait: "visual", name: "Visual", by: "Blinded" }], traits: "Visual", by: "Blinded" }, "immune to a thing with the Visual trait, and it says what makes it so");
+    same([ruleTraitImmunity(blinded, ["Auditory"]), ruleTraitImmunity(blinded, ["Emotion", "Mental", "Reach 5"]), ruleTraitImmunity(blinded, []), ruleTraitImmunity(blinded, null), ruleTraitImmunity(null, ["Visual"])], [null, null, null, null, null], "and to nothing else");
+    same(ruleTraitImmunity(blinded, ["Auditory", "Visual"])?.traits, "Visual", "Calm Animal, Auditory and Visual: immune by the one");
+    same(ruleTraitImmunity(blinded, ["Auditory or Visual", "Emotion"]), null, "Captivate, \"Auditory or Visual\": not immune while it can hear");
+    const both = creature({ statuses: ["blinded", "deafened"] });
+    same([ruleTraitImmunity(both, ["Auditory or Visual", "Emotion"])?.traits, ruleTraitImmunity(both, ["Auditory or Visual", "Emotion"])?.by], ["Auditory and Visual", "Deafened and Blinded"], "Blinded and Deafened: immune to Captivate");
+    same([ruleTraitImmunity(creature({ statuses: ["prone"] }), ["Visual"]), ruleTraitImmunity(creature(), ["Visual"])], [null, null], "a creature without the Condition is immune to nothing");
+    // The hook answers only when it is asked about a trait, and only for the trait handed over.
+    same(rulePreventers(blinded, { effect: TRAIT_IMMUNITY, threat: { traits: ["visual"] } }).map(p => [p.item.name, p.item.type, p.trait, p.name, p.reaction, p.mark]), [["Blinded", CONDITION_CARRIER_TYPE, "visual", "Visual", false, null]], "the carrier is the Condition, never a Reaction, with no mark to spend");
+    same([rulePreventers(blinded, { effect: TRAIT_IMMUNITY }).length, rulePreventers(blinded, { effect: TRAIT_IMMUNITY, threat: { traits: ["auditory"] } }).length, rulePreventers(blinded, { effect: "prone" }).length, rulePreventers(blinded, { effect: "frightened", threat: { traits: ["visual"] } }).length], [0, 0, 0, 0], "no traits, another trait, or a Condition asked about: nothing");
+    // An adversary is, to the rules engine, a creature with no ranks (the engine has no branch for
+    // one, and its own Talents are unread): the Condition's line holds for it as for a character.
+    const npc = creature({ statuses: ["blinded"], uuid: "Actor.bandit" });
+    delete npc.system.proficiency;
+    npc.system.rules = collectRules(npc);
+    same(ruleTraitImmunity(npc, ["Visual"])?.by, "Blinded", "an adversary");
+    // A Talent's own IMMUNE of a Condition is never an answer about a trait.
+    const stubborn = talentWith("Stubborn Footing", "[EFFECT IMMUNE: prone; LIMIT: encounter]");
+    same(ruleTraitImmunity(rulesActor([stubborn]), ["Prone", "Visual"]), null, "a Condition's line answers for no trait");
+  }, immuneRows());
+  // With no workbook's rows registered the built-in carries no line.
+  same(ruleTraitImmunity(creature({ statuses: ["blinded"] }), ["Visual"]), null, "the line is the workbook's: with no rows, no immunity");
+});
+
+check("immunity: a Condition held against one creature alone is passed over for anybody else (ruling 359)", () => {
+  seeded(() => {
+    // Dazzled [X] counts as Blinded against the creature that put it on, and nobody else.
+    const dazzled = creature({ statuses: ["dazzled"], appliedBy: { dazzled: "Actor.tess" } });
+    must(/Blinded/.test(ruleTraitImmunity(dazzled, ["Visual"], { other: { uuid: "Actor.tess" } })?.by ?? ""), "immune to that creature's Visual effects");
+    same([ruleTraitImmunity(dazzled, ["Visual"], { other: { uuid: "Actor.wren" } }), ruleTraitImmunity(dazzled, ["Visual"]), ruleTraitImmunity(dazzled, ["Visual"], { other: null })], [null, null, null], "and to nobody else's, nor when nobody is named");
+    // Held outright, the other party does not matter.
+    must(ruleTraitImmunity(creature({ statuses: ["blinded"] }), ["Visual"], { other: { uuid: "Actor.wren" } }) !== null, "a Condition held against everyone answers whoever asks");
+  }, [...immuneRows(), { name: "Dazzled [X]", takes: "X", includes: ["Blinded against X"] }]);
 });
 
 /* -------------------------------------------- */

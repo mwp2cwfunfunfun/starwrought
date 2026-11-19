@@ -163,7 +163,9 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
           // The Defense the first die was read against, and no other (0.34.0): the read does not
           // move to one nobody named or chose (helpers/threshold-read.mjs).
           defense: flags.targetDefense, permitted: [flags.targetDefense],
-          threat: { threat: "check", melee: false, traits: item?.system?.traits ?? [], check: flags.slug ?? null },
+          // The traits the first read had (0.35.0): the Maneuver's own with its parent's, as the
+          // card kept them, else the Item's.
+          threat: { threat: "check", melee: false, traits: Array.isArray(flags.itemTraits) ? flags.itemTraits : (item?.system?.traits ?? []), check: flags.slug ?? null },
           attacker: roller.tokenOnScene?.() ?? roller
         });
         if (Number.isFinite(Number(read?.threshold))) {
@@ -243,6 +245,10 @@ export async function rerollCheck(message, flags, { roll, reason = "", rule = nu
     // player's roll for an adversary's Maneuver is still read from the other side, so the GM's
     // client posts a new result for it (documents/cards/check-request.mjs).
     checkRequest: (flags.check && !flags.check.resultOf) ? { ...flags.check } : null,
+    // The Maneuver's traits as the first card kept them (0.35.0): the new card asks the target's
+    // immunity again with them, as it is posted (dice/check/card.mjs).
+    ...(Array.isArray(flags.itemTraits) ? { itemTraits: [...flags.itemTraits] } : {}),
+    ...(flags.usedOn?.uuid ? { usedOn: { ...flags.usedOn } } : {}),
     label: foundry.utils.unescapeHTML?.(label) ?? label,
     subtitle: "",
     threshold: withhold ? null : threshold,

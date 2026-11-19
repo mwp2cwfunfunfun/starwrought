@@ -135,7 +135,11 @@ export function position(cfg, result) {
       }
     }
   } else {
-    pos.exposeDefender = kind.full && ((cfg.strike === "committed") || (outcome === "critical"));
+    // A defender immune to a trait the attack carries (0.35.0; rulings 353 and 355) takes no
+    // damage and NOTHING LANDS ON IT, so a Hit Exposes no Zone of its. This is the one offer here
+    // that lands on the defender by the attacker's doing; everything else stands as rolled, the
+    // attacker's own Expose on a Miss and the Bind a Guard forms among it.
+    pos.exposeDefender = !cfg.immune && kind.full && ((cfg.strike === "committed") || (outcome === "critical"));
   }
 
   // The `prevent` rules (0.13.0): the Reaction Talents on the scene that could stop the Expose on

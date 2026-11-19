@@ -54,8 +54,13 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
     Condition    its name ("Frightened"). The table's suffix reads too ("Frightened N", "Exposed
                  [Zone]", "Bound [X]") and is put back from Takes wherever a table is printed.
     Takes        blank, N (a value: Frightened 2), Zone (the system's own only), or X (a creature).
-    Description  the text players read: the tooltip on the Condition's row of a sheet and on the
-                 token's hover card, and the reference tables.
+    Description  one line of flavor, as on a talent sheet (0.35.0). Shown in italics above the
+                 Effect in the Rules Reference journal and in the Condition's tooltip on a sheet.
+                 May be blank.
+    Effect       the rules text players read: the tooltip on the Condition's row of a sheet and on
+                 the token's hover card, and the reference tables. REQUIRED under this name since
+                 0.35.0 (through 0.34.0 this column was headed Description): a sheet with no Effect
+                 column stops the build, which will not guess which text a lone Description holds.
     Includes     other Conditions this one also counts as, comma separated. Prone: Off-Guard. A
                  creature is Off-Guard once, however many ways it got there. "Off-Guard against X"
                  means only against the creature that put this Condition on, and needs Takes = X.
@@ -64,6 +69,13 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
                  after IFT: may ask about the attack answered (RANGED, MELEE, BLOW, BLAST, BLIGHT,
                  BEGUILEMENT, TRAIT(...)). -N is the Condition's own value: [EFFECT DEF: -N
                  condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.
+                 IMMUNITY TO A TRAIT (0.35.0): [EFFECT IMMUNE: TRAIT(Visual)] on Blinded,
+                 [EFFECT IMMUNE: TRAIT(Auditory)] on Deafened. Whoever has the Condition is immune
+                 to anything with that trait: a Maneuver used on it puts nothing on it, an attack
+                 or a spell deals it no damage, and Foundry says so and goes on. One trait to a
+                 line, nothing after it, and on a Condition's row alone for now. Separate traits
+                 on a Maneuver are each enough (Calm Animal: Auditory, Visual); one trait written
+                 "Auditory or Visual" (Captivate) needs both.
     System       Yes for the Conditions the system itself puts on and takes off (Dying, Wounded,
                  Spent, Preparing, the Bind's three, Exposed, Dead): the row holds their text.
     Listed?      Yes prints the row in the reference tables. A sheet without the column lists all.

@@ -43,6 +43,7 @@
  */
 
 import * as SW from "../../config.mjs";
+import { immunityRecord } from "../../rules/prevent.mjs";
 import { SOCKET, replyTo, resolveActor } from "./shared.mjs";
 import { postCard } from "../../helpers/cards.mjs";
 import { sameBody, wasRerolled, writerFor } from "./give.mjs";
@@ -457,8 +458,20 @@ async function applyOnce(request, who, userId) {
   if ((writerFor(recipient)?.id !== game.user.id) || !(recipient.isOwner || game.user.isGM)) return refused("cannotWrite");
   const lines = standing(flags, who);
   if (!lines.length) return refused("nothing");
-  const done = await applySide({ chat, flags, roller, recipient, who, lines });
-  return { type: "effect:done", name: done.name, words: done.words };
+  // IMMUNITY TO A TRAIT (0.35.0; rulings 354 and 358). The creature this would land on is immune
+  // to a trait the Maneuver carries (Blinded: `[EFFECT IMMUNE: TRAIT(Visual)]`): the system says
+  // it and goes on, so nothing is refused, NOTHING IS APPLIED, and the record card says why, which
+  // is also what makes the button give way on every client. Asked here, on the one writer, at the
+  // moment of the write: a creature Blinded after the roll is immune, one cured since is not. The
+  // roller's own side is never asked: what a Maneuver puts on its user lands as always.
+  // `itemTraits` is the Maneuver's traits as the roll kept them (dice/check/card.mjs).
+  const named = flags.applies.target?.uuid ? resolveActor(flags.applies.target.uuid) : null;
+  const shown = (named && sameBody(named, recipient) && flags.applies.target?.name) ? flags.applies.target.name : recipient.name;
+  const immune = ((who === "target") && Array.isArray(flags.itemTraits))
+    ? immunityRecord(recipient, shown, flags.itemTraits, { other: roller, key: "applied" })
+    : null;
+  const done = await applySide({ chat, flags, roller, recipient, who, lines: immune ? [] : lines, notes: immune ? [immune.note] : [] });
+  return { type: "effect:done", name: done.name, words: immune ? [immune.note] : done.words };
 }
 
 /* -------------------------------------------- */

@@ -933,7 +933,8 @@ def equipment_only():
 #
 #   Condition    its name ("Frightened"; the table's suffix, "Frightened N", is read off)
 #   Takes        blank, N (a value), Zone, or X (a creature)
-#   Description  the text players read
+#   Description  one line of flavor, as on a Talent's sheet (0.35.0); optional
+#   Effect       the rules text players read (0.35.0; the column was "Description" through 0.34.0)
 #   Includes     other Conditions this one also counts as, comma separated ("Off-Guard"; or
 #                "Off-Guard against X": only against the creature that put this Condition on)
 #   Automation   lines in the grammar, as on a Talent; N/A for a row that needs none
@@ -947,7 +948,9 @@ def equipment_only():
 # one of them without a row, and only then writes assets/conditions.json and the roster's
 # `conditions` block together. So a workbook with a slip in it never leaves a half-written file.
 CONDITIONS_SHEET = "Conditions"
-CONDITION_COLUMNS = {"name": "condition", "takes": "takes", "description": "desc", "includes": "include",
+# 0.35.0 (Mike, 2026-11-19: "to bring it in line with other spreadsheets"): Effect is the rules
+# text and Description the flavor line. Through 0.34.0 the one column, Description, was the rules.
+CONDITION_COLUMNS = {"name": "condition", "takes": "takes", "description": "desc", "effect": "effect", "includes": "include",
                      "automation": "automation", "system": "system", "listed": "listed", "icon": "icon", "notes": "note"}
 CONDITION_TAKES = {"": "", "n": "N", "zone": "Zone", "x": "X"}
 CONDITION_SUFFIX = re.compile(r"\s*(?:\[\s*(zone|x)\s*\]|\s((?-i:N)))\s*$", re.I)
@@ -959,15 +962,20 @@ def is_conditions_workbook(sheetnames):
 
 def parse_conditions_workbook(wb, fname, conditions, warnings, errors, defined):
     """One Condition per row of the Conditions sheet, appended to `conditions` as the staged rows
-    assets/parse_rules.mjs reads: name (the table's suffix off), takes, description, includes (a
-    list, as written), automation (the cell's text), system, listed, icon, notes, and `row`, the
+    assets/parse_rules.mjs reads: name (the table's suffix off), takes, effect (the rules text),
+    description (the flavor line), includes (a list, as written), automation (the cell's text),
+    system, listed, icon, notes, and `row`, the
     sheet row, for a message. `defined` is shared across workbooks (bare lower-case name -> file).
     Returns how many rows this workbook gave."""
     ws = wb[CONDITIONS_SHEET]
     where_sheet = f"{fname} / {CONDITIONS_SHEET}"
     cm = header_map(ws, CONDITION_COLUMNS, unknown=warnings, where=where_sheet)
-    if "name" not in cm or "description" not in cm:
-        errors.append(f"{where_sheet}: sheet needs Condition and Description columns"); return 0
+    # An Effect column is required and never guessed at: a sheet with only "Description" is the
+    # shape of 0.34.0, where that column was the rules text, and reading it as flavor (or as rules,
+    # under a header that now means flavor) would ship the wrong text in silence.
+    if "name" not in cm or "effect" not in cm:
+        errors.append(f"{where_sheet}: sheet needs Condition and Effect columns. Since 0.35.0 Effect is the rules "
+                      f"text a Condition's row carries and Description is its one line of flavor: head the rules column Effect"); return 0
     n = 0
     for i, r in enumerate(ws.iter_rows(min_row=2), start=2):
         cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
@@ -992,9 +1000,11 @@ def parse_conditions_workbook(wb, fname, conditions, warnings, errors, defined):
         if takes_cell and from_suffix and takes_cell != from_suffix:
             errors.append(f"{where}: Takes says '{raw('takes')}' and the name ends '{written[len(name):].strip()}'; keep one"); continue
         takes = CONDITION_TAKES[takes_cell or from_suffix]
+        effect = raw("effect")
+        if not effect:
+            warnings.append(f"{where}: no Effect; players will read nothing for this Condition")
+        # The flavor line: optional, as on a Talent's sheet.
         description = raw("description")
-        if not description:
-            warnings.append(f"{where}: no Description; players will read nothing for this Condition")
         # Includes: comma separated, a comma inside brackets never splitting, as a Traits cell is.
         includes = [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", raw("includes"))) if t]
         # Automation: the cell as written, line breaks kept. "N/A" (and a blank) is no automation,
@@ -1004,7 +1014,7 @@ def parse_conditions_workbook(wb, fname, conditions, warnings, errors, defined):
         system = raw("system").lower() == "yes"
         # Listed?: a sheet without the column lists every row; with it, only a Yes.
         listed = enabled_flag(cellv("listed"), "listed" in cm)
-        conditions.append({"name": name, "takes": takes, "description": description, "includes": includes,
+        conditions.append({"name": name, "takes": takes, "description": description, "effect": effect, "includes": includes,
                            "automation": automation, "system": system, "listed": listed,
                            "icon": raw("icon"), "notes": raw("notes"), "row": i, "workbook": fname})
         n += 1

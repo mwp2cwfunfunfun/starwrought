@@ -1,5 +1,45 @@
 [
   {
+    "id": "0.35.0-immunity-claudes-readings",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.35.0, rulings 356 to 360",
+    "question": "Readings 0.35.0 makes that Mike did not rule on. 356 (his choice: a Condition's row only) with Claude's detail: one trait to a line, nothing after it, and IMMUNE: <Condition> stays refused on a Condition's row. 357: a thing's separate traits are alternatives for immunity (Calm Animal, Auditory and Visual, does nothing to a creature that is only Blinded), while one trait written 'Auditory or Visual' (Captivate) needs both. 358: immunity is judged when a thing would land, each card as it is posted and the write again; a reroll's card asks again; there is no override (see the row below). 359: a Condition held only against one creature gives its immunity only against that creature. 360: 'nothing lands' covers a Maneuver's target lines, a result given to an ally, an attack's damage buttons and the Expose of the defender's Zone; the roller's own lines stand; an immune defender still pays for its Reaction; a Maneuver performed as part of another carries its parent's traits; 'Trait' and 'Expose' are names a new Condition may not take.",
+    "recommendation": "Leave them. The one to know is 357: Calm Animal cannot calm a Blinded animal though it is also Auditory. If a Maneuver with two separate traits should need immunity to both, write its trait as one, 'Auditory or Visual', as Captivate's is.",
+    "decidedBy": ""
+  },
+  {
+    "id": "immunity-no-override",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/module/documents/cards/apply.mjs, applyOnce; the 0.35.0 plan's 'There is no override'",
+    "question": "While a creature has the Condition, 'Apply to <creature>' applies nothing however often it is pressed. The plan said deleting the small 'immune' card brings the button back; it does, but the press asks again and posts the same card (the review found this). So the only way to affect an immune creature by a GM's ruling is to take the Condition off, press Apply, and put it back. Should the GM have an 'Apply anyway'?",
+    "recommendation": "Leave it unless play asks for it. If wanted: a GM-only 'Apply anyway' button on the small 'immune' card, which applies the lines once and says so. It is a small change in apply.mjs.",
+    "decidedBy": ""
+  },
+  {
+    "id": "deafened-needs-its-line",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Data",
+    "where": "data/conditions.xlsx, the Deafened row's Automation cell",
+    "question": "Deafened's Effect says 'Immune to Auditory effects' and its Automation cell is N/A, so a Deafened creature is immune to nothing. The line is [EFFECT IMMUNE: TRAIT(Auditory)]. It reaches further than Blinded's: Demoralize, Rally, Talk Them Down, Command the Field, Anticipate, Battle Cry, Bolster and Direct Animal are all Auditory.",
+    "recommendation": "Type [EFFECT IMMUNE: TRAIT(Auditory)] in place of the N/A and double-click sync_conditions.cmd, then run Sync content in the open world.",
+    "decidedBy": ""
+  },
+  {
+    "id": "conditions-about-sheet-stale",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Data",
+    "where": "data/conditions.xlsx, the About sheet",
+    "question": "Three sentences of the About sheet describe the sheet as it was before the Effect column: 'Description: the text players read ...' (that is Effect now; Description is the flavor line), and the Automation sentence, which lists CHECK, ATK, DEF and INIT and not IMMUNE for a trait.",
+    "recommendation": "Reword when convenient; nothing reads the About sheet. Suggested wording is in the 0.35.0 changelog entry, under Worth knowing.",
+    "decidedBy": ""
+  },
+  {
     "id": "0.34.0-check-claudes-readings",
     "since": "2026-11-19",
     "status": "open",
@@ -55,7 +95,7 @@
     "status": "open",
     "category": "Rules decision",
     "where": "data/conditions.xlsx, the Supine row's Automation cell",
-    "question": "Supine's Description says -2 Situation to Attacks 'except melee Attacks against adjacent creatures, Grapples included'. The grammar has no word for the exception, so the row's [EFFECT ATK: -2 situation] reaches those attacks too. Supine also does not stop movement yet (no word for what a Condition forbids).",
+    "question": "Supine's Effect says -2 Situation to Attacks 'except melee Attacks against adjacent creatures, Grapples included'. The grammar has no word for the exception, so the row's [EFFECT ATK: -2 situation] reaches those attacks too. Supine also does not stop movement yet (no word for what a Condition forbids).",
     "recommendation": "Keep the line for now and hold the exception at the table, or delete the ATK line from the Supine row until the exception has a word (then nothing is taken off a Supine creature's attacks). The words for what a Condition forbids are the next release, one at a time.",
     "decidedBy": ""
   },
@@ -64,9 +104,9 @@
     "since": "2026-11-18",
     "status": "open",
     "category": "Data",
-    "where": "data/conditions.xlsx, the Prone row's Description (copied from the handbook's Conditions table as written)",
+    "where": "data/conditions.xlsx, the Prone row's Effect cell (copied from the handbook's Conditions table as written)",
     "question": "The Prone row ends 'Stand to clear, or Roll Over to become Prone.' Rolling over from Prone would make a creature Supine, so the last word reads like a slip. The same sentence is in the handbook's table.",
-    "recommendation": "Change the last word to Supine in the Description cell of data/conditions.xlsx and double-click sync_conditions.cmd. The handbook's table is yours to mend or to take out of the book.",
+    "recommendation": "Change the last word to Supine in the Effect cell of data/conditions.xlsx and double-click sync_conditions.cmd. The handbook's table is yours to mend or to take out of the book.",
     "decidedBy": ""
   },
   {

@@ -27,7 +27,7 @@
  */
 
 import * as SW from "../config.mjs";
-import { rulePreventers } from "./engine.mjs";
+import { rulePreventers, ruleTraitImmunity } from "./engine.mjs";
 import { sceneContextFor, encounterContext, writeRuleMarks } from "./scene.mjs";
 import { EXPOSE } from "./kinds/prevent.mjs";
 
@@ -106,6 +106,67 @@ export function exposePreventers(actor, token = null) {
     itemId: p.item.id ?? "", itemName: p.item.name ?? "", ownerUuid: p.owner?.uuid ?? "", ownerName: p.owner?.name ?? "",
     cost: Number(p.item.system?.costValue ?? SW.actionCostValue?.(p.item.system?.cost) ?? 0) || 0
   }));
+}
+
+/* -------------------------------------------- */
+/*  Immunity to a trait (0.35.0)                */
+/* -------------------------------------------- */
+
+/**
+ * Is this creature immune to a thing that carries these traits (0.35.0; rulings 350 to 360)? The
+ * Blinded row of the Conditions sheet says `[EFFECT IMMUNE: TRAIT(Visual)]`, and the system SAYS
+ * IT AND GOES ON (Mike): the use is made and paid for, and nothing lands on the immune creature.
+ *
+ * A READ, on whichever client asks: the roller's for the roll window, the client that posts a
+ * card for its note, the one writer of an Effect for the write itself, the coordinator for an
+ * attack's result. Each asks at its own moment, so the answer is the creature as it stands THEN:
+ * immunity is judged when a thing would land (ruling 358). No scene is read and nothing is
+ * written, so every client answers the same. Never throws: a card never dies over a rule.
+ *
+ * @param {Actor} actor       The creature the thing would land on.
+ * @param {string[]} traits   The thing's traits (a Maneuver's, a weapon's, a spell's).
+ * @param {{other?: Actor|null}} [options]  The creature doing the thing.
+ * @returns {{covered: object[], traits: string, by: string}|null}
+ */
+export function traitImmunity(actor, traits, { other = null } = {}) {
+  if (!actor || !Array.isArray(traits) || !traits.length) return null;
+  try {
+    return ruleTraitImmunity(actor, traits, { other });
+  } catch (err) {
+    console.error("STARWROUGHT | a creature's immunity to a trait could not be read", err);
+    return null;
+  }
+}
+
+/**
+ * The sentence that says it: "Bandit is immune to Visual effects (Blinded). Nothing this does
+ * lands on Bandit."
+ * @param {string} target  The creature's name, as the table sees it (its token's).
+ * @param {{traits: string, by: string}} immunity  From `traitImmunity`.
+ * @param {string} [key]   The i18n key: `note` for a Maneuver, `attack` for an attack's result,
+ *                         `applied` for the write that applied nothing, `given` for a refused give.
+ * @returns {string}
+ */
+export function immunityNote(target, immunity, key = "note") {
+  if (!immunity) return "";
+  return game.i18n.format(`STARWROUGHT.Immune.${key}`, { target: String(target ?? ""), traits: immunity.traits, by: immunity.by });
+}
+
+/**
+ * What a card keeps of an immunity, and prints: who was immune, to which traits, by what, and the
+ * sentence. Null when the creature is not immune. The one shape `flags.starwrought.immune` has,
+ * whoever asked (the card as it is posted, the coordinator as it resolves an attack's pairing).
+ * @param {Actor} target      The creature the thing would land on.
+ * @param {string} name       Its name as the table sees it.
+ * @param {string[]} traits   The thing's traits.
+ * @param {{other?: Actor|null, key?: string}} [options]  `key`: which sentence (see `immunityNote`).
+ * @returns {{targetUuid: string, target: string, traits: string, by: string, note: string}|null}
+ */
+export function immunityRecord(target, name, traits, { other = null, key = "note" } = {}) {
+  const hit = traitImmunity(target, traits, { other });
+  if (!hit) return null;
+  const shown = String(name || target?.name || "");
+  return { targetUuid: target.uuid, target: shown, traits: hit.traits, by: hit.by, note: immunityNote(shown, hit, key) };
 }
 
 /**

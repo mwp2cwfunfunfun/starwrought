@@ -1,20 +1,30 @@
 {
-  "build": "ad86faced48c2c5b",
+  "build": "2b8e8471f58f5924",
   "source": [
     "conditions.xlsx"
   ],
   "conditions": [
     {
-      "name": "Blind",
+      "name": "Blinded",
       "takes": "",
-      "description": "Off-Guard; cannot see. Immune to Visual effects.",
+      "effect": "You cannot see. You are immune to Visual effects. You are Off-Guard.",
+      "description": "The world vanishes from sight, leaving you to find your way through danger by your remaining senses.",
       "includes": [
         {
           "name": "Off-Guard",
           "against": false
         }
       ],
-      "rules": [],
+      "rules": [
+        {
+          "effect": "trait",
+          "trait": "visual",
+          "name": "Visual",
+          "kind": "prevent",
+          "line": 1,
+          "text": "[EFFECT IMMUNE: TRAIT(Visual)]"
+        }
+      ],
       "system": false,
       "icon": "",
       "listed": true
@@ -22,7 +32,8 @@
     {
       "name": "Bound",
       "takes": "x",
-      "description": "Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when either of you attacks.",
+      "effect": "Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when either of you attacks.",
+      "description": "Your weapon or shield presses against your foe’s, neither of you yet holding the advantage.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -32,7 +43,8 @@
     {
       "name": "Controlled",
       "takes": "x",
-      "description": "X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶, Move, or Step to end it.",
+      "effect": "X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶, Move, or Step to end it.",
+      "description": "Your foe forces your weapon out of line, opening a dangerous gap in your defenses.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -42,7 +54,8 @@
     {
       "name": "Controlling",
       "takes": "x",
-      "description": "You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.",
+      "effect": "You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.",
+      "description": "You hold your foe’s weapon out of line, keeping their defenses open to attack.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -52,7 +65,8 @@
     {
       "name": "Deafened",
       "takes": "",
-      "description": "Cannot hear. Immune to Auditory effects.",
+      "effect": "Cannot hear. Immune to Auditory effects.",
+      "description": "The world falls silent, cutting off shouted warnings and the telltale sounds of approaching danger.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -62,7 +76,8 @@
     {
       "name": "Dying",
       "takes": "",
-      "description": "You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect.",
+      "effect": "You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect.",
+      "description": "Your life is slipping away, and each passing moment brings death closer.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -72,7 +87,8 @@
     {
       "name": "Exposed",
       "takes": "zone",
-      "description": "That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated.",
+      "effect": "That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated.",
+      "description": "A gap in your defenses offers a clear path past your armor to a vulnerable part of your body.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -82,7 +98,8 @@
     {
       "name": "Fatigued",
       "takes": "n",
-      "description": "−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified.",
+      "effect": "−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified.",
+      "description": "Weariness drags at your limbs, making each attack and defense an effort.",
       "includes": [],
       "rules": [
         {
@@ -135,7 +152,8 @@
     {
       "name": "Frightened",
       "takes": "n",
-      "description": "-N to all checks and Thresholds; reduce by 1 at the end of each round.",
+      "effect": "-N to all checks and Thresholds; reduce by 1 at the end of each round.",
+      "description": "Fear tightens its grip, making every danger loom larger and every decision harder.",
       "includes": [],
       "rules": [
         {
@@ -209,7 +227,8 @@
     {
       "name": "Grabbed",
       "takes": "",
-      "description": "Off-Guard and can't Move or Step; Escape ❶ to break free.",
+      "effect": "Off-Guard and can't Move or Step; Escape ❶ to break free.",
+      "description": "A firm grip holds you in place, leaving you to struggle for room to move.",
       "includes": [
         {
           "name": "Off-Guard",
@@ -224,7 +243,8 @@
     {
       "name": "Heedless",
       "takes": "",
-      "description": "Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action.",
+      "effect": "Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action.",
+      "description": "Your commitment overwhelms caution, leaving little room for careful thought.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -234,7 +254,8 @@
     {
       "name": "Off-Guard",
       "takes": "",
-      "description": "-2 Situation to Evade and Guard against all foes.",
+      "effect": "-2 Situation to Evade and Guard against all foes.",
+      "description": "Your defenses have slipped, giving enemies an opening to press their advantage.",
       "includes": [],
       "rules": [
         {
@@ -285,7 +306,8 @@
     {
       "name": "Preparing",
       "takes": "",
-      "description": "You have begun a Maneuver of three or more actions: two actions spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it.",
+      "effect": "You have begun a Maneuver of three or more actions: two actions spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it.",
+      "description": "You have committed to a demanding maneuver, its decisive moment still to come.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -295,7 +317,8 @@
     {
       "name": "Prone",
       "takes": "",
-      "description": "Off-Guard, -2 Situation to Attacks; +2 Situation to Evade vs. ranged Attacks.\nStand ❶ to clear, or Roll Over ❶ to become Prone.",
+      "effect": "Off-Guard, -2 Situation to Attacks; +2 Situation to Evade vs. ranged Attacks.\nStand ❶ to clear, or Roll Over ❶ to become Prone.",
+      "description": "You lie facedown on the ground, struggling to bring your strength to bear from below.",
       "includes": [
         {
           "name": "Off-Guard",
@@ -356,7 +379,8 @@
     {
       "name": "Supine",
       "takes": "",
-      "description": "Off-Guard; -2 Situation to Attacks (except melee Attacks against adjacent creatures, Grapples included); +2 Situation to Evade vs. ranged Attacks. You cannot Move, Step, Rush, Leap, or Crawl; forced movement affects you normally.\nStand ❶ to clear (you can stand directly from your back), or Roll Over ❶ to become Prone.",
+      "effect": "Off-Guard; -2 Situation to Attacks (except melee Attacks against adjacent creatures, Grapples included); +2 Situation to Evade vs. ranged Attacks. You cannot Move, Step, Rush, Leap, or Crawl; forced movement affects you normally.\nStand ❶ to clear (you can stand directly from your back), or Roll Over ❶ to become Prone.",
+      "description": "You lie on your back, ready to fend off whatever looms over you.",
       "includes": [
         {
           "name": "Off-Guard",
@@ -418,7 +442,8 @@
     {
       "name": "Restrained",
       "takes": "",
-      "description": "As Grabbed but can’t take any action other than Escape ❶.",
+      "effect": "As Grabbed but can’t take any action other than Escape ❶.",
+      "description": "You are held fast, with no freedom left except the struggle to break loose.",
       "includes": [
         {
           "name": "Grabbed",
@@ -433,7 +458,8 @@
     {
       "name": "Slowed",
       "takes": "n",
-      "description": "Lose N actions at the start of each round. Reduce N by 1 at the end of each round.",
+      "effect": "Lose N actions at the start of each round. Reduce N by 1 at the end of each round.",
+      "description": "Your movements come sluggishly, letting the fight creep ahead of you.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -443,7 +469,8 @@
     {
       "name": "Spent",
       "takes": "",
-      "description": "Every Hit that lands on you inflicts a Wound on the Zone it struck, and a Critical Hit inflicts two.\nIf you are Hit or Critically Hit and take any Nonlethal damage as a result, you are knocked unconscious. You awake in ten minutes, or sooner if someone rouses you, with 1 Vigor.",
+      "effect": "Every Hit that lands on you inflicts a Wound on the Zone it struck, and a Critical Hit inflicts two.\nIf you are Hit or Critically Hit and take any Nonlethal damage as a result, you are knocked unconscious. You awake in ten minutes, or sooner if someone rouses you, with 1 Vigor.",
+      "description": "Your reserves are exhausted, and every blow that finds its mark threatens lasting harm.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -453,7 +480,8 @@
     {
       "name": "Stunned",
       "takes": "n",
-      "description": "Lose the next N actions; may carry over across rounds.",
+      "effect": "Lose the next N actions; may carry over across rounds.",
+      "description": "Shock leaves you struggling to act while the fight races on around you.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -463,7 +491,8 @@
     {
       "name": "Wounded",
       "takes": "zone",
-      "description": "That Zone carries a Wound: its critical effect made lasting (see Chapter 4: Vigor and Wounds). Fill the Torso’s or Head’s Wound capacity (two, for anyone Medium or smaller) and you are Dying.",
+      "effect": "That Zone carries a Wound: its critical effect made lasting (see Chapter 4: Vigor and Wounds). Fill the Torso’s or Head’s Wound capacity (two, for anyone Medium or smaller) and you are Dying.",
+      "description": "A serious injury turns a moment’s violence into a lasting burden.",
       "includes": [],
       "rules": [],
       "system": true,
@@ -473,7 +502,8 @@
     {
       "name": "Wrong-Footed",
       "takes": "x",
-      "description": "Off-Guard against that creature only.",
+      "effect": "Off-Guard against that creature only.",
+      "description": "One foe has caught you out of position, leaving an opening only they can exploit.",
       "includes": [
         {
           "name": "Off-Guard",
@@ -488,7 +518,8 @@
     {
       "name": "Unconscious",
       "takes": "",
-      "description": "You are out, Dying or knocked cold: you drop everything you are holding in your squares, and you’re also Prone.",
+      "effect": "You are out, Dying or knocked cold: you drop everything you are holding in your squares, and you’re also Prone.",
+      "description": "You lie senseless as the world carries on beyond your awareness.",
       "includes": [
         {
           "name": "Prone",
@@ -503,7 +534,8 @@
     {
       "name": "Concealed",
       "takes": "",
-      "description": "Your foe knows exactly what squares you are in, but something is preventing them from seeing or otherwise detecting all of you. You gain a +2 Situation bonus to Evade and Guard for physical Attacks.",
+      "effect": "Your foe knows exactly what squares you are in, but something is preventing them from seeing or otherwise detecting all of you. You gain a +2 Situation bonus to Evade and Guard for physical Attacks.",
+      "description": "Your foe knows where you are, but whatever veils you makes a clean strike uncertain.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -513,7 +545,8 @@
     {
       "name": "Hidden",
       "takes": "",
-      "description": "Your foe knows that you are present, but not what squares you occupy. Your foe must successfully guess one of the squares you occupy in order to attack you. Even so, you gain a +4 Situation bonus to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.",
+      "effect": "Your foe knows that you are present, but not what squares you occupy. Your foe must successfully guess one of the squares you occupy in order to attack you. Even so, you gain a +4 Situation bonus to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.",
+      "description": "Your foe knows you are present, but can only guess where a blow might find you.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -523,7 +556,8 @@
     {
       "name": "Undetected",
       "takes": "",
-      "description": "Your foe has no idea if you are even present. You cannot be targeted at all. Your foe is Wrong-Footed to you.",
+      "effect": "Your foe has no idea if you are even present. You cannot be targeted at all. Your foe is Wrong-Footed to you.",
+      "description": "You escape your foe’s notice entirely, a threat they have no reason to expect.",
       "includes": [],
       "rules": [],
       "system": false,
@@ -533,7 +567,8 @@
     {
       "name": "Dead",
       "takes": "",
-      "description": "You are dead.",
+      "effect": "You are dead.",
+      "description": "Your life has ended, leaving others to reckon with your absence.",
       "includes": [],
       "rules": [],
       "system": true,

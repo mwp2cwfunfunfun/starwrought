@@ -38,6 +38,8 @@ import { AttackSocket, SOCKET } from "./attack-socket.mjs";
 import { resolveSource, maneuverFrom, costOf, meleeAnswers, attackThreshold, describe, resolveArgs, rollBlind } from "./attack-source.mjs";
 import { threatContext, writeRuleMarks, sceneContextFor, encounterContext } from "../rules/scene.mjs";
 import { ruleModifiers } from "../rules/engine.mjs";
+// 0.35.0: a defender immune to a trait the attack carries (a Condition's `IMMUNE: TRAIT(...)`).
+import { immunityRecord } from "../rules/prevent.mjs";
 // What an attack does to the Binds around it (0.27.0), pure.
 import { attackBindPlan } from "./bind-rules.mjs";
 
@@ -1832,6 +1834,15 @@ export class AttackCoordinator {
 
     const reaction = (SW.REACTIONS[revealed.reaction]?.kind === "reaction") ? revealed.reaction : null;
 
+    // IMMUNITY TO A TRAIT (0.35.0; rulings 353 and 355). The defender is immune to a trait this
+    // attack carries (a Condition's row: `[EFFECT IMMUNE: TRAIT(Visual)]`). Asked here, on the
+    // coordinator, as the pairing resolves, which is when the attack would land: the defender has
+    // committed a Defense and the dice are rolled, as for any attack (the system says it and goes
+    // on). The result card says so and offers no damage; nothing else about the pairing changes.
+    const immune = (Array.isArray(maneuver.traits) && maneuver.traits.length)
+      ? immunityRecord(defender, defenderToken?.name ?? target.name ?? defender.name, maneuver.traits, { other: attacker, key: "attack" })
+      : null;
+
     // `resolveAgainst` charges the Reaction's ❶ itself on an attack when this client owns the
     // defender (`SwCheck.chargeReaction`, owner-gated) and writes `reactionCharged` to the card,
     // else the card offers the Charge button; a Defense roll paid it before the die. Charging here
@@ -1856,7 +1867,8 @@ export class AttackCoordinator {
       controlZone: workflow.bind?.zones?.[target.id] ?? null,
       controlledAttack: !!workflow.bind?.controlledAttack,
       threat,
-      conditionShift
+      conditionShift,
+      immune
     });
 
     const outcome = result?.outcome;

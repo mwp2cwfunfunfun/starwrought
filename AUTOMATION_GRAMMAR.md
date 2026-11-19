@@ -61,6 +61,7 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT INIT: 1 situation]` | a bonus to Initiative | 3 |
 | `[EFFECT SPEED: 1 situation]` | feet on a Move | 3 |
 | `[EFFECT IMMUNE: prone]`, `[EFFECT IMMUNE: expose]` | a Condition, or an Expose, does not land | 3 |
+| `[EFFECT IMMUNE: TRAIT(Visual)]` | on a Condition's row: whoever has the Condition is immune to anything with the trait (0.35.0) | 4, 11 |
 | `[EFFECT MARK: enemies]` | using it names one creature | 3 |
 | `[EFFECT REROLL: diplomacy]` | the card of a matching roll offers the die again | 3 |
 | `[EFFECT IGNORE: terrain, mud]` | difficult terrain of those kinds costs nothing | 3 |
@@ -206,7 +207,7 @@ exactly one, `APPLY` and `REMOVE` one or two, and never a value or a type. No bo
 | `DEF: 1 situation, guard` | a Defense's roll and Threshold; with no descriptor all four | `evade`, `guard`, `endure`, `awareness` | `bonus` |
 | `INIT: 1 situation` | Initiative | none | `bonus` |
 | `SPEED: 1 situation` | feet on a Move (not a Step, a Rush or a Leap) | none | `bonus` |
-| `IMMUNE: prone` | the Condition does not land; `IMMUNE: expose` a Zone a Stop would Expose stays closed (FG's own `IMMUNE: [condition]`) | a Condition by name, or `expose` | `prevent` |
+| `IMMUNE: prone` | the Condition does not land; `IMMUNE: expose` a Zone a Stop would Expose stays closed (FG's own `IMMUNE: [condition]`) | a Condition by name, or `expose`; on a Condition's row, `TRAIT(<Trait>)` (0.35.0, section 4) | `prevent` |
 | `MARK: enemies` | using the Talent or Maneuver names one creature, the player's target, until the encounter ends; `enemies` or `all` | who may be named | `mark` |
 | `REROLL: diplomacy` | the card of a matching roll offers to throw the die again; no descriptor means any check | a Constellation | `reroll` |
 | `IGNORE: terrain, mud, decking` | difficult terrain of those kinds costs nothing; `IGNORE: terrain` alone every kind | `terrain`, then kinds | `ignore` |
@@ -397,6 +398,66 @@ A typed bonus or penalty to a roll, and to the Threshold that roll's Constellati
 An effect does not land: a Condition, or an Expose. Made by `[EFFECT IMMUNE: ...]`. Takes every
 component but `CLAIM`. With `FOR` the prevention reaches others; when the carrier is a Reaction (↺
 in its cost) it is offered as that Reaction where the effect would land, and the owner pays its cost.
+
+**Immunity to a trait (0.35.0; rulings 350 to 360).** Mike, of the Blinded Condition: "We already
+have [IMMUNE] in automation grammar, so should we extend it to allow for adding of Traits in
+there?" On a Condition's row of `data/conditions.xlsx`:
+
+```
+[EFFECT IMMUNE: TRAIT(Visual)]        Blinded
+[EFFECT IMMUNE: TRAIT(Auditory)]      Deafened
+```
+
+Whoever has the Condition is immune to anything that carries the trait. A trait is always written
+`TRAIT(...)`, as after `IFT:`; a Condition after `IMMUNE:` stays a bare word, so the two can never
+be confused.
+
+- **One trait to a line, named by one word.** Two immunities are two lines. The word is the
+  trait's first word, without its value: `TRAIT(Reach)`, never `TRAIT(Reach 5)`.
+- **Nothing after it.** No `IF:`, `FOR:` or `LIMIT:`: the line acts for whoever has the Condition,
+  as a row's other lines do, so it asks nothing about an owner and every client answers the same.
+- **Read on a Condition's row alone, for now.** On a Talent, a Maneuver or a custom effect it is
+  refused and says so. A Talent's immunity to a trait comes with the first Talent that asks for it.
+- **A Condition's name is not read there yet.** `[EFFECT IMMUNE: frightened]` on a row is refused:
+  a Condition that another one counts as would still count, which is half a rule.
+
+**How a thing's traits are read** (ruling 357). Only the first word of a trait is compared
+(`Reach 5` is `reach`), as everywhere.
+
+- **Separate traits** are each a way the thing works. Calm Animal is Auditory and Visual: a
+  creature immune to either one is immune to it.
+- **One trait written with `or`** is alternatives. Captivate's is "Auditory or Visual": it works
+  through either sense, so a creature is immune only when it is immune to both. A Blinded creature
+  that can hear is still Captivated.
+- **A Maneuver performed as part of another** carries its parent's traits too: No Quarter is
+  Visual, and performs Demoralize.
+
+**What it does in play.** The system says it and goes on (Mike): nothing is refused, the use is
+made and paid for, and nothing lands on the immune creature.
+
+- **A Maneuver with the trait, used on the creature.** The roll window says so before the roll
+  ("Bandit is immune to Visual effects (Blinded). Nothing this does lands on Bandit."), and so do
+  the check card and a request card. The roll is made as always, and what it puts on the roller
+  still lands. Pressing "Apply to Bandit" applies nothing: a small card says why, and the button
+  gives way. A result that would be given to an immune ally is refused, with the reason.
+- **An attack or a spell with the trait.** The defender commits a Defense and the dice are rolled
+  as for any attack. The result card says the defender is immune and offers no damage to roll.
+  Everything else stands as rolled, the attacker's own side included (a Zone Exposed on a Miss, a
+  Bind).
+- **Judged when a thing would land** (ruling 358): each card asks as it is posted, a reroll's
+  card among them, and the write asks again. A creature Blinded after the roll and before the
+  button is immune; one cured in between is not.
+- **There is no override.** While the creature has the Condition, Apply applies nothing however
+  often it is pressed. If the table rules that it is affected after all, take the Condition off,
+  press Apply, and put it back. If it was cured after the small "immune" card was posted, delete
+  that card and the Apply button comes back.
+- **A Condition held against one creature alone** (an `against X` inclusion) makes its holder
+  immune to that creature's things and nobody else's.
+
+**Not read:** a Maneuver whose whole use is a `MARK`, a `PERMIT` or a `SUBORDINATE` line (Command
+the Field still lets a Deafened ally Move); another creature's aura or bonus whose carrier has the
+trait; damage applied by hand from a damage card; a defender marked immune before it commits a
+Defense (it still pays for a Parry); and what a Blinded or Deafened creature itself cannot do.
 
 ### `mark`
 Using the Talent or Maneuver names one creature. Made by `[EFFECT MARK: ...]`. Takes `IF: RANK(...)` alone.
@@ -1357,7 +1418,8 @@ workbook was first filled (section 11 says how a row is read). Every other row i
   Supine                Off-Guard              (the same two lines)
   Grabbed               Off-Guard              N/A
   Restrained            Grabbed                N/A
-  Blind                 Off-Guard              N/A
+  Blinded               Off-Guard              [EFFECT IMMUNE: TRAIT(Visual)]      (0.35.0)
+  Deafened                                     [EFFECT IMMUNE: TRAIT(Auditory)]    (0.35.0; to type)
   Unconscious           Prone                  N/A
   Wrong-Footed   X      Off-Guard against X    N/A
 ```
@@ -1365,8 +1427,9 @@ workbook was first filled (section 11 says how a row is read). Every other row i
 What these rows say that a line cannot yet: Supine's "except melee Attacks against adjacent
 creatures" (its -2 reaches those too), "cannot Move or Step", Evade being unavailable while
 Grabbed (the system marks that itself), a value that drops by 1 each round (Frightened, Slowed),
-Stunned's and Slowed's lost actions, Heedless's extra action, what Blind and Deafened cannot
-perceive, and Fatigued's maximum, Wind check and rests, which stay the system's.
+Stunned's and Slowed's lost actions, Heedless's extra action, what Blinded and Deafened cannot
+perceive (their immunity to Visual and Auditory effects is a line since 0.35.0), and Fatigued's
+maximum, Wind check and rests, which stay the system's.
 
 ### Declaring a check (0.34.0)
 
@@ -1776,6 +1839,10 @@ written on the Maneuver's row.
 | `a who is written self, allies, enemies, all or self+allies` | the FOR subject |
 | `a range is written <N>ft, as in 15ft` | the feet |
 | `"<word>" is not a Condition or Expose` | the IMMUNE descriptor |
+| `` `IMMUNE: TRAIT(...)` is read on a Condition's row for now (the Conditions sheet, as Blinded's `[EFFECT IMMUNE: TRAIT(Visual)]`); a Talent's immunity to a trait is not read yet `` | `IMMUNE: TRAIT(...)` on a Talent, a Maneuver or a custom effect (0.35.0) |
+| `IMMUNE names one trait to a line: write \`[EFFECT IMMUNE: TRAIT(Visual)]\` and a second line for a second trait` / `TRAIT(...) names a trait` / `"<name>" is not a trait's name: one word ...` | two traits in one `TRAIT(...)`, or two `TRAIT(...)` on one line; an empty one, or the bare word `trait`; a name of two words (`Reach 5`, `visual effects`) or with a mark in it |
+| `on a Condition's row IMMUNE names a trait, as \`[EFFECT IMMUNE: TRAIT(Visual)]\`; immunity to a Condition or an Expose is not read on a Condition's row yet` | `[EFFECT IMMUNE: prone]` or `expose` on a Condition's row |
+| `` `IMMUNE: TRAIT(...)` takes nothing after it on a Condition's row yet (no IF:, IFT:, FOR: or LIMIT:): the line acts for whoever has the Condition, so it is written alone `` | `LIMIT:`, `FOR:`, `IF:` or `IFT:` after `IMMUNE: TRAIT(...)` |
 | `"<word>" is not a terrain kind: write Mud, Shallow Water, ...` | a kind not in the Difficult terrain behavior's list |
 | `a substitution is written \`USE: <Attribute>, <Constellation>, <Maneuver>\`, as in \`USE: Presence, Origin, aid\`` | a `USE` with no descriptor; with one alone the message ends `(1 descriptor given, 3 wanted)` |
 | `USE takes three descriptors, the Attribute, the Constellation and the Maneuver, not <N>: \`USE: Presence, Origin, aid\`` | four descriptors or more |
@@ -1810,7 +1877,10 @@ written on the Maneuver's row.
 | `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
 | `"N" is a Condition's own value and is written on that Condition's row of the Conditions workbook, as in \`DEF: -N condition\` on Frightened; here write a whole number` | `-N` on a Talent, a Maneuver or a custom effect (0.33.0) |
 | `\`-N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number` | `-N` on a row of the Conditions workbook whose Takes is not N |
-| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, ATK, DEF, INIT); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT, IMMUNE` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, ATK, DEF, INIT, IMMUNE); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `... / Conditions: sheet needs Condition and Effect columns. Since 0.35.0 Effect is the rules text ... and Description is its one line of flavor: head the rules column Effect` | the Conditions sheet has no Effect column: the build stops, and does not guess which text a lone Description holds |
+| `WARNING: ... / Conditions / <Name>: no Effect; players will read nothing for this Condition` | not a failure: a row with an empty Effect cell (an empty Description, the flavor line, is never said) |
+| `WARNING: the roster's conditions block and assets/conditions.json disagree; run the Conditions build ...` | the two are written together, and one is from an older build: run `node assets/build_all.mjs --conditions` |
 | `<TAG> on a Condition's row does not take <component> yet: the line acts for whoever has the Condition, and may ask only about the attack it answers (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...))` | `IF: RANK(...)`, `FOR:`, `IF: ALLIES(...)`, `IF: SEEN`, `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED` or `EFFECT(...)` on a Condition's row |
 | `NEW CONDITION: "<Name>" is made by its row (the system has no Condition of that name). If it is a slip for another row's name, mend the row.` | not a failure: a row of the Conditions workbook that names no Condition the system has makes one. Printed every build, so a typo in a name is seen at once |
 | `... / Conditions: no row for <names>. Every Condition the system has needs its row: the workbook is the only source for what a Condition says` | a row the system needs was deleted or renamed; put it back |
@@ -1819,7 +1889,7 @@ written on the Maneuver's row.
 | `"<Name>" includes "<Other>", which is no Condition` / `"<Name>" includes itself` / `two rows describe the Condition "<Name>"` / `"<Name>" cannot name a Condition: the word already means something else where a Condition is read` / `"<Name>" is marked System, and the system knows no Condition of that name` | a row the registry cannot take; nothing is written |
 | `WARNING: ... / Conditions / <Name>: a CHECK line and an INIT line: an Initiative is a check, so it takes both` / `... a DEF line for every Defense and a DEF line for one of them: that Defense takes both` | not a failure: two lines of one row both reach one roll, and both count |
 | `CONDITION ERRORS (nothing written)` / `CONDITION ERRORS (a warning in content mode)` | the Conditions workbook did not read: `assets/conditions.json` and the roster's `conditions` block are left as they were |
-| `WARNING: ... TRAIT(<Trait>): no shipping weapon, attack or Talent carries the trait "<Trait>"` | not a failure: the rule reads and fires when something is authored with that trait |
+| `WARNING: TRAIT(<Trait>): no shipping weapon, Maneuver, attack or Talent carries the trait "<trait>" yet (asked by ...); the rule holds once one is authored` | not a failure: a trait named after `IFT:` or in `IMMUNE: TRAIT(...)` that nothing carries. Often a slip of the pen (`TRAIT(Visaul)`); else the rule waits for something authored with that trait |
 | `WARNING: <workbook>: the _Tree Index columns <list> are retired; the Root's feature lines are the authoring now` | move the facts into the Root's cell as section 2 says, then drop the columns |
 | `ERROR: <tree>: the _Tree Index <column> reads <a> but the Root's [<KEYWORD>] says <b>; drop the column` | a retired column and the Root's block disagree |
 
@@ -2027,6 +2097,14 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   One kind, the twenty-fifth: `check`, a feature block on a Maneuver's own row, with no hook.
   The build's guess from prose stays for a row with no block. Gain Control itself stays in code
   until a word says what a result does to a Bind.
+- **0.35.0** (2026-11-19): immunity to a trait, and the Conditions sheet's two texts, from
+  Mike's revision of `data/conditions.xlsx` ("should we extend it to allow for adding of Traits
+  in there?"). No kind is new: `IMMUNE`'s one descriptor has a second form, `TRAIT(<Trait>)`, on a
+  Condition's row alone, with no component (rulings 352 and 356), and a Condition after `IMMUNE:`
+  stays a bare word. A thing's separate traits are each enough for immunity, and one trait written
+  "Auditory or Visual" needs both (357). The system says it and goes on (354). On the sheet, the
+  rules text is the **Effect** column and **Description** is one line of flavor, as on every
+  other sheet (350).
 
 ## 11. The Conditions workbook
 
@@ -2039,7 +2117,8 @@ follows. One sheet, `Conditions`, one row for each Condition:
 |---|---|
 | Condition | its name: `Frightened`. The suffix the handbook's table prints (`Frightened N`, `Exposed [Zone]`, `Bound [X]`) reads too, and is put back from Takes wherever a table is printed |
 | Takes | blank, `N` (a value: Frightened 2), `Zone` (the system's own only), or `X` (a creature: Wrong-Footed to X) |
-| Description | the text players read: the tooltip on the Condition's row of a sheet and on the token's hover card, and the reference tables |
+| Description | one line of flavor, as on a Talent's sheet (0.35.0). It shows in italics above the Effect in the Rules Reference journal and in the Condition's tooltip on a sheet; it may be blank |
+| Effect | the rules text players read: the tooltip on the Condition's row of a sheet and on the token's hover card, and the reference tables. Through 0.34.0 this column was headed Description; the build now requires it under this name |
 | Includes | other Conditions this one also counts as, comma separated |
 | Automation | lines in this grammar, one to a line; `N/A` for a row that needs none |
 | System | `Yes` for the Conditions the system itself puts on and takes off (Dying, Wounded, Spent, Preparing, the Bind's three, Exposed, Dead). Their rows hold the text; the system runs them |
@@ -2048,7 +2127,7 @@ follows. One sheet, `Conditions`, one row for each Condition:
 | Notes | yours: what the code still does for the row, or does not do yet. The system never reads it |
 
 **A row's lines act for whoever has the Condition**, a character or an adversary. So a row reads
-the four modifier tags and nothing that asks about an owner:
+the four modifier tags, and `IMMUNE: TRAIT(...)` (0.35.0), and nothing that asks about an owner:
 
 ```
 [EFFECT DEF: -2 situation, evade]              Off-Guard
@@ -2056,6 +2135,7 @@ the four modifier tags and nothing that asks about an owner:
 [EFFECT CHECK: -N condition]                   ... every check, and an Initiative rolled as one
 [EFFECT ATK: -N condition]                     ... every Strike and Cast
 [EFFECT DEF: 2 situation, evade; IFT: RANGED]  Prone: +2 Evade against a ranged Attack
+[EFFECT IMMUNE: TRAIT(Visual)]                 Blinded: immune to anything with the Visual trait
 ```
 
 - **`N` is the Condition's own value.** `-N` on Frightened is -2 at Frightened 2 and -3 at
@@ -2067,9 +2147,10 @@ the four modifier tags and nothing that asks about an owner:
   known (the Defense roll, the Threshold an attack is read against) and is not in the number on
   the sheet.
 - **Nothing else is read on a row yet**: `IF: RANK(...)`, `FOR:`, `IF: ALLIES(...)`, `IF: SEEN`,
-  `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED`, `EFFECT(...)`, any other tag (`IMMUNE`, `SPEED`,
-  `APPLY`) and every feature block are refused by name. What a Condition forbids (movement,
-  Reactions, a Defense) and how it fades have no word yet.
+  `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED`, `EFFECT(...)`, any other tag (`SPEED`, `APPLY`)
+  and every feature block are refused by name. `IMMUNE` is read in its `TRAIT(...)` form alone,
+  with nothing after it (section 4, `prevent`); `IMMUNE: <Condition>` is not read on a row yet.
+  What a Condition forbids (movement, Reactions, a Defense) and how it fades have no word yet.
 - **One Condition is one circumstance.** A creature that is Off-Guard three ways (the status,
   Prone, a Torso Wound) takes Off-Guard's -2 once.
 - **A Condition's lines have no On / Skip / Off.** The Condition is the switch: take it off and
@@ -2098,7 +2179,8 @@ cell can write (`[EFFECT APPLY: Supine]`, `[REQUIRES supine]`, `IFT: EFFECT(supi
 and the Includes of its row. Supine is the first. The build prints `NEW CONDITION: "<Name>"` for
 each, every time, so a slip in a name is seen at once. A name may not be a word that already
 means something where a Condition is read (`shield`, `weapon ...`, `foe ...`, `effect ...`,
-`bind`, `not ...`, `exposed ...`). A row deleted from the sheet is gone from the system at the
+`bind`, `not ...`, `exposed ...`, and since 0.35.0 `trait` and `expose`, the two words `IMMUNE:`
+reads that are no Condition). A row deleted from the sheet is gone from the system at the
 next build, except the Conditions the system itself has, which the build refuses to go without.
 
 **The row is the word** (ruling 329). A row whose Automation cell is blank or `N/A` means the

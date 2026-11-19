@@ -3,7 +3,7 @@
 # the workbook is the source the system reads, and the ONLY authority for what a Condition says;
 # "I fill it from the handbook's table" was the plan he approved).
 #
-# Built for him to edit rather than retype: one row for each Condition, its Description copied
+# Built for him to edit rather than retype: one row for each Condition, its Effect copied
 # VERBATIM from the Conditions table of the newest Players Handbook on the shelf (22 rows in v4.25,
 # Supine among them), then the four Conditions the system has and the table does not (Concealed,
 # Hidden and Undetected, worded from the roster's Detection table, and Dead), with the Includes and
@@ -30,10 +30,12 @@ OUT = os.path.join(DATA, "conditions.xlsx")
 
 # The columns the converter reads (assets/xlsx_to_trees.py, CONDITION_COLUMNS), in the order a
 # reader wants them. The first word of each header is what is matched.
-COLUMNS = ["Condition", "Takes", "Description", "Includes", "Automation", "System", "Listed?", "Icon", "Notes"]
-WIDTHS = {"Condition": 16, "Takes": 8, "Description": 78, "Includes": 22, "Automation": 46, "System": 9,
+# 0.35.0 (Mike, 2026-11-19: "to bring it in line with other spreadsheets"): Description is one
+# line of flavor and Effect the rules text. Through 0.34.0 the one column, Description, was the rules.
+COLUMNS = ["Condition", "Takes", "Description", "Effect", "Includes", "Automation", "System", "Listed?", "Icon", "Notes"]
+WIDTHS = {"Condition": 16, "Takes": 8, "Description": 50, "Effect": 78, "Includes": 22, "Automation": 46, "System": 9,
           "Listed?": 9, "Icon": 14, "Notes": 70}
-WRAPPED = ("Description", "Includes", "Automation", "Notes")
+WRAPPED = ("Description", "Effect", "Includes", "Automation", "Notes")
 
 SUFFIX = re.compile(r"\s*(?:\[\s*(Zone|X)\s*\]|\s(N))\s*$")
 
@@ -107,11 +109,13 @@ ABOUT = [
     "One row for each Condition, on the Conditions sheet. This sheet is ignored.",
     "Condition: its name. The suffix the handbook's table prints (Frightened N, Exposed [Zone], Bound [X]) is put back from Takes wherever a table is printed.",
     "Takes: blank, N (a value: Frightened 2), Zone (the system's own only), or X (a creature: Wrong-Footed to X).",
-    "Description: the text players read: the tooltip on a Condition's row and on the token's hover card, and the reference tables.",
+    "Description: one line of flavor, as on a Talent's sheet. It shows in italics above the Effect in the Rules Reference journal and in a Condition's tooltip on a sheet. It may be blank.",
+    "Effect: the rules text players read: the tooltip on a Condition's row and on the token's hover card, and the reference tables.",
     "Includes: other Conditions this one also counts as, comma separated. Prone: Off-Guard. A creature is Off-Guard once, however many ways it got there. "
     "\"Off-Guard against X\" means only against the creature that put this Condition on (Wrong-Footed), and needs Takes = X.",
     "Automation: lines in the grammar, one to a line, as on a Talent (AUTOMATION_GRAMMAR.md). A Condition's row reads CHECK, ATK, DEF and INIT, "
     "and may ask about the attack answered (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...)). "
+    "It also reads [EFFECT IMMUNE: TRAIT(Visual)], written alone: whoever has the Condition is immune to anything with that trait. "
     "-N is the Condition's own value: [EFFECT DEF: -N condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.",
     "System: Yes for the Conditions the system itself puts on and takes off (Dying, Wounded, Spent, Preparing, the Bind's three, Exposed, Dead). Their rows hold the text; the system runs them.",
     "Listed?: Yes prints the row in the reference tables. Anything else keeps it in the system and out of the tables.",
@@ -180,7 +184,8 @@ def build(rows):
     for i, (name, takes, description, listed) in enumerate(rows, 2):
         includes, automation = SEED.get(name, ("", "N/A"))
         values = {
-            "Condition": name, "Takes": takes, "Description": description, "Includes": includes,
+            # The handbook's table gives the rules text; the flavor line is the author's to write.
+            "Condition": name, "Takes": takes, "Description": "", "Effect": description, "Includes": includes,
             "Automation": automation, "System": "Yes" if name in SYSTEM else "", "Listed?": "Yes" if listed else "No",
             "Icon": ICONS.get(name, ""), "Notes": NOTES.get(name, ""),
         }

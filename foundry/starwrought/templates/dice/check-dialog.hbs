@@ -111,6 +111,9 @@
   </div>
   {{/each}}
 
+  {{!-- The creature this is used on is immune to it (0.35.0): said before the roll, which is still the roller's to make. --}}
+  {{#if immuneNote}}<p class="hint sw-warn sw-immune-note"><i class="fa-solid fa-shield-halved"></i> {{immuneNote}}</p>{{/if}}
+
   {{#if targetDefense}}
   {{!-- The defender committed a Defense in the Combat Prompt; it is revealed on the card, never here. --}}
   {{!-- A check read against a creature (0.15.0) says its own words since 0.34.0 (`heading`,

@@ -6,7 +6,8 @@
  * knows nothing of the grammar or of which Conditions the system has; this module is the rest:
  *
  *   1. every Automation cell parsed with the system's grammar, as a Condition's row
- *      (`itemType: "condition"`: CHECK, ATK, DEF, INIT, with `-N` for the Condition's own value);
+ *      (`itemType: "condition"`: CHECK, ATK, DEF, INIT, with `-N` for the Condition's own value;
+ *      and since 0.35.0 `IMMUNE: TRAIT(<Trait>)`);
  *   2. the rows laid over the system's own Conditions (`registerConditions`), which refuses a row
  *      it cannot take and says which rows made NEW Conditions;
  *   3. the checks only the whole sheet can make: every Condition the system has must have a row,
@@ -14,6 +15,14 @@
  *   4. the two outputs, built together: `assets/conditions.json` (every row with its rules) and
  *      the roster's `conditions` block (`[name, effect]` for the Listed rows, which the web app,
  *      the compendium docx and the Rules Reference journal read).
+ *
+ * TWO TEXTS SINCE 0.35.0 (Mike, 2026-11-19: "to bring it in line with other spreadsheets"): a
+ * row's `effect` is the rules text players read, and its `description` is one line of flavor.
+ * Through 0.34.0 a row had one text, `description`, and it was the rules. A file or a staged row of
+ * that shape is read as an Effect with no flavor (`textsOf`), in the one place every reader
+ * passes through, so nothing downstream ever sees the old meaning of the word. The roster's block
+ * keeps its two slots, name and Effect: the web app, the compendium docx and the smoke test read
+ * it by position.
  *
  * Nothing is written here: the caller (assets/parse_rules.mjs) writes both outputs only when
  * `errors` is empty, so a workbook with a slip in it never leaves a half-written file.
@@ -47,9 +56,54 @@ export function listedName(name, takes) {
   return `${name}${SUFFIX[String(takes ?? "").toLowerCase()] ?? ""}`;
 }
 
-/** A Description as the roster's tables hold one: its paragraphs with a blank line between. */
-function listedText(description) {
-  return String(description ?? "").split(/\n+/).map(s => s.trim()).filter(Boolean).join("\n\n");
+/** A row's text as the roster's tables hold one: its paragraphs with a blank line between. */
+export function listedText(text) {
+  return String(text ?? "").split(/\n+/).map(s => s.trim()).filter(Boolean).join("\n\n");
+}
+
+/**
+ * A row's two texts, whatever shape it was written in: `{ effect, description }`, the rules text
+ * and the flavor line. A record with no `effect` key was built before 0.35.0, when its one text,
+ * `description`, WAS the rules: it is read as an Effect with no flavor.
+ * @param {object} row  A staged row, or a record of conditions.json.
+ * @returns {{effect: string, description: string}}
+ */
+export function textsOf(row) {
+  const old = !row || !Object.hasOwn(row, "effect");
+  return {
+    effect: String((old ? row?.description : row.effect) ?? "").trim(),
+    description: old ? "" : String(row.description ?? "").trim()
+  };
+}
+
+/**
+ * The Listed rows as the reference tables hold them: `[name with its suffix, the Effect]`. The
+ * roster's block, and what the journal's Conditions page is built from (assets/build_foundry.mjs,
+ * which adds the flavor line), so the two cannot drift.
+ * @param {object[]} conditions  Records with `name`, `takes`, `listed` and their texts.
+ * @returns {Array<[string, string]>}
+ */
+export function listedRows(conditions) {
+  return (conditions ?? []).filter(c => c && (c.listed !== false)).map(c => [listedName(c.name, c.takes), listedText(textsOf(c).effect)]);
+}
+
+const escapeHtml = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * THE CONDITIONS PAGE'S ROWS (0.35.0; Mike: the flavor line shows in the journal and on the
+ * sheet): the Listed rows as `listedRows` gives them, with a row's flavor line in italics above
+ * its Effect. A row with no flavor is EXACTLY its `listedRows` row, so a sheet with no
+ * Description column prints the page it always printed. The flavor is the one text escaped here:
+ * the Effect is printed as the roster's tables always printed it.
+ * @param {object[]} conditions  Records with `name`, `takes`, `listed` and their texts.
+ * @returns {Array<[string, string]>}  `[name with its suffix, html]`.
+ */
+export function pageRows(conditions) {
+  return (conditions ?? []).filter(c => c && (c.listed !== false)).map(c => {
+    const { effect, description } = textsOf(c);
+    const text = listedText(effect);
+    return [listedName(c.name, c.takes), description ? `<em>${escapeHtml(description)}</em><br>${text}` : text];
+  });
 }
 
 /**
@@ -61,7 +115,7 @@ function listedText(description) {
  */
 export function registryRows(json) {
   return (json?.conditions ?? []).map(c => ({
-    name: c.name, takes: c.takes, description: c.description, includes: c.includes, rules: c.rules,
+    name: c.name, takes: c.takes, ...textsOf(c), includes: c.includes, rules: c.rules,
     system: c.system === true, icon: c.icon, listed: c.listed !== false, ...(c.statusId ? { statusId: c.statusId } : {})
   }));
 }
@@ -126,7 +180,7 @@ export function buildConditions({ staged, resolve = null } = {}) {
   if (!errors.length) {
     try {
       answer = registerConditions(parsedRows.map(p => ({
-        name: p.name, takes: p.takes, description: p.row.description, includes: p.includes, rules: p.rules,
+        name: p.name, takes: p.takes, ...textsOf(p.row), includes: p.includes, rules: p.rules,
         system: p.row.system === true, icon: p.row.icon, listed: p.row.listed !== false
       })));
     } catch (error) {
@@ -188,7 +242,9 @@ export function buildConditions({ staged, resolve = null } = {}) {
       id,
       name: p.name,
       takes: p.takes,
-      description: String(p.row.description ?? ""),
+      // The flavor line, then the rules text, in the sheet's own order (0.35.0).
+      description: textsOf(p.row).description,
+      effect: textsOf(p.row).effect,
       includes: p.includes,
       automation: String(p.row.automation ?? ""),
       rules: p.rules,
@@ -201,6 +257,6 @@ export function buildConditions({ staged, resolve = null } = {}) {
       ...((record && !record.builtIn) ? { statusId: record.statusId } : {})
     };
   });
-  const block = conditions.filter(c => c.listed).map(c => [listedName(c.name, c.takes), listedText(c.description)]);
+  const block = listedRows(conditions);
   return { errors, warnings, created: answer.created.map(id => conditionLabel(id)), json: { source, conditions }, block, rules, cells };
 }

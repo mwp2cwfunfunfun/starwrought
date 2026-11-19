@@ -52,6 +52,10 @@ import { CONDITION_ROW } from "./syntax.mjs";
 import { buildTable, sameGiven, givenCarrier, GIVE_DEGREES } from "./given.mjs";
 // 0.24.0: the owner's rank against an alteration's condition, when a Maneuver is used (pure).
 import { rankMeets } from "./operators.mjs";
+// 0.35.0: immunity to a trait. The word the `prevent` hook point is asked with, and the reading
+// of a thing's traits as groups of alternatives (pure).
+import { TRAIT as TRAIT_IMMUNITY } from "./kinds/prevent.mjs";
+import { traitKeysOf, coveredGroup, immunityWords } from "./immunity.mjs";
 
 /**
  * The Item types that may carry rules. A Constellation Item is included now, before any carries
@@ -872,6 +876,9 @@ export function ruleApplies(actor, context = {}) {
  * @property {object|null} ownerToken
  * @property {boolean} reaction      The carrier is a ↺ Talent: offered as that Reaction, not applied.
  * @property {{key: string, per: string}|null} mark  A FIRST or ONCE to remember on the recipient.
+ * @property {string} [trait]        Asked with `effect: "trait"` (0.35.0): the trait's key this
+ *                                   preventer makes the recipient immune to, and `name` as written.
+ * @property {string} [name]
  */
 
 /**
@@ -882,7 +889,10 @@ export function ruleApplies(actor, context = {}) {
  * the Expose button). The dispatch is `ruleModifiers`' twin: every kind with `hooks.prevent`, its
  * own rules and the other tokens' FOR rules, try/catch, the answer validated.
  * @param {object} actor
- * @param {{effect: string, threat?: object|null, scene?: object|null, encounter?: object|null}} context
+ * @param {{effect: string, threat?: object|null, other?: object|null, scene?: object|null, encounter?: object|null}} context
+ *        `effect` a condition id, "expose", or "trait" (0.35.0: immunity to a trait, with the keys
+ *        of the thing's traits in `threat.traits`); `other` the creature doing the thing, which a
+ *        Condition held against one creature alone is read by.
  * @returns {Preventer[]}
  */
 export function rulePreventers(actor, context = {}) {
@@ -919,13 +929,46 @@ export function rulePreventers(actor, context = {}) {
         out.push({
           item: p.item, owner: p.owner ?? actor, ownerToken: p.ownerToken ?? null,
           reaction: p.reaction === true,
-          mark: (p.mark && p.mark.key && p.mark.per) ? { key: String(p.mark.key), per: String(p.mark.per) } : null
+          mark: (p.mark && p.mark.key && p.mark.per) ? { key: String(p.mark.key), per: String(p.mark.per) } : null,
+          // Immunity to a trait (0.35.0): which trait this preventer answers for, and its name.
+          ...(p.trait ? { trait: String(p.trait), name: String(p.name ?? p.trait) } : {})
         });
       }
     }
   }
   out.marks = skipped;
   return out;
+}
+
+/**
+ * Is a creature immune to a thing that carries these traits (0.35.0; rulings 353 and 357)? Asked
+ * of the `prevent` hook point with `effect: "trait"` and every key the traits name, then read as
+ * groups of alternatives (./immunity.mjs): separate traits are each a way the thing works, so
+ * immunity to one is immunity to it; one trait written "Auditory or Visual" needs both.
+ *
+ * No scene and no encounter are handed over: a trait immunity is written on a Condition's row with
+ * no component, so it asks nothing about where anybody stands or which round it is, and EVERY
+ * CLIENT ANSWERS THE SAME (the roller's, the writer's, the coordinator's, a GM on another scene).
+ * A Reaction's answer is passed over: a ↺ carrier's immunity would be an offer, and none is made.
+ *
+ * @param {object} actor   The creature the thing would land on.
+ * @param {string[]} traits  The thing's traits, as its Item stores them.
+ * @param {{other?: object|null}} [context]  `other`: the creature doing the thing, which a
+ *        Condition held against one creature alone is read by.
+ * @returns {{covered: Array<{trait: string, name: string, by: string}>, traits: string, by: string}|null}
+ *          The traits it is immune by ("Visual"; "Auditory and Visual") and what makes it so
+ *          ("Blinded"), or null.
+ */
+export function ruleTraitImmunity(actor, traits, { other = null } = {}) {
+  const keys = traitKeysOf(traits);
+  if (!actor || !keys.length) return null;
+  const immune = new Map();
+  for (const p of rulePreventers(actor, { effect: TRAIT_IMMUNITY, threat: { traits: keys }, other, scene: null, encounter: null })) {
+    if (p.reaction || !p.trait || immune.has(p.trait)) continue;
+    immune.set(p.trait, { name: p.name ?? p.trait, by: plainName(p.item?.name ?? "") });
+  }
+  const covered = coveredGroup(traits, immune);
+  return covered ? { covered, ...immunityWords(covered) } : null;
 }
 
 /* -------------------------------------------- */

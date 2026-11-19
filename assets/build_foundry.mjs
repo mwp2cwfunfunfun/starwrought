@@ -55,7 +55,9 @@ import {
   // is parsed, so a cell that names a Condition a row made (Supine) means that Condition.
   registerConditions
 } from "../foundry/starwrought/module/config.mjs";
-import { registryRows } from "./lib/conditions_build.mjs";
+import { registryRows, listedRows, pageRows } from "./lib/conditions_build.mjs";
+// 0.35.0: a trait written "Auditory or Visual" carries both keys, for the trait census.
+import { traitKeysOf } from "../foundry/starwrought/module/rules/immunity.mjs";
 // The automation grammar (0.9.0; ruling 120) is imported from the system for the same reason: the
 // build and the client must read an Automation cell identically, so there is one parser and it is
 // the system's. grammar.mjs imports the kinds registry itself, so the registry is live here (the
@@ -285,7 +287,7 @@ function freeTalentOf(row, rules, source) {
 /* -------------------------------------------- */
 
 /** What the Automation cells added up to, for the summary line: rules, documents carrying any, kinds used. */
-const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), unread: 0, unreadDocuments: 0, carriers: [] };
+const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), immuneAsked: new Map(), unread: 0, unreadDocuments: 0, carriers: [] };
 
 /**
  * An Item's `automation` and `rules` from the cell the converter copied through (0.9.0; rulings
@@ -547,6 +549,20 @@ let conditionsRegistered = null;
 /** The Conditions as the client loads them, and a hash of the lot (also in the content index). */
 const registryConditions = conditionsJson ? registryRows(conditionsJson) : null;
 const conditionsBuild = registryConditions ? crypto.createHash("sha1").update(JSON.stringify(registryConditions)).digest("hex").slice(0, 16) : "";
+// The Conditions' own lines join the trait census (0.35.0). A row's `IMMUNE: TRAIT(Visual)`, or
+// an `IFT: TRAIT(...)` on one of its bonus lines, names a trait as a Talent's line does; the rows
+// are parsed by assets/lib/conditions_build.mjs and never pass through `automationOf`, so they are
+// read here, off the registry's rows. A misspelt trait is then said (`TRAIT(Visaul)`).
+for (const c of registryConditions ?? []) {
+  const source = `data/conditions.xlsx / Conditions / ${c.name}`;
+  // Two lists, because the two questions are compared differently at the table (the census,
+  // below): an immunity reads a carried trait's alternatives, an `IFT: TRAIT(...)` its first word.
+  const ask = (asked, key, name) => (asked.get(key) ?? asked.set(key, []).get(key)).push(`${source} (${name ?? key})`);
+  for (const rule of Array.isArray(c.rules) ? c.rules : []) {
+    if ((rule?.kind === "prevent") && (rule.effect === "trait") && rule.trait) ask(automationTally.immuneAsked, rule.trait, rule.name);
+    for (const w of Array.isArray(rule?.when) ? rule.when : (rule?.when ? [rule.when] : [])) if (w?.trait) ask(automationTally.traitsAsked, w.trait, w.name);
+  }
+}
 if (registryConditions) {
   try {
     conditionsRegistered = registerConditions(registryConditions);
@@ -1518,6 +1534,25 @@ const REFERENCE_ID = docId("rules", "journal:reference");
 const pageLink = title =>
   `@UUID[Compendium.starwrought.rules.JournalEntry.${REFERENCE_ID}.JournalEntryPage.${docId("rules", `page:${title}`)}]{${title}}`;
 const conditionRows = (...names) => names.map(n => (roster.conditions ?? []).find(r => r[0] === n)).filter(Boolean);
+
+/**
+ * THE CONDITIONS PAGE'S ROWS (0.35.0; Mike: the flavor line shows in the journal and on the
+ * sheet). Name and Effect, as the roster's block holds them and the web app and the compendium
+ * document print them, with a row's flavor line (the sheet's Description) in italics above its
+ * Effect. Built from the registry's rows by `pageRows` (assets/lib/conditions_build.mjs, beside
+ * `listedRows`, which builds the block, and tested with it), so the two cannot drift; a row with
+ * no flavor is exactly its block row, and a build with no conditions.json prints the block.
+ */
+function conditionPageRows() {
+  if (!registryConditions) return roster.conditions ?? [];
+  // The block and conditions.json are written together (assets/parse_rules.mjs). If they ever
+  // disagree, the roster's tables (the web app, the compendium document) and this page would
+  // print different rules text for one Condition: said, so it is seen.
+  if (JSON.stringify(listedRows(registryConditions)) !== JSON.stringify(roster.conditions ?? [])) {
+    console.warn("  WARNING: the roster's conditions block and assets/conditions.json disagree; run the Conditions build (node assets/build_all.mjs --conditions) so the reference tables and the journal print one text");
+  }
+  return pageRows(registryConditions);
+}
 const actionRows = (...names) => {
   const all = Object.values(roster.actions ?? {}).flat();
   return names.map(n => all.find(r => r[0] === n)).filter(Boolean).map(([name, , effect]) => [name, effect]);
@@ -1588,7 +1623,7 @@ const journalPages = [
   ["The Bind", bindPage],
   ["Damage: order of operations", table(["Step", "Do this"], roster.damageOrder ?? [])],
   ["Protection: finding a Zone's number", table(["Step", "Do this"], roster.protectionSteps ?? [])],
-  ["Conditions", table(["Condition", "Effect"], roster.conditions ?? [])],
+  ["Conditions", table(["Condition", "Effect"], conditionPageRows())],
   ["Weapon Traits", table(["Trait", "Effect"], roster.weaponTraits ?? [])],
   ["Armor Traits", table(["Trait", "Effect"], roster.armorTraits ?? [])],
   ["Action Traits", table(["Trait", "Effect"], roster.actionTraits ?? [])],
@@ -2007,19 +2042,31 @@ if (automationTally.rules) {
 // The grammar journal (0.17.0): how many pages AUTOMATION_GRAMMAR.md made, one per `## ` section.
 console.log(`  grammar journal: ${plural(grammarPages.length, "page")} from ${path.relative(ROOT, grammarPath)}`);
 
-// The trait census (0.14.0; ruling 171): every trait a shipping weapon, action or Talent carries,
-// by its first word, against the traits the rules' `IF(Trait=...)` ask about. A trait nothing
-// carries is a warning: the rule reads and fires once an attack with that trait is authored.
-if (automationTally.traitsAsked.size) {
-  const carried = new Set();
-  for (const weapon of equipment?.weapons ?? []) for (const t of splitTraits(weapon.traits)) carried.add(traitKey(t));
-  for (const action of sheetActions) for (const t of action.traits ?? []) carried.add(traitKey(t));
-  for (const tree of Object.values(trees)) for (const node of tree.nodes ?? []) for (const t of node.traits ?? []) carried.add(traitKey(t));
-  for (const [trait, askers] of automationTally.traitsAsked) {
-    if (carried.has(trait)) continue;
-    console.warn(`  WARNING: IF(Trait=${askers[0].match(/\(([^)]*)\)$/)?.[1] ?? trait}): no shipping weapon, attack or Talent carries the trait "${trait}" yet `
-      + `(asked by ${askers.map(a => a.replace(/ \([^)]*\)$/, "")).join(", ")}); the rule fires when one is authored`);
-  }
+// The trait census (0.14.0; ruling 171): every trait a shipping weapon, action or Talent carries
+// against the traits the rules ask about. A trait nothing carries is a warning: the rule reads and
+// fires once a thing with that trait is authored. Each question is held to what the table
+// compares (the review of 0.35.0): an `IFT: TRAIT(...)` reads a carried trait by its FIRST WORD
+// (`hasTrait`, rules/operators.mjs), so "Auditory or Visual" carries `auditory` alone for it; an
+// immunity reads the trait's alternatives (rules/immunity.mjs), so it carries both.
+if (automationTally.traitsAsked.size || automationTally.immuneAsked.size) {
+  const carriedFirst = new Set();
+  const carriedAny = new Set();
+  const carry = traits => {
+    for (const written of Array.isArray(traits) ? traits : []) { const key = traitKey(written); if (key) carriedFirst.add(key); }
+    for (const key of traitKeysOf(traits)) carriedAny.add(key);
+  };
+  for (const weapon of equipment?.weapons ?? []) carry(splitTraits(weapon.traits));
+  for (const action of sheetActions) carry(action.traits ?? []);
+  for (const tree of Object.values(trees)) for (const node of tree.nodes ?? []) carry(node.traits ?? []);
+  const census = (asked, carried) => {
+    for (const [trait, askers] of asked) {
+      if (carried.has(trait)) continue;
+      console.warn(`  WARNING: TRAIT(${askers[0].match(/\(([^)]*)\)$/)?.[1] ?? trait}): no shipping weapon, Maneuver, attack or Talent carries the trait "${trait}" yet `
+        + `(asked by ${askers.map(a => a.replace(/ \([^)]*\)$/, "")).join(", ")}); the rule holds once one is authored`);
+    }
+  };
+  census(automationTally.traitsAsked, carriedFirst);
+  census(automationTally.immuneAsked, carriedAny);
 }
 
 // The Effects census (0.32.0): a named Effect a line reads that no Maneuver applies, and an APPLY

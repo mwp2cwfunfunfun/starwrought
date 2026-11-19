@@ -118,7 +118,8 @@ export function glanceData(actor, { full = false } = {}) {
       return {
         id, label: condition ? localize(SW.conditionNameKey(condition.id)) : id, img: condition?.img ?? "", value: value > 0 ? value : null,
         // The text its row of the Conditions workbook gives it (0.33.0), for the tag's tooltip.
-        description: condition ? foundry.utils.escapeHTML(SW.conditionDescription(condition.id)).replace(/\n+/g, "<br>") : ""
+        // The rules text alone (0.35.0: a row's flavor line is the journal's and the sheet's).
+        description: condition ? foundry.utils.escapeHTML(SW.conditionEffect(condition.id)).replace(/\n+/g, "<br>") : ""
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label));

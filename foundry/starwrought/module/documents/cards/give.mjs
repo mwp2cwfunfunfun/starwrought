@@ -44,6 +44,7 @@
  */
 
 import * as SW from "../../config.mjs";
+import { immunityRecord } from "../../rules/prevent.mjs";
 import { SOCKET, replyTo, resolveActor } from "./shared.mjs";
 import { postCard } from "../../helpers/cards.mjs";
 import { enabledConstellations } from "../../helpers/content.mjs";
@@ -68,7 +69,10 @@ const REFUSALS = Object.freeze({
   nothing: "STARWROUGHT.Given.refusedNothing",
   recipient: "STARWROUGHT.Given.refusedRecipient",
   constellation: "STARWROUGHT.Given.refusedConstellation",
-  cannotWrite: "STARWROUGHT.Given.refusedCannotWrite"
+  cannotWrite: "STARWROUGHT.Given.refusedCannotWrite",
+  // 0.35.0: the recipient is immune to a trait the Maneuver carries. The reply's own `note` says
+  // who, to what and by what; this is the sentence for a reply that lost it.
+  immune: "STARWROUGHT.Immune.givenRefused"
 });
 
 /* -------------------------------------------- */
@@ -327,7 +331,8 @@ export async function giveFromCard(message, flags, button) {
 /** Say a refusal to the presser. A give that went through says nothing: its card is the notice. */
 function notify(reply) {
   if (reply?.type === "give:done") return null;
-  return ui.notifications.warn(L(REFUSALS[reply?.reason] ?? "STARWROUGHT.Given.refused"));
+  // A refusal that carries its own sentence says it (0.35.0: who is immune, to what, and by what).
+  return ui.notifications.warn(reply?.note || L(REFUSALS[reply?.reason] ?? "STARWROUGHT.Given.refused"));
 }
 
 /**
@@ -431,6 +436,12 @@ async function giveOnce(request, userId) {
   if (!recipient || (recipient.type !== "character") || sameBody(recipient, roller)) return refused("recipient");
   // This client must be the recipient's one writer, and able to write it.
   if ((writerFor(recipient)?.id !== game.user.id) || !(recipient.isOwner || game.user.isGM)) return refused("cannotWrite");
+  // IMMUNITY TO A TRAIT (0.35.0; ruling 354): the recipient is immune to a trait the Maneuver
+  // carries, so its result is not given, and the presser is told who, to what and by what. Asked
+  // here, on the one writer, at the moment of the write, as an Effect's is (./apply.mjs). The
+  // Give button stays: the result may still be given to somebody else.
+  const immune = Array.isArray(flags.itemTraits) ? immunityRecord(recipient, recipient.name, flags.itemTraits, { other: roller, key: "given" }) : null;
+  if (immune) return { ...refused("immune"), note: immune.note };
   // The Constellation: the line's own when it names one, else the one asked for, which must be
   // one the recipient may roll.
   const to = (result.to?.type !== "chosen")

@@ -1,4 +1,42 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0)
+
+**0.35.0 (2026-11-19).** No new kind and no new hook point: THE `prevent` KIND READS A THIRD
+FORM, AND ITS HOOK POINT IS ASKED A SECOND QUESTION (rulings 350 to 360). Mike: "I want to add
+an automation to make the person immune to attacks/spells/effects/etc. with the Visual trait.
+We already have [IMMUNE] in automation grammar, so should we extend it to allow for adding of
+Traits in there?" `[EFFECT IMMUNE: TRAIT(Visual)]` on a CONDITION'S ROW (and nowhere else this
+release; nothing after it) is stored as the kind's own rule with two more fields, `{ kind:
+"prevent", effect: "trait", trait: "visual", name: "Visual" }`, so every rule stored before is
+unchanged. `IMMUNE` joined `CONDITION_ROW_TAGS` (`syntax.mjs`) in that form alone: a Condition
+or `expose` after it is refused on a Condition's row.
+
+- **The question.** `ruleTraitImmunity(actor, traits, { other })` in `engine.mjs` asks
+  `rulePreventers` with `effect: "trait"` and the thing's trait keys in `threat.traits`, where
+  the hook already looks for `IFT: TRAIT(...)`. It passes NO scene and NO encounter, so every
+  client answers the same and the answer spends nothing: a triggered point asked as a
+  calculation. `immunity.mjs` is the pure half (`traitGroups`: a thing's traits as groups of
+  alternatives, "Auditory or Visual" one group of two; `coveredGroup`: immune when any ONE
+  group is wholly covered; `immunityWords`). `prevent.mjs` has the Foundry side
+  (`traitImmunity`, `immunityNote`, `immunityRecord(target, name, traits, { other, key })`).
+- **Against one creature.** The hook passes over a carrier that is a Condition held only
+  "against X" (`carrier.condition.against`) unless `context.other` is one of those creatures.
+  A caller that knows who is acting passes `other`.
+- **Where it is asked.** Wherever a thing would land, and each place asks for itself: the roll
+  window (`#rollPlanned` in `documents/item.mjs`, `defendFromCard`), the card as it is posted
+  (`immunityOf` in `dice/check/card.mjs`, which keeps `flags.immune`, and the traits as
+  `flags.itemTraits` for the write to ask with), a request card as it is drawn (and it is drawn
+  again when a Condition comes to its target or goes), the write (`applyOnce` hands `applySide`
+  no lines and one note; `giveOnce` refuses), and the attack (`AttackCoordinator.#resolvePairing`
+  hands `SwCheck.resolveAgainst` the record: the note, no damage buttons, no Expose of the
+  defender). A reroll asks again, of either kind of card: `rerollCheck` through the card it
+  posts, `rerollCard` with the attack's traits as the first card kept them (`flags.threat.traits`).
+  Nothing is refused: the system says it and goes on (ruling 354).
+- **A caller that lands something new on a creature asks `immunityRecord` first.** A Maneuver
+  whose whole use is a `MARK`, a `PERMIT` or a `SUBORDINATE` line does not ask yet.
+
+Beside it, A CONDITION HAS TWO TEXTS: a registry record holds `effect` (the rules text) and
+`flavor`, read through `conditionEffect(id)` and `conditionFlavor(id)`. `conditionDescription`
+is gone, so a reader that was missed fails at import.
 
 **0.34.0 (2026-11-19).** The twenty-fifth kind, `check` (rulings 337 to 349), and no new hook
 point. Mike: "when I add new talents I don't want to hard-code what the check is. So wouldn't it
@@ -255,7 +293,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
 | `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map, `[AURA ...]`; `toAuraField` is `system.aura`. No hook. |
 | `kinds/features.mjs` | The feature kinds (0.16.0): `trait`, `size`, `speed`, `reach` (0.30.0), `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`, each read from its block; no hooks. The build and the pipeline step carry the chassis facts, the wizard the choice and the free Talent, `SwItem.grantManeuvers` the Maneuver, and the character's `_prepareRules` the Talents' additions (`system.features`). |
-| `kinds/prevent.mjs` | The `prevent` kind (0.13.0): a Condition or an Expose does not land; the `prevent` hook. |
+| `kinds/prevent.mjs` | The `prevent` kind (0.13.0): a Condition or an Expose does not land; since 0.35.0 also `IMMUNE: TRAIT(<Trait>)` on a Condition's row (`effect: "trait"`, with `trait` and `name`): whoever has the Condition is immune to anything with the trait. The `prevent` hook. |
 | `kinds/mark.mjs` | The `mark` kind (0.15.0): using the Talent names one creature; the `use` hook. Read back by `MARKED` (`markedHolds` in operators.mjs). |
 | `kinds/reroll.mjs` | The `reroll` kind (0.15.0): a button on the matching check card throws the die again; the `card` hook. |
 | `kinds/ignore.mjs` | The `ignore` kind (0.15.0): difficult terrain of named kinds costs nothing; no hook point. `ignoresTerrain(actor, kind)` is asked by the Difficult terrain region behavior (data/region-behaviors/difficult-terrain.mjs). |
@@ -275,7 +313,8 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `given.mjs` | The pure half of both (0.22.0): `buildTable(lines, alterations)` (the results by degree), `alterationTouches`, `pendingEntry` (what the recipient holds), `pendingRule` and `givenCarrier` (the one-roll carrier the engine indexes it through), `settle(entry, { combat, ended, began })` (what a turn change does to its window), `appliesNow`, and the words (`resultWords`, `windowWords`, `pendingWindowWords`). Since 0.25.0 also the used Effect (`usedEntry(entry, moment, holder)`, what a roll leaves when it uses a result up, or null; `usedLive(record, encounter)`; `usedOf`, `usedEffects`, `isUsedKey`, `usedFlagKey`) and `limitOf(rule, alterations)` (the LIMIT that stands once the owner's `ALTER: <Maneuver>.limit` is read, with the marks a Skip owes). Imports `operators.mjs` alone. |
 | `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |
 | `effects-state.mjs` | The writes behind the Effects tab (0.16.0): a line's state, the custom effect rows, the marks `writeRuleMarks` hands it. Since 0.22.0 also the pending results: `writeGiven`, `removeGiven` (the GM's), `settleGivenResults(combat, { ended, began })` on the turn change, the clearing of a deleted Combat's results, and the `per: "effect"` mark that removes a result a roll used. Since 0.25.0 `markUpdates(actor, marks, moment)` also WRITES the used Effect that roll leaves (`flags.starwrought.rules.used.<maneuver>`), removes one the Maneuver it triggered spent (`used:<maneuver>`), `removeUsed` is the GM's bin, and `endManeuverMoves` sweeps a used Effect with the Move records, since both end with an Opportunity. Foundry globals only inside functions. |
-| `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor` (a read, writing nothing; its `marks` are the Skips the reading would spend), `spendSkips`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. |
+| `prevent.mjs` | The Foundry side of the `prevent` hook point: `preventersFor` (a read, writing nothing; its `marks` are the Skips the reading would spend), `spendSkips`, `conditionPrevented`, `exposePreventers`, `sayPrevented`. Since 0.35.0 also `traitImmunity(actor, traits, { other })`, `immunityNote` and `immunityRecord(target, name, traits, { other, key })`, the record a card keeps (`{ targetUuid, target, traits, by, note }`, or null). |
+| `immunity.mjs` | Immunity to a trait (0.35.0), pure: `traitGroups(traits)` (a thing's traits as groups of alternatives), `traitKeysOf(traits)`, `coveredGroup(traits, immune)` (the first group wholly covered, or null), `joinNames`, `immunityWords(covered)`. Imports `operators.mjs` alone (`traitKey`); `engine.mjs` and the build's trait census import it. |
 | `kinds/<kind>.mjs` | One file per kind, each exporting the definition below. |
 | `engine.mjs` | `collectRules(actor)` and `rulesOfKind(actor, kind)`: the index the Actor keeps so a hook never walks the Items. `ruleModifiers(actor, context)`: the `modifiers` hook point's dispatcher, which since 0.13.0 also hands a kind the other tokens' rules whose `FOR` reaches the actor and lifts the `FIRST`/`ONCE` marks for the caller to write. `ruleSubstitutions(actor, context)` (0.21.0): the `substitutions` hook point's dispatcher, over the roller's own rules alone, answering `{ candidates, marks }`. `ruleGives(actor, context)` (0.22.0): the `gives` hook point's dispatcher, over the rules on the Item behind the roll and the roller's own, answering `{ table, notes, marks }`. `givenResults(actor)`: the results pending on an actor, which `collectRules` indexes as carriers. |
 | `../dice/check/substitute.mjs` | Outside this folder (`module/dice/check/`): the pure half of the `substitutions` hook point's caller (0.21.0). `swapTerms` (the two terms a swap rolls), `substitutionRecord` (what the card's flags keep of it), `chooseVariant` (which variant of the roll stands) and `mergeMarks` (the roll's marks, each once). It imports nothing, so the self-test checks it from Node; `modifiers.mjs` beside it, which reads the actor and localizes labels, cannot be imported there. |
@@ -566,6 +605,14 @@ Reactions apart), `conditionPrevented(actor, id)` (the card and the mark), `expo
 token)` for the Expose widget, `sayPrevented`. Only an automatic preventer (a Talent without ↺)
 acts on a Condition write; a ↺ one would be a Reaction the owner chooses, which no Condition write
 offers yet because no Talent asks for it.
+
+**Since 0.35.0 the point is also asked about a trait** (`context.effect === "trait"`, the trait
+keys of the thing in `context.threat.traits`, the acting creature in `context.other`), through
+`ruleTraitImmunity`. That question is a calculation: no scene, no encounter, no marks, nothing
+written, and the same answer on every client. The answer carries `trait` and `name` beside the
+usual fields. What executes is each caller's own: a card keeps the answer in its flags, and the
+write that would land something (`applyOnce`, `giveOnce`) asks again on the one client that
+writes.
 
 ### `use` (0.15.0)
 

@@ -11,8 +11,78 @@ import * as SW from "../../config.mjs";
 import { strikeCanCrit } from "./strike.mjs";
 import { position as settlePosition } from "./position.mjs";
 import { substitutionLine } from "./modifiers.mjs";
+import { immunityRecord } from "../../rules/prevent.mjs";
 
 const { renderTemplate } = foundry.applications.handlebars;
+
+/** An Actor by a uuid a card carries (a token's, or an Actor's own), or null. */
+function actorOf(uuid) {
+  if (!uuid) return null;
+  try {
+    const doc = fromUuidSync(uuid);
+    return doc?.actor ?? ((doc?.documentName === "Actor") ? doc : null);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * IS THE CREATURE THIS CARD NAMES IMMUNE TO WHAT WAS USED ON IT (0.35.0; rulings 353, 354, 358)?
+ * A Condition's row may say `[EFFECT IMMUNE: TRAIT(Visual)]` (Blinded), and the system says it and
+ * goes on (Mike): the card says the target is immune, and nothing the roll does lands on it.
+ *
+ * Asked HERE, as the card is posted, so every card says it from the creature as it stands at
+ * that moment: a direct roll, the roll that answers a request, a reroll, and the result card of
+ * an adversary's Maneuver all come through `toMessage`, and none of them hands a note along.
+ *
+ *  - An attack's or a Defense's card (the attack flow): the coordinator asked as it resolved the
+ *    pairing and handed the answer in as `cfg.immune` (a reroll hands back the one its card kept).
+ *  - A player's Defense rolled for an adversary's Maneuver (`check.inverted`): the ROLLER is who
+ *    the Maneuver would land on; its traits are the roll's Threat's.
+ *  - A check made from a Maneuver with one creature named (the Defense it was read against, the
+ *    target of its APPLY lines, the ally its result is given to): that creature, and the
+ *    Maneuver's own traits with those of a Maneuver it is performed as part of.
+ *
+ * @returns {{targetUuid: string, target: string, traits: string, by: string, note: string}|null}
+ */
+function immunityOf(cfg, isExchange) {
+  if (isExchange) return (cfg.immune && (typeof cfg.immune === "object")) ? cfg.immune : null;
+  if (cfg.kind !== "check") return null;
+  let target = null;
+  let name = "";
+  let traits = [];
+  let other = null;
+  if (cfg.checkRequest?.inverted) {
+    target = cfg.actor;
+    name = cfg.actor?.tokenOnScene?.()?.name ?? cfg.actor?.name ?? "";
+    traits = itemTraitsOf(cfg);
+    other = cfg.targetActor ?? actorOf(cfg.checkRequest.userUuid);
+  } else if (cfg.item?.type === "action") {
+    traits = itemTraitsOf(cfg);
+    // (`given.ally` is the same ally as the roll's own `ally`, kept on the card: a reroll has only that.)
+    const ally = cfg.ally ?? cfg.given?.ally ?? null;
+    // `usedOn` is the token targeted at the use (documents/item.mjs), which a Maneuver with a
+    // typed Threshold and no line about a target would otherwise leave unnamed on its card.
+    const usedOn = cfg.usedOn ?? null;
+    target = cfg.targetActor ?? actorOf(cfg.targetUuid) ?? actorOf(usedOn?.uuid) ?? actorOf(cfg.applied?.target?.uuid) ?? actorOf(ally?.uuid);
+    name = cfg.targetName || usedOn?.name || cfg.applied?.target?.name || ally?.name || target?.name || "";
+    other = cfg.actor;
+  }
+  if (!target || (target === other) || !traits.length) return null;
+  return immunityRecord(target, name, traits, { other });
+}
+
+/**
+ * The traits of the Maneuver behind a check: the ones its caller handed over (its own with its
+ * parent's, when it is performed as part of one; a reroll's, from the first card), else the
+ * Item's own. On a player's Defense rolled for an adversary's Maneuver there is no Item on the
+ * roll: the Maneuver's traits are the roll's Threat's.
+ */
+function itemTraitsOf(cfg) {
+  if (Array.isArray(cfg.itemTraits)) return cfg.itemTraits;
+  if (cfg.checkRequest?.inverted) return [...(cfg.threat?.traits ?? [])];
+  return (cfg.item?.type === "action") ? [...(cfg.item.system?.traits ?? [])] : [];
+}
 
 /**
  * Post the card. One renderer for every check card: `roll()` and `resolveAgainst` both come
@@ -23,6 +93,8 @@ export async function toMessage(result) {
   const cfg = result.config;
   const isExchange = ["attack", "defense"].includes(cfg.kind);
   const position = isExchange ? settlePosition(cfg, result) : null;
+  // Immunity to a trait (0.35.0): read once, for the note the card prints and the flag it keeps.
+  cfg.immunity = immunityOf(cfg, isExchange);
 
   const content = await renderTemplate(
     "systems/starwrought/templates/chat/check-card.hbs",
@@ -75,7 +147,9 @@ export async function cardContext(result, position) {
   // spell's card (PHB v4.21) offers them when the spell rolls a die; a Quick Cast's Graze deals
   // nothing unless the spell says so, so its Graze button is left off.
   const spellDamages = isSpell && !!item?.system?.spell?.die;
-  const canDamage = !!result.outcome?.damage && (!!cfg.weaponId || spellDamages);
+  // A defender immune to the attack's trait takes no damage from it (0.35.0, ruling 355): the
+  // outcome stands as rolled, and the card offers no damage to roll.
+  const canDamage = !!result.outcome?.damage && (!!cfg.weaponId || spellDamages) && !cfg.immunity;
   const damageButtons = canDamage ? ["critical", "hit", "graze"]
     .filter(key => (key !== "critical") || strikeCanCrit(cfg.strike, item))
     .filter(key => (key !== "graze") || !isSpell || !!castKind?.grazeDie)
@@ -123,10 +197,12 @@ export async function cardContext(result, position) {
     // A check read against the one Defense its row names, which the target cannot use now
     // (0.34.0): said whether or not the Threshold itself is printed.
     targetNote: cfg.targetNote ?? "",
+    // The creature this was used on is immune to it (0.35.0): said, and nothing lands on it.
+    immuneNote: cfg.immunity?.note ?? "",
     rangeNote: cfg.rangeNote ?? "",
     // The Zone the attacker's Control held open (0.27.0): the Bind ended as the attack resolved,
     // and this attack's damage may still be placed there.
-    controlZoneNote: (isExchange && cfg.controlZone && result.outcome?.damage)
+    controlZoneNote: (isExchange && cfg.controlZone && result.outcome?.damage && !cfg.immunity)
       ? game.i18n.format("STARWROUGHT.Bind.controlZoneNote", {
         name: cfg.controlZoneName ?? "", zone: game.i18n.localize(SW.ZONES[cfg.controlZone].label)
       })
@@ -213,6 +289,9 @@ export function cardFlags(result, position) {
     flags.rerollOf = cfg.rerollOf;
     flags.rerollReason = cfg.rerollReason ?? "";
   }
+  // Immunity to a trait (0.35.0): who was immune when the card was posted, to what, and by what.
+  // A reroll of an attack's card hands it back; the write of an Effect asks again for itself.
+  if (cfg.immunity) flags.immune = { ...cfg.immunity };
   if (isExchange) {
     flags.attackId = cfg.attackId ?? null;
     if (Array.isArray(cfg.pairingModifiers) && cfg.pairingModifiers.length) flags.pairingModifiers = cfg.pairingModifiers;
@@ -246,6 +325,13 @@ export function cardFlags(result, position) {
     // use was paid at, the creature targeted and the Combat. documents/cards/apply.mjs applies the
     // roller's own from it and draws the button for a target's; a reroll copies it across.
     if (cfg.applied?.lines?.length) flags.applies = cfg.applied;
+    // The traits of the Maneuver behind the check (0.35.0), with its parent's when it is performed
+    // as part of one: the one writer of an Effect or a given result asks a recipient's immunity
+    // with these, on its own client, with no Item to find.
+    const itemTraits = itemTraitsOf(cfg);
+    if (itemTraits.length) flags.itemTraits = itemTraits;
+    // The creature the Maneuver was used on (0.35.0), for a reroll's card to ask about again.
+    if (cfg.usedOn?.uuid) flags.usedOn = { uuid: String(cfg.usedOn.uuid), name: String(cfg.usedOn.name ?? "") };
     // A Gain Control (0.27.0): the Bind it was rolled for, the two fighters, the side of the one
     // who used it before the roll, and whether the degree is read from the other side (an
     // adversary's, rolled as the partner's Guard). documents/cards/gain-control.mjs draws the

@@ -38,6 +38,7 @@ import { resolveActor, resolveTokenDoc } from "./shared.mjs";
 import { sameBody } from "./give.mjs";
 import { SwCheck } from "../../dice/check.mjs";
 import { ruleApplies } from "../../rules/engine.mjs";
+import { immunityRecord } from "../../rules/prevent.mjs";
 import { CHECK_REQUEST, CHECK_ANSWER, usableDefenses, validRequest, standingAnswer, requestState, userDegree } from "../../rules/check-request.mjs";
 
 export { CHECK_REQUEST, CHECK_ANSWER };
@@ -78,7 +79,7 @@ const PRESSING = new Set();
  * @param {boolean} [args.dialog]      False when the roll is to open no window.
  * @returns {Promise<{pending: true, message: ChatMessage}|null>}
  */
-export async function postCheckRequest({ mode, user, item, token, rolled, line = "", defenses = [], cost = 0, label = "", gate = "none", applies = null, ally = null, prepared = false, paid = null, dialog } = {}) {
+export async function postCheckRequest({ mode, user, item, token, rolled, line = "", defenses = [], cost = 0, label = "", gate = "none", applies = null, ally = null, prepared = false, paid = null, dialog, traits = null } = {}) {
   const target = token?.actor ?? null;
   if (!user || !item || !target || !rolled?.slug) return null;
   const userToken = user.tokenOnScene?.() ?? null;
@@ -91,6 +92,10 @@ export async function postCheckRequest({ mode, user, item, token, rolled, line =
     mode: (mode === "roll") ? "roll" : "answer",
     userUuid: user.uuid, userName, userTokenUuid: userToken?.uuid ?? "",
     itemUuid: item.uuid, itemName: SW.plainName(item.name),
+    // The Maneuver's traits (0.35.0): a card asks the target's immunity with them as it is drawn.
+    // With the traits of a Maneuver it is performed as part of, when its caller hands them over
+    // (the review of 0.35.0: an adversary's subordinate lost its parent's on the way to a request).
+    traits: [...new Set([...(item.system?.traits ?? []), ...(Array.isArray(traits) ? traits : [])])],
     tokenUuid: token.uuid, targetUuid: target.uuid, targetName,
     rolled: { slug: String(rolled.slug), name: String(rolled.name || rolled.slug) },
     line: String(line ?? ""),
@@ -457,6 +462,9 @@ export async function defendFromCard(message, flags, button) {
     const userName = userToken?.name ?? request.userName ?? user.name;
     // The row names this Defense alone and the character cannot use it now: it is still the one
     // rolled, and the window and the card say so (ruling 345), as a character's own use does.
+    // The character is immune to a trait the Maneuver carries (0.35.0): said in the window, and
+    // the roll is still theirs to make. The card says it for itself as it is posted.
+    const immune = immunityRecord(target, request.targetName, request.traits ?? item?.system?.traits ?? [], { other: user });
     const blocked = target.system?.defenses?.[defense]?.unavailable ?? null;
     const blockedNote = blocked
       ? F("STARWROUGHT.CheckRequest.rollUnavailable", { target: request.targetName, defense: defenseLabel(defense), reason: L(SW.conditionNameKey(blocked)) })
@@ -470,6 +478,7 @@ export async function defendFromCard(message, flags, button) {
       threshold,
       thresholdLabel: F("STARWROUGHT.CheckRequest.thresholdLabel", { name: userName, check: request.rolled.name }),
       ...(blockedNote ? { targetNote: blockedNote } : {}),
+      ...(immune ? { immuneNote: immune.note } : {}),
       targetDefense: {
         key: null, label: "", threshold: null, unavailable: blockedNote || null, hidden: true,
         heading: L("STARWROUGHT.Roll.readAgainst"),
@@ -483,7 +492,9 @@ export async function defendFromCard(message, flags, button) {
       targetUuid: userToken?.uuid ?? "",
       targetName: userName,
       targetActor: user,
-      threat: { threat: "check", melee: false, traits: item?.system?.traits ?? [], check: request.rolled.slug },
+      // The request's own traits, which the window above read too, so the card says what the
+      // window said though the Item is gone or the Maneuver was part of another.
+      threat: { threat: "check", melee: false, traits: Array.isArray(request.traits) ? request.traits : (item?.system?.traits ?? []), check: request.rolled.slug },
       checkRequest: check,
       // Once more as the die is thrown: another client of this player may have rolled meanwhile,
       // or the GM withdrawn the request, or its Combat ended.
@@ -572,6 +583,9 @@ export async function postManeuverResult(rollCard) {
       targetUuid: targetToken?.uuid ?? "",
       rollMode: rollCard.whisper?.length ? "gmroll" : "publicroll",
       checkRequest: { from: check.from, resultOf: rollCard.id },
+      // The request's traits (0.35.0), for the result card's own note and for its Apply to ask
+      // with: the Maneuver's own and those of one it was performed as part of.
+      ...(Array.isArray(request.traits) ? { itemTraits: [...request.traits] } : {}),
       ...(previous ? { rerollOf: previous.id, rerollReason: flags.rerollReason ?? "" } : {})
     };
     const result = {
@@ -656,6 +670,16 @@ function drawRequest(message, card) {
   if (!st) return;
   const { request, state } = st;
   const names = { target: request.targetName, name: request.userName };
+  // The target is immune to a trait the Maneuver carries (0.35.0): said while the request still
+  // waits, read as the card is drawn, and the card is drawn again when a Condition comes to the
+  // target or goes (`registerCheckRequestCards`), so a creature Blinded since the request was
+  // posted is said to be, and one cured is not. Nothing is refused: the answer and the roll are
+  // still theirs to make.
+  if (["open", "answered"].includes(state) && Array.isArray(request.traits) && request.traits.length) {
+    const target = resolveActor(request.targetUuid);
+    const immune = target ? immunityRecord(target, request.targetName, request.traits, { other: resolveActor(request.userUuid) }) : null;
+    if (immune) note(card, immune.note, true);
+  }
   if (state === "open") {
     const usable = usableNow(request);
     for (const button of card.querySelectorAll("[data-defense]")) {
@@ -739,6 +763,21 @@ export function registerCheckRequestCards() {
     }
   });
   Hooks.on("deleteChatMessage", linked);
+  // A waiting request says whether its target is immune (0.35.0), and that is the target's
+  // Conditions as they stand: when one comes or goes, the requests that name the creature and
+  // carry a trait are drawn again (the review of 0.35.0: the note was only as fresh as the card's
+  // last draw). A redraw reads; nothing is written.
+  const conditionsMoved = effect => {
+    const actor = (effect?.parent?.documentName === "Actor") ? effect.parent : null;
+    if (!actor) return;
+    for (const message of (game.messages?.contents ?? []).slice(-REDRAW_DEPTH)) {
+      const request = recordOf(message);
+      if (!request?.traits?.length) continue;
+      const target = resolveActor(request.targetUuid);
+      if (target && sameBody(target, actor)) redraw(message);
+    }
+  };
+  for (const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"]) Hooks.on(hook, conditionsMoved);
   Hooks.on("deleteCombat", combat => {
     for (const message of (game.messages?.contents ?? []).slice(-REDRAW_DEPTH)) {
       if (recordOf(message)?.combat === combat.id) redraw(message);

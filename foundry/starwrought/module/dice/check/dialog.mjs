@@ -169,6 +169,8 @@ export async function prompt(cfg, parts) {
     actionsLeft: actor.inEncounter ? (actor.system.actions?.value ?? null) : null,
     targetName: cfg.targetName ?? "",
     targetDefense: cfg.targetDefense ?? null,
+    // The creature this is used on is immune to it (0.35.0): the caller's note, said before the roll.
+    immuneNote: cfg.immuneNote ?? "",
     defenseForced: !!cfg.defenseForced,
     // A Defense rolled inside the attack flow meets the coordinator's Threshold, an adversary's
     // withheld from players, so the dialog offers no box for one (live test, 2026-10-01).

@@ -212,8 +212,9 @@ function linesOf(id, value = 1) {
 }
 
 /**
- * What a sheet says of a Condition's own effect (0.33.0): the Description its row of the
- * Conditions workbook gives it, as the row's tooltip, and under the row, read-only, what the
+ * What a sheet says of a Condition's own effect (0.33.0): the texts its row of the Conditions
+ * workbook gives it (the flavor line, then the Effect; 0.35.0), as the row's tooltip, and under
+ * the row, read-only, what the
  * Condition is doing: its own lines at its value, then each Condition it also counts as with that
  * Condition's lines ("Counts as Off-Guard: -2 Situation penalty to Evade; ..."), a Condition held
  * against one creature alone said so. Null for an effect that is no Condition's own. A Condition
@@ -229,7 +230,12 @@ export function conditionInfo(actor, effect) {
   if (!record) return null;
   const hintKey = record.builtIn ? `${record.name}Hint` : "";
   const fallback = (hintKey && game.i18n.has?.(hintKey)) ? L(hintKey) : "";
-  const description = foundry.utils.escapeHTML(SW.conditionDescription(record.id) || fallback).replace(/\n+/g, "<br>");
+  // The row's flavor line in italics, then its Effect (0.35.0; Mike: the flavor shows in the
+  // journal and on the sheet). Each is escaped here, so the only markup is this function's own.
+  const esc = text => foundry.utils.escapeHTML(String(text ?? "")).replace(/\n+/g, "<br>");
+  const effectText = esc(SW.conditionEffect(record.id) || fallback);
+  const flavor = esc(SW.conditionFlavor(record.id));
+  const description = flavor ? `<em>${flavor}</em>${effectText ? `<br>${effectText}` : ""}` : effectText;
   const lines = [];
   if (!effect.disabled && !effect.isSuppressed && !record.zone) {
     const value = record.numeric ? (Number(actor?.conditionValue?.(record.id)) || 1) : 1;

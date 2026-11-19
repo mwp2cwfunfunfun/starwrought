@@ -17,6 +17,8 @@ import { kindOf } from "../rules/kinds/index.mjs";
 import { setting } from "../helpers/settings.mjs";
 // A check read against another creature's Threshold (0.15.0; shared with Gain Control since 0.27.0).
 import { readTargetThreshold } from "../helpers/threshold-read.mjs";
+// 0.35.0: a target immune to a trait the Maneuver carries (a Condition's `IMMUNE: TRAIT(...)`).
+import { immunityRecord } from "../rules/prevent.mjs";
 // 0.34.0: the check a Maneuver's row declares, and the request its target answers first.
 import { planOf } from "../rules/check.mjs";
 import { usableDefenses } from "../rules/check-request.mjs";
@@ -315,6 +317,8 @@ export class SwItem extends Item {
     // it is read against is the target's; `#startCheck` settles both and rolls, or posts the
     // request the target answers first (documents/cards/check-request.mjs).
     if (rolls) {
+      // A subordinate's roll carries its parent's traits (0.35.0), in the roll's own config.
+      if (Array.isArray(partOf?.traits) && partOf.traits.length) config.partOfTraits = [...partOf.traits];
       return this.#startCheck(actor, {
         check, config, subtitle, note: partOf?.note ? String(partOf.note) : "", applies,
         cost: plan.n, label, prepared, paid, partOf,
@@ -631,7 +635,9 @@ export class SwItem extends Item {
     return target.use({
       actor,
       ...((dialog === undefined) ? {} : { dialog }),
-      partOf: { label: named, cost, marks, gated: gate === true, note: F("STARWROUGHT.Subordinate.partOf", { parent: named }) }
+      // `traits` (0.35.0): the parent's own traits, which the subordinate's roll carries with
+      // its own, so a creature immune to the parent's trait is immune to what it performs.
+      partOf: { label: named, cost, marks, gated: gate === true, note: F("STARWROUGHT.Subordinate.partOf", { parent: named }), traits: [...(this.system.traits ?? [])] }
     });
   }
 
@@ -809,14 +815,30 @@ export class SwItem extends Item {
    * @param {object} [how.extra]            More roll config (`checkRequest`).
    */
   async #rollPlanned(actor, how) {
+    // The traits this use carries (0.35.0): the Maneuver's own, with its parent's when it is
+    // performed as part of one (`partOf.traits`, which the roll's own `beforeRoll` closure knows
+    // nothing of, so they ride in the caller's config).
+    const traits = [...(this.system.traits ?? []), ...(Array.isArray(how.config?.partOfTraits) ? how.config.partOfTraits : [])];
     const read = (how.defense && how.token?.actor)
       // The read itself is shared with Gain Control since 0.27.0 (helpers/threshold-read.mjs).
       ? readTargetThreshold({
         roller: actor, token: how.token, defense: how.defense,
         permitted: how.permitted ?? [how.defense],
         answered: how.answered === true,
-        check: how.rolled.slug, traits: this.system.traits ?? []
+        check: how.rolled.slug, traits
       })
+      : null;
+    // IMMUNITY TO A TRAIT (0.35.0; rulings 353 and 354): the one creature this is used on (the
+    // token targeted) is immune to a trait the Maneuver carries. The system says it and goes on
+    // (Mike): this is the roll window's line, said before the roll, which is still the roller's
+    // to make and to pay for. The card asks again for itself as it is posted (dice/check/card.mjs).
+    // Its own token targeted is no other creature: one body, whether it is rolled from the token
+    // or from the sidebar sheet of an unlinked creature (the review of 0.35.0).
+    const targeted = how.token?.actor ?? null;
+    const oneBody = !!targeted && ((targeted === actor) || (targeted.uuid === actor.uuid) || ((targeted.id === actor.id) && !(targeted.isToken && actor.isToken)));
+    const facedActor = oneBody ? null : targeted;
+    const immune = (facedActor && traits.length)
+      ? immunityRecord(facedActor, how.token.name ?? facedActor.name, traits, { other: actor })
       : null;
     const typed = (!read && Number.isFinite(how.threshold)) ? { threshold: Number(how.threshold) } : {};
     // An adversary rolls flat (dice/check/modifiers.mjs): its typed number for this Constellation
@@ -843,8 +865,16 @@ export class SwItem extends Item {
       ...typed,
       ...(read ?? {}),
       ...flat,
+      ...(immune ? { immuneNote: immune.note } : {}),
+      // The one creature this is used on (the token targeted), whether or not a Defense of its is
+      // read or a line of the row names it: the card asks that creature's immunity (0.35.0).
+      ...(facedActor ? { usedOn: { uuid: how.token.uuid, name: how.token.name ?? facedActor.name } } : {}),
+      // With a parent's traits beside its own, the card is told the whole list (it would read the
+      // Item's alone); a Maneuver used by itself needs nothing said.
+      ...((traits.length > (this.system.traits ?? []).length) ? { itemTraits: traits } : {}),
       ...(how.extra ?? {})
     }, how.config ?? {}, { inplace: false });
+    delete cfg.partOfTraits;
     // What this use settled stands over a caller's own options: the Constellation picked or
     // declared, and a Threshold typed in this use's picker (the review of 0.34.0).
     cfg.slug = how.rolled.slug;
@@ -982,7 +1012,9 @@ export class SwItem extends Item {
         cost: 0, label: how.label, gate: "none",
         applies: applies?.applies ?? null, ally: null,
         prepared: false, paid: how.paid ?? null,
-        dialog: config.dialog
+        dialog: config.dialog,
+        // Performed as part of another Maneuver, it carries that one's traits too (0.35.0).
+        traits: Array.isArray(config.partOfTraits) ? config.partOfTraits : null
       });
       // A Prepared Maneuver is finished as its request goes out: the adversary's part is done,
       // and the roll is the player's (the review of 0.34.0: it stayed Preparing, since only a

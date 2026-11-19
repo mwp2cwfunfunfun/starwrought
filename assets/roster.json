@@ -2005,8 +2005,8 @@
  ],
  "conditions": [
   [
-   "Blind",
-   "Off-Guard; cannot see. Immune to Visual effects."
+   "Blinded",
+   "You cannot see. You are immune to Visual effects. You are Off-Guard."
   ],
   [
    "Bound [X]",

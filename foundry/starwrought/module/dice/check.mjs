@@ -35,6 +35,8 @@ import { ruleGives, ruleApplies } from "../rules/engine.mjs";
 // 0.32.0: which of a Maneuver's APPLY and REMOVE lines stand for a degree and a cost (pure).
 import { linesFor } from "../rules/applied.mjs";
 import { encounterContext } from "../rules/scene.mjs";
+// Immunity to a trait (0.35.0): a rerolled attack card asks again, as every card does when posted.
+import { immunityRecord } from "../rules/prevent.mjs";
 
 
 
@@ -381,7 +383,14 @@ export class SwCheck {
     // A reroll reads that Threshold again from actor data, and the creature's Conditions may have
     // moved since (a Hit that left a Torso Wound made it Off-Guard): the card keeps the first
     // reading's total, a small number that gives the Threshold itself away to nobody.
-    threat = null, conditionShift = null
+    threat = null, conditionShift = null,
+    // THE DEFENDER IS IMMUNE TO A TRAIT THE ATTACK CARRIES (0.35.0; rulings 353 and 355). The
+    // coordinator asked as it resolved this pairing (`immunityRecord`, rules/prevent.mjs) and
+    // hands the answer in; a reroll hands back the one its card kept. The card says so and offers
+    // no damage to roll. NOTHING ELSE CHANGES: the outcome, the Reaction's cost and everything the
+    // roll does on the attacker's side (a Zone Exposed on a Miss, a Bind) stand as rolled (Mike:
+    // "It stands as rolled").
+    immune = null
   } = {}) {
     if (!rollData) throw new Error("STARWROUGHT | resolveAgainst needs the roll's data.");
     // The roller may have sent its whole submission rather than the bare Roll data.
@@ -547,7 +556,9 @@ export class SwCheck {
       controlledAttack: !!controlledAttack,
       // 0.33.0: kept on the card for a reroll (above).
       threat: (threat && (typeof threat === "object")) ? threat : null,
-      conditionShift: Number.isFinite(conditionShift) ? conditionShift : null
+      conditionShift: Number.isFinite(conditionShift) ? conditionShift : null,
+      // 0.35.0: the defender's immunity to the attack's trait, for the card's note and its flag.
+      immune: (immune && (typeof immune === "object")) ? immune : null
     };
 
     const applied = [...(Array.isArray(modifiers) ? modifiers : []), ...pairing];
@@ -785,7 +796,18 @@ export class SwCheck {
       controlledAttack: !!flags.controlledAttack,
       // 0.33.0: copied too, so a second reroll meets what the first die met.
       threat: flags.threat ?? null,
-      conditionShift: Number.isFinite(flags.conditionShift) ? flags.conditionShift : null
+      conditionShift: Number.isFinite(flags.conditionShift) ? flags.conditionShift : null,
+      // 0.35.0: ASKED AGAIN, never copied (ruling 358: immunity is judged when a thing would land,
+      // and each card asks as it is posted, as a Maneuver's reroll does). The attack's traits are
+      // the ones the first card kept with its Threat. Copied through the review, which found the
+      // dead end: a defender made Blinded by mistake stayed "immune" on every reroll, with no way
+      // back to the damage buttons. A card with no Threat kept (from before 0.33.0) says what its
+      // first card said.
+      immune: (defender && Array.isArray(flags.threat?.traits))
+        ? (flags.threat.traits.length
+          ? immunityRecord(defender, (isAttack ? targetDoc?.name : own(defender)?.name) ?? flags.immune?.target ?? defender.name, flags.threat.traits, { other: attacker, key: "attack" })
+          : null)
+        : ((flags.immune && (typeof flags.immune === "object")) ? { ...flags.immune } : null)
     });
 
     if (message.isAuthor || game.user.isGM) {

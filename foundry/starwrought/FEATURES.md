@@ -8,11 +8,11 @@ entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 en
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
 297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321, the 0.33.0 entry 322
-to 336 and the 0.34.0 entry 337 to 349). Since
+to 336, the 0.34.0 entry 337 to 349 and the 0.35.0 entry 350 to 360). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
 their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
-too (section 5). System version **0.34.0**.
+too (section 5). System version **0.35.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2338,13 +2338,14 @@ open their rules pages.
 **The Conditions are a workbook since 0.33.0** (rulings 322 to 336; Mike, 2026-11-18: "can we
 build a conditions.xlsx that includes every condition, and the automation effects (if any) of
 it?"). `data/conditions.xlsx` is the only source for what a Condition says and does: one row for
-each, with its Description, the Conditions it also counts as (Includes), and its Automation, the
-lines that say what it does to whoever has it. The system reads the sheet at startup and after
+each, with its Effect (the rules text players read), its Description (one line of flavor, a
+column of its own since 0.35.0), the Conditions it also counts as (Includes), and its
+Automation, the lines that say what it does to whoever has it. The system reads the sheet at startup and after
 Sync content; the web app, the compendium and the Rules Reference journal print the same rows.
 
 29 are registered as toggleable token statuses: Off-Guard, Wrong-Footed, Frightened N, Prone,
 **Supine** (the first Condition a row of the sheet made), Grabbed, Restrained, Heedless, Stunned
-N, Slowed N, Fatigued N, Blind, Deafened, Concealed, Hidden, Undetected, Unconscious, Dying N,
+N, Slowed N, Fatigued N, Blinded, Deafened, Concealed, Hidden, Undetected, Unconscious, Dying N,
 Wounded, Spent, Bound, Controlled, Controlling, Preparing, Dead, and Exposed: Head, Torso, Arms
 and Legs. A new row in the sheet is a new Condition on the palette at the next build.
 
@@ -2356,7 +2357,8 @@ What the sheet's rows do today, for a character and for an adversary alike:
 | Frightened N | -N Condition to all four Defenses, to every check (an Initiative among them) and to attacks |
 | Fatigued N | -N Condition to all four Defenses and to attacks |
 | Prone, Supine | Off-Guard; -2 Situation to attacks; +2 Situation to Evade against a ranged Attack |
-| Grabbed, Blind | Off-Guard |
+| Grabbed | Off-Guard |
+| Blinded | Off-Guard; immune to anything with the Visual trait (0.35.0, below) |
 | Restrained | counts as Grabbed, and so as Off-Guard |
 | Unconscious | counts as Prone, and so as Off-Guard |
 | Wrong-Footed [X] | Off-Guard against the creature that put it on, and nobody else |
@@ -2372,10 +2374,11 @@ What the sheet's rows do today, for a character and for an adversary alike:
   Defense Thresholds, its Attack Thresholds, its own attack die and its Initiative. Its sheet
   keeps the number the GM typed in the field and shows the number in effect beside it ("11 in
   effect"), with what moved it on hover. An adversary's own Talents are still unread.
-- **On the sheets.** A Condition's row on the Effects tab carries its Description as a tooltip,
-  and under the row, read-only, what the Condition is doing: its lines at its value, then what
-  it counts as. The token's hover card carries the Description too. A Condition's lines have no
-  On / Skip / Off: the Condition is the switch.
+- **On the sheets.** A Condition's row on the Effects tab carries a tooltip: its Description,
+  the flavor line, in italics, and then its Effect (0.35.0, ruling 351). Under the row,
+  read-only, is what the Condition is doing: its lines at its value, then what it counts as.
+  The token's hover card carries the Effect alone. A Condition's lines have no On / Skip / Off:
+  the Condition is the switch.
 - **A reroll meets the number the first die met**, though the creature's Conditions have moved
   since: the card keeps the attack answered and what the adversary's Conditions were worth.
 - **Drop Flat** gives its +4 against the attack that triggered it and nothing of Prone's; Prone
@@ -2388,6 +2391,42 @@ What the sheet's rows do today, for a character and for an adversary alike:
 - **Everyone is on the same Conditions.** Sync content reads them again on every connected
   client, and when the Conditions are all that moved the GM's next load does the same with no
   question asked.
+
+**Immunity to a trait** (0.35.0; rulings 350 to 360; Mike, 2026-11-19: "I want to add an
+automation to make the person immune to attacks/spells/effects/etc. with the Visual trait"). A
+Condition's row may carry `[EFFECT IMMUNE: TRAIT(Visual)]`: whoever has the Condition, a
+character or an adversary, is immune to anything that carries the trait. Blinded carries it for
+Visual. Deafened's row waits for `[EFFECT IMMUNE: TRAIT(Auditory)]`.
+
+- **The system says it and goes on** (ruling 354). Nothing is refused: the Maneuver is used and
+  paid for, the attack is declared and rolled. What changes is that nothing lands on the immune
+  creature.
+- **A Maneuver.** The roll window carries a line before the roll ("Bandit is immune to Visual
+  effects (Blinded). Nothing this does lands on Bandit."). The check card carries it, and so
+  does a request card that asks the target to pick a Defense or to roll. "Apply to Bandit"
+  applies nothing and posts a small card saying why, after which the button gives way. A result
+  given to an immune ally is refused with the reason. What the roll puts on the roller still
+  lands.
+- **An attack.** The defender still commits a Defense and the dice are rolled. The result card
+  says the defender is immune, has no damage buttons and offers no Expose of the defender's
+  Zone. The attacker's own side stands as rolled (ruling 355): a Miss still Exposes the
+  attacker, and a Guard still forms its Bind.
+- **Which traits count** (ruling 357). A thing's separate traits are alternatives: Calm Animal
+  is Auditory and Visual, so a creature immune to either is immune to it. One trait written
+  with "or" needs every part: Captivate is "Auditory or Visual", so a Blinded creature that can
+  hear is still Captivated. A Maneuver performed as part of another carries its parent's traits
+  as well.
+- **When it is judged** (ruling 358). When a thing would land. Each card asks as it is posted,
+  a reroll's card among them, and the write asks again, so a creature Blinded after the roll and
+  before the button is immune, and one cured in between is not. A request card that is still
+  waiting is drawn again when a Condition comes to its target or goes.
+- **No override.** While the creature has the Condition, Apply applies nothing however often it
+  is pressed. If the table rules that the creature is affected after all, take the Condition
+  off, press Apply, and put it back. If it was cured after the small "immune" card was posted,
+  delete that card and the Apply button returns.
+- **Where the line is read** (ruling 356). On a Condition's row, one trait to a line, named by
+  one word (`TRAIT(Reach)`, never `TRAIT(Reach 5)`), with nothing after it. On a Talent, a
+  Maneuver or a custom effect it is refused for now.
 
 Beyond the sheet's lines the system still runs these itself (a failed Wind check raises
 Fatigued one step at a time to its maximum of 3; the book ends it "after ten minutes of rest",
@@ -2923,6 +2962,8 @@ order at most tables; Mike, 2026-11-05), it closes the Zone this card Exposed an
 closes it or asks the GM's client to, and with no GM connected the Exposed stands, said in a
 notice. A Zone Exposed by anything but that card is never touched; the widget shows "Exposed in
 the Arms" in place of the select once a Zone is picked, with the Reaction buttons still there.
+Since 0.35.0 the kind reads a third form on a Condition's row, `[EFFECT IMMUNE: TRAIT(Visual)]`
+(section 5, Immunity to a trait); a Condition after `IMMUNE:` is still a bare word.
 
 **The Relevant Check Maneuver** (0.10.0; ruling 123). A Maneuver whose check is enabled with no
 Constellation chosen is a Relevant Check: using it opens the Relevant Check picker with the
@@ -3381,7 +3422,7 @@ before; the sources and the index are.
   exception for melee Attacks against adjacent creatures, Grabbed's and Restrained's "cannot
   Move or Step" and "no action other than Escape" are by hand, Frightened and Slowed do not drop
   by 1 at a round's end, Stunned takes no actions, Heedless adds no action to a Concentrate
-  Maneuver, and Blind and Deafened stop no perception beyond what the system already read. Roll
+  Maneuver, and Blinded and Deafened stop no perception beyond what the system already read. Roll
   Over has no row yet, and a rule that names Prone still means Prone and not Supine. Wrong-Footed
   is to one creature at a time, the one that last applied it, by its own identity (a Feint
   rolled from an adversary's sheet in the sidebar and not from its token names another body). A
@@ -3392,6 +3433,18 @@ before; the sources and the index are.
   Condition's row reads CHECK, ATK, DEF and INIT and nothing that asks about an owner. An
   adversary's own Talents stay unread. Fatigued's maximum of 3 is kept only where the system
   raises it.
+- **What immunity to a trait leaves to the table** (0.35.0): it is mostly the note today, since
+  no Visual or Auditory Maneuver on the sheets carries an `APPLY`, `REMOVE` or `GIVE` line and
+  no weapon, attack or spell carries either trait. Deafened is immune to nothing until its row
+  carries its line. A Maneuver whose whole use is a `MARK`, a `PERMIT` or a `SUBORDINATE` line
+  still reaches an immune creature (Command the Field lets a Deafened ally Move). Another
+  creature's aura or bonus is not stopped, nor is damage applied by hand from a damage card. An
+  immune defender still commits a Defense and pays for the Reaction it answers with. The card's
+  note is the creature as it stood when the card was posted; the write asks again. The note
+  names the one token targeted when the Maneuver was used, whether or not the Maneuver is aimed
+  at it (Rally, rolled with a Deafened foe still targeted, would say that foe is immune). A
+  Talent, a Maneuver and a custom effect cannot carry the line yet, and nothing is read after
+  it.
 - **Nothing answers for a defender but a commitment** (0.12.0, rulings 159 and 162). With no GM
   connected an adversary's Blow waits for one; an absent player's character waits for the GM's
   explicit answer; a Strike or Cast with no target rolls against a typed Threshold because there is

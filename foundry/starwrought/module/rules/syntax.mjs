@@ -42,8 +42,12 @@ export class RuleSyntaxError extends Error {
  */
 export const CONDITION_ROW = "condition";
 
-/** The effect tags a Condition's row may carry in this version. */
-export const CONDITION_ROW_TAGS = Object.freeze(["check", "atk", "def", "init"]);
+/**
+ * The effect tags a Condition's row may carry in this version. `immune` since 0.35.0, and there in
+ * its `TRAIT(...)` form alone (Blinded: `[EFFECT IMMUNE: TRAIT(Visual)]`; the kind refuses the
+ * rest, ./kinds/prevent.mjs).
+ */
+export const CONDITION_ROW_TAGS = Object.freeze(["check", "atk", "def", "init", "immune"]);
 
 /* -------------------------------------------- */
 /*  "No automation"                             */

@@ -118,8 +118,8 @@ RULES = [
      "Enable the Talent handed over free, or disable the one that hands it over."),
     (r"\[MANEUVER ([^\]]+)\] names a Maneuver whose row is not enabled", "Fix", "Data",
      "Set Enabled? = Yes on the '{1}' row of the actions workbook, or disable the Talent that grants it."),
-    (r"IF\(Trait=([^)]+)\): no shipping weapon, attack or Talent carries the trait", "Note", "Data",
-     "The rule reads and waits: author a weapon, adversary attack or spell Talent carrying the {1} trait, or leave it until one exists."),
+    (r"TRAIT\(([^)]+)\): no shipping weapon, Maneuver, attack or Talent carries the trait", "Note", "Data",
+     "The rule reads and waits. If {1} is a slip of the pen, mend the cell; otherwise author a weapon, a Maneuver, an adversary attack or a spell Talent carrying the {1} trait, or leave it until one exists."),
     (r"EFFECT\(([^)]+)\): no Maneuver applies an Effect of that name", "Note", "Data",
      "Check the spelling of '{1}' against the row that should apply it, or add [EFFECT APPLY: {1}] to that Maneuver's row; an Effect the GM adds by hand needs nothing."),
     (r"this Maneuver is run by the system another way .* so its APPLY and REMOVE lines apply nothing", "Fix", "Data",
@@ -187,11 +187,29 @@ RULES = [
      "Delete the INIT line unless Initiative should take the Condition twice: an Initiative is a check, so the CHECK line already reaches it."),
     (r"a DEF line for every Defense and a DEF line for one of them", "Fix", "Automation cell",
      "Keep one of the two DEF lines, or accept that the named Defense takes both."),
-    (r"no Description; players will read nothing for this Condition", "Fix", "Data",
-     "Write the Description cell: it is the tooltip on the Condition's row and on the token's hover card, and the reference tables' text."),
-    (r"is not read on a Condition's row yet|on a Condition's row does not take|a Condition's row takes", "Fix", "Automation cell",
-     "A Condition's row reads CHECK, ATK, DEF and INIT lines, which act for whoever has the Condition. What this line asks for has no "
-     "word there yet: say what the Condition should do and Claude will propose it, and mark the cell N/A meanwhile."),
+    # 0.35.0: the sheet's two texts. Effect is the rules text; Description is the flavor line.
+    (r"no Effect; players will read nothing for this Condition", "Fix", "Data",
+     "Write the Effect cell: it is the tooltip on the Condition's row and on the token's hover card, and the reference tables' text. "
+     "(The Description cell is the one line of flavor, and may be blank.)"),
+    (r"sheet needs Condition and Effect columns", "Error", "Data",
+     "Head the rules-text column of data/conditions.xlsx 'Effect'. Since 0.35.0 'Description' is the flavor line; a sheet with only "
+     "Description is the older shape, and the build will not guess which text it holds."),
+    (r"the roster's conditions block and assets/conditions\.json disagree", "Fix", "Build",
+     "Run node assets/build_all.mjs --conditions (sync_conditions.cmd): the two are written together, and one of them is from an older build."),
+    # 0.35.0: immunity to a trait.
+    (r"`IMMUNE: TRAIT\(\.\.\.\)` is read on a Condition's row for now", "Fix", "Automation cell",
+     "Immunity to a trait is read on a row of data/conditions.xlsx alone for now (Blinded: [EFFECT IMMUNE: TRAIT(Visual)]). "
+     "If a Talent should grant it, say which, and it comes with that Talent; mark the cell N/A meanwhile."),
+    (r"IMMUNE names one trait to a line|TRAIT\(\.\.\.\) names a trait|is not a trait's name", "Fix", "Automation cell",
+     "Write one trait to a line, as [EFFECT IMMUNE: TRAIT(Visual)], and a second line for a second trait. A trait is named by one "
+     "word, its first word as the Traits column writes it (Reach, not Reach 5)."),
+    (r"takes nothing after it on a Condition's row yet", "Fix", "Automation cell",
+     "Write the line alone, as [EFFECT IMMUNE: TRAIT(Visual)]: it acts for whoever has the Condition. If the immunity should be "
+     "limited or conditional, say how and Claude will propose the word."),
+    (r"is not read on a Condition's row yet|on a Condition's row does not take|on a Condition's row yet|a Condition's row takes", "Fix", "Automation cell",
+     "A Condition's row reads CHECK, ATK, DEF and INIT lines, and IMMUNE: TRAIT(...) written alone, all of which act for whoever has "
+     "the Condition. What this line asks for has no word there yet: say what the Condition should do and Claude will propose it, and "
+     "mark the cell N/A meanwhile."),
     (r"is a Condition's own value|this Condition takes none", "Fix", "Automation cell",
      "-N is the Condition's own value: write it only on a row of data/conditions.xlsx whose Takes is N; anywhere else write a whole number."),
     (r"assets/conditions\.json could not be registered|no Conditions workbook in data/", "Fix", "Build",
@@ -324,8 +342,14 @@ def findings_from_step(step):
                 parts = [p.strip() for p in src.split(" / ")]
                 where, item = (" / ".join(parts[:-1]), parts[-1]) if len(parts) > 1 else (src, "")
                 sev = "Error" if banner == "rule" else "Fix"
-                out.append(Finding(sev, "Automation cell", where, item, f"line {line_no}: {message} [{text}]",
-                                   "Mend the line (the Red cells sheet gives the cause and the hint); in release mode this stops the build.", step["name"]))
+                # A message with a row of its own in RULES carries that row's recommendation (the
+                # review of 0.35.0: every automation line took the generic one, so the rows written
+                # for the grammar's messages were never reached). Asked of the message alone, never
+                # of the source's path, and only a row filed under the Automation cell is taken.
+                _, row_cat, row_rec = classify(message)
+                rec = (f"{row_rec} In release mode this stops the build." if row_cat == "Automation cell"
+                       else "Mend the line (the Red cells sheet gives the cause and the hint); in release mode this stops the build.")
+                out.append(Finding(sev, "Automation cell", where, item, f"line {line_no}: {message} [{text}]", rec, step["name"]))
                 continue
         where, item, msg = split_where(s)
         sev, cat, rec = classify(s)

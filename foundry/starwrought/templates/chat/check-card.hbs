@@ -39,6 +39,8 @@
   {{/if}}
   {{!-- A check read against a Defense the target cannot use now (0.34.0): the row names no other. --}}
   {{#if targetNote}}<p class="sw-card-note sw-warn sw-target-note">{{targetNote}}</p>{{/if}}
+  {{!-- The creature this was used on is immune to it (0.35.0): the roll stands, and nothing lands there. --}}
+  {{#if immuneNote}}<p class="sw-card-note sw-warn sw-immune-note"><i class="fa-solid fa-shield-halved"></i> {{immuneNote}}</p>{{/if}}
 
   {{#if reactionLabel}}
   {{!-- The Reaction behind the Defense. On an attack card it is the defender's committed one, charged

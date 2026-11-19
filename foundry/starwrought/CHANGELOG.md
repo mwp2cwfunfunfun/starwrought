@@ -7,6 +7,242 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.35.0 (2026-11-19): immunity to a trait, and the Conditions sheet's two texts
+
+Built from **Player's Handbook v4.25**, which did not move. Mike, revising
+`data/conditions.xlsx`: "I am changing the name of the "Description" column to "Effect", and
+added a "Description" column for flavor text, to bring it in line with other spreadsheets. I am
+changing the name of Blind to Blinded. For automation, I want to add an automation to make the
+person immune to attacks/spells/effects/etc. with the Visual trait. We already have [IMMUNE] in
+automation grammar, so should we extend it to allow for adding of Traits in there?" Planned
+first; his decisions, by question: the line is `[EFFECT IMMUNE: TRAIT(Visual)]` and a Condition
+after `IMMUNE:` stays a bare word; immunity stops Maneuvers and attacks; the system says it and
+goes on; on an attack the attacker's own side stands as rolled; the flavor shows in the journal
+and on the sheet; and this release reads the line on a Condition's row only. **No rule kind and
+no hook point is new**: the `prevent` kind reads one more form, and the `prevent` hook point is
+asked one more question. The Conditions sheet was built as he last saved it. None of his four
+workbooks in progress was converted, built, staged or written.
+
+| You write, in a Condition's Automation cell | It means |
+|---|---|
+| `[EFFECT IMMUNE: TRAIT(Visual)]` | Whoever has this Condition is immune to anything with the Visual trait. |
+| `[EFFECT IMMUNE: TRAIT(Auditory)]` | The same for Auditory. This is the line Deafened needs. |
+
+| | 0.34.0 | 0.35.0 |
+|---|---|---|
+| The sheet's text columns | One, Description, the rules text | Two: Effect, the rules text, and Description, a line of flavor |
+| A sheet with the new columns | Would have shipped the flavor line as every Condition's rules | Read as written; a sheet with no Effect column is an error that says what to rename |
+| "You are immune to Visual effects" | Prose in the Blinded row | `[EFFECT IMMUNE: TRAIT(Visual)]`, read by the system |
+| A Visual Maneuver used on a Blinded creature | Rolled and applied as on anyone | Rolled and paid for; the window and the card say the creature is immune; nothing lands on it |
+| A Visual attack on a Blinded defender | Resolved as any attack | Resolved as rolled, with the note, no damage buttons, and no Zone of the defender's Exposed |
+| A Condition's tooltip on a sheet | The one text | The flavor in italics, then the Effect |
+| The journal's Conditions page | The one text | The flavor in italics above the Effect |
+| The token's hover card, the web app, the compendium document | The one text | The Effect, as before |
+| The row "Blind" | Named Blind | Named Blinded (the system's own name for it already) |
+
+**What you will see at the table.**
+
+- **A Maneuver with the trait, used on an immune creature.** The roll window says so before the
+  roll: "Bandit is immune to Visual effects (Blinded). Nothing this does lands on Bandit." The
+  check card carries the same line, and so does a request card that asks the target to pick a
+  Defense or to roll. The roll is made and paid for as always, and what it puts on the roller
+  still lands. Pressing "Apply to Bandit" applies nothing: a small card says the Bandit is
+  immune and the button gives way. A result that would be given to an immune ally is refused,
+  with the reason.
+- **An attack with the trait, on an immune defender.** The defender still commits a Defense and
+  the dice are still rolled. The result card says the defender is immune, shows no damage
+  buttons and offers no Expose of the defender's Zone. Everything else stands as rolled: a Miss
+  still Exposes the attacker, and a Guard still forms its Bind.
+- **The sheets and the journal.** A Condition's tooltip on the Effects tab shows the flavor line
+  in italics, then the Effect; under the row the line reads "immune to anything with the Visual
+  trait". The Rules Reference journal's Conditions page shows the flavor in italics above the
+  Effect.
+
+**How a Maneuver's traits are read.**
+
+- **Separate traits** (Calm Animal is Auditory and Visual): immune to either one is immune.
+- **One trait written "Auditory or Visual"** (Captivate): immune only when immune to both. A
+  Blinded creature that can hear is still Captivated.
+- **A Maneuver performed as part of another** carries its parent's traits too (No Quarter is
+  Visual, and performs Demoralize).
+
+**What the build read from your sheet.** `data/conditions.xlsx` as saved on 2026-11-19, built
+with `node assets/build_all.mjs --conditions`: 26 Conditions, every one with a Description and
+an Effect; 12 rules on 6 rows (Blinded 1, Fatigued 2, Frightened 3, Off-Guard 2, Prone 2,
+Supine 2); Supine still the one Condition the sheet makes; 22 rows listed in the reference
+tables. Blinded's line reads. **Deafened's Automation cell is still `N/A`**, so a Deafened
+creature is immune to nothing until its row carries `[EFFECT IMMUNE: TRAIT(Auditory)]`.
+
+**The rulings** (350 to 355 are Mike's, by question; 356 is his choice with Claude's detail;
+the rest are Claude's readings and his to overrule).
+
+- **350. A Condition has two texts** (Mike). Effect is the rules text players read. Description
+  is a line of flavor, as on the other sheets.
+- **351. The flavor shows in the journal and on the sheet** (Mike): in italics above the Effect
+  on the Rules Reference journal's Conditions page and in the tooltip on a sheet's Effects tab.
+  The token's hover card, the web app and the compendium document keep the Effect alone.
+- **352. The line is `[EFFECT IMMUNE: TRAIT(Visual)]`** (Mike). A Condition after `IMMUNE:`
+  stays a bare word (`[EFFECT IMMUNE: prone]`), so no cell written before this release changes.
+- **353. Immunity stops Maneuvers and attacks** (Mike).
+- **354. The system says it and goes on** (Mike). Nothing is refused. The use is made and paid
+  for, the window warns, the card says the creature is immune, and nothing lands on it.
+- **355. On an attack the attacker's own side stands as rolled** (Mike): the Zone a Miss
+  Exposes on the attacker, the Bind a Guard forms, the actions spent.
+- **356. The line is read on a Condition's row only** (Mike's choice). Claude's detail: one
+  trait to a line, and nothing after it (no `IF:`, `FOR:` or `LIMIT:`), as a Condition's other
+  lines take nothing that asks about an owner. Written on a Talent, a Maneuver or a custom
+  effect it is refused and told so. `IMMUNE: <Condition>` and `IMMUNE: expose` stay refused on a
+  Condition's row: a Condition that another one counts as would still count, so it waits until
+  that is settled.
+- **357. Separate traits are alternatives for immunity; one trait written with "or" needs
+  all of its parts.** Calm Animal (Auditory, Visual) does nothing to a creature that is only
+  Blinded. Captivate ("Auditory or Visual") still works on it.
+- **358. Immunity is judged when a thing would land.** The window and each card ask as they are
+  made, a reroll's card among them, and the write asks again. A creature Blinded after the roll
+  and before the button is immune; one cured in between is not. A request card that is still
+  waiting is drawn again when a Condition comes to its target or goes. **There is no override**:
+  while the creature has the Condition, Apply applies nothing however often it is pressed.
+- **359. A Condition held only against one creature gives its immunity only against that
+  creature.** A Condition a creature has through "Off-Guard against X" style inclusion is
+  passed over when anybody else acts on it.
+- **360. What "nothing lands" covers.** The lines of a Maneuver aimed at the target (`APPLY` and
+  `REMOVE` with `target`), a result given to an ally (`GIVE`), an attack's damage buttons, and
+  the Expose of the defender's Zone on a Hit. What the roll puts on the roller stands. An immune
+  defender still commits a Defense and pays for the Reaction it answers with. A Maneuver
+  performed as part of another carries its parent's traits. "Trait" and "Expose" are names a new
+  Condition row may not take.
+
+**Worth knowing.**
+
+- **At the table today this is mostly the note.** No Visual or Auditory Maneuver on the sheets
+  carries an `APPLY`, `REMOVE` or `GIVE` line yet, and no weapon, attack or spell carries either
+  trait. The guards are built and tested for when they do.
+- **Only Calm Animal triggers Blinded today.** Point Out and Glimmer target nobody, Captivate
+  needs both senses gone, and No Quarter reaches its target through Demoralize.
+- **Calm Animal cannot calm a Blinded animal**, though it is also Auditory. That follows from
+  ruling 357.
+- **There is no override, and the way round I described in the plan does not work.** The plan
+  said that deleting the small "immune" card lets the table apply after all. The button does
+  come back, but the press asks again and posts the same card. If the table rules that an
+  immune creature is affected, take the Condition off, press Apply, and put it back. Deleting
+  the small card helps only for a creature that was cured after the card was posted. Whether
+  the GM should have an "Apply anyway" is an open decision.
+- **Deafened needs its line**, and it will reach further than Blinded does: Demoralize, Rally,
+  Talk Them Down, Command the Field, Anticipate, Battle Cry, Bolster and Direct Animal are all
+  Auditory, so with `[EFFECT IMMUNE: TRAIT(Auditory)]` on the row none of them lands on a
+  Deafened creature.
+- **Tokens that already carry "Blind" keep that name** on the effect until it is toggled off
+  and on. The rules read it as Blinded either way, and `blind` stays a word a cell can write.
+- **The About sheet in the workbook is yours.** Three of its sentences describe the sheet as it
+  was. Suggested wording:
+  - "Description: one line of flavor. It shows in italics above the Effect in the Rules
+    Reference journal and in the tooltip on a sheet's Effects tab. The system never reads it."
+  - "Effect: the rules text players read: the tooltip on a Condition's row and on the token's
+    hover card, and the reference tables."
+  - In the Automation sentence, after "reads CHECK, ATK, DEF and INIT": "and IMMUNE for a trait
+    ([EFFECT IMMUNE: TRAIT(Visual)]: whoever has the Condition is immune to anything with that
+    trait)".
+- **The Prone row still ends "or Roll Over to become Prone"**, which reads like a slip for
+  Supine. It is now in the Effect cell.
+
+**In the code.** `module/rules/kinds/prevent.mjs` (the `TRAIT(...)` form, stored as the kind's
+own rule with `effect: "trait"`, `trait` and `name`; the hook's trait branch, and its passing
+over a Condition held only against somebody else); `module/rules/immunity.mjs` (new and pure: a
+thing's traits as groups of alternatives, which group is covered, the words);
+`ruleTraitImmunity` in `module/rules/engine.mjs` and `traitImmunity`, `immunityNote` and
+`immunityRecord` in `module/rules/prevent.mjs`, asking the existing `prevent` hook point with
+the traits in `threat.traits`; the window (`#rollPlanned` in `module/documents/item.mjs`, `defendFromCard`), the card
+(`immunityOf` in `module/dice/check/card.mjs`; `flags.immune`, `flags.itemTraits`,
+`flags.usedOn`), the request card (`drawRequest`, drawn again by `conditionsMoved`), the write
+(`applyOnce`, `giveOnce`), the attack (`AttackCoordinator.#resolvePairing`,
+`SwCheck.resolveAgainst`, `position`) and the rerolls (`rerollCard` and `rerollCheck`, which
+ask again); `conditionEffect` and `conditionFlavor` in `module/config/conditions.mjs` in place of
+`conditionDescription`, so a reader that was missed fails loudly; `CONDITION_COLUMNS` and
+`parse_conditions_workbook` in `assets/xlsx_to_trees.py`; `textsOf`, `listedRows`, `pageRows`
+and `registryRows` in `assets/lib/conditions_build.mjs` (a file built before this release is
+read as Effect with no flavor); the trait census in `assets/build_foundry.mjs`, which keeps one
+list for immunities and one for `IFT: TRAIT(...)` lines, since the table compares them
+differently.
+
+**Not built.** `IMMUNE: TRAIT(...)` on a Talent, a Maneuver or a custom effect. `LIMIT`, `FOR`
+and the other components after it. Several traits in one line. `IMMUNE: <Condition>` on a
+Condition's row. A Maneuver whose whole use is a `MARK`, a `PERMIT` or a `SUBORDINATE` line
+reaching an immune creature (Command the Field would still let a Deafened ally Move). Another
+creature's aura or bonus whose carrier has the trait. Damage applied by hand from a damage
+card. Marking a defender immune before it commits a Defense. What a Blinded or Deafened
+creature itself cannot do, which is "what a Condition forbids" and still comes after Gain
+Control's grammar.
+
+**The review.** Two independent readers went through the finished change, one the runtime and
+one the grammar, the build and the documents. Neither found a crash, a double application or
+one client disagreeing with another. Fifteen findings, two of them medium; all are mended but
+the three stated at the end.
+
+- **The way round "no override" that I described does not exist** (medium). See Worth knowing.
+  The documents now say what is true.
+- **Two `TRAIT(...)` on one line were told to write what they had written** (medium), and on a
+  Talent a wrong cell was told to write a second line that would then be refused. Any
+  descriptor that begins the form is now told, in this order: where the form is read, one
+  trait to a line, then the trait's name.
+- **A rerolled attack card copied the first card's answer.** A defender made Blinded by mistake
+  stayed "immune" on every reroll, with no way back to the damage buttons. A reroll asks again,
+  as a Maneuver's reroll already did.
+- **An adversary's Maneuver performed as part of another lost its parent's traits** on the way
+  to the player's request, so nothing said the character was immune and the GM's Apply landed.
+  The request carries one list of traits, which the window, the player's roll card and the
+  adversary's result card all read.
+- **A waiting request card's note was only as fresh as its last draw.** The card is drawn again
+  when a Condition comes to its target or goes.
+- **`TRAIT(visual effects)` was stored under a name that printed "immune to visual effects
+  effects"**, and `TRAIT(Reach 5)` read as immunity to every Reach. A trait is named by one
+  word, and the name prints with a capital however it was typed.
+- **The build's census and the table disagreed about "Auditory or Visual".** The census counted
+  it as carrying both traits for every line, while an `IFT: TRAIT(Visual)` bonus compares first
+  words only. It keeps two lists now, each held to what the table compares.
+- **The build report's rows for the new grammar messages could never be reached**: every
+  automation line took one generic recommendation. A line now takes its own row's.
+- **"Trait" and "Expose" were reserved by name but not by the id a name makes**, so a row
+  named "Trai't" would have taken the word. Refused.
+- Beside those: a reroll reads a withheld Threshold with the traits the first read had; the
+  Control's Zone note no longer prints beside "no damage"; a creature rolled from its sidebar
+  sheet with its own token targeted is no longer told it is immune to its own Maneuver; a check
+  of the self-test that compared a value with itself now tests the journal page's rows; and two
+  statements in the documents did not match the code.
+- **Stated, not changed.** The note names the one token targeted when the Maneuver was used,
+  whether or not the Maneuver is aimed at it: Rally, rolled with a Deafened foe still targeted,
+  would say that foe is immune. The small "applied" card names the creature by its own name
+  where the roll named no target. A second column of the sheet headed "Effect..." is ignored
+  with no warning, as a second of any column is.
+
+**Checked.** 248 self-test checks (the line on a Condition's row and every slip; a Blinded
+creature immune to Visual and to nothing else; Captivate's "Auditory or Visual" needing both; a
+Condition held against one creature; the Conditions build's two texts, the roster block left as
+it was, the journal page's rows, and a file built before this release); `node --check` on every
+module; `build_all.mjs --check`; the style check (one failure, the em-dash in Dwarf Lore B13 of
+Mike's uncommitted workbook); the smoke test on the rebuilt app; and the Conditions build run
+for real on the saved sheet, before the review and again after its mends. Row by row against
+the committed text: 25 of 26 Effects are what the old Description was, and Blinded's is his
+rewording; the roster block and the web app move in Blinded's row only; the journal's
+Conditions page moves by the flavor lines and the new name, and its Exposed and Bind pages are
+byte for byte what they were. **Live in the test world with a GM tab and a player tab, before
+the review and again for its mends.** Before: Calm Animal on a Blinded Bandit (the window, the
+card, a reroll); a world Maneuver with the Visual trait and an APPLY line (Apply applying
+nothing and saying so, then applying once Blinded was taken off); the Bandit's Visual Maneuver
+on a Blinded Tess, rolled by her player (the request card, her window, her roll card, the
+Bandit's result card, the GM's Apply); a Visual weapon against a Blinded Bandit (the result
+card with no damage buttons, a Miss still Exposing the attacker); the tooltip with the flavor
+in italics; Captivate's trait giving a Blinded Bandit no immunity. After the mends: the new
+messages on a Condition's row and on a Talent; a rerolled attack card still immune while the
+Bandit was Blinded, and with its damage buttons and the Expose back once Blinded was taken off;
+a waiting request card gaining and losing its note as Tess was Blinded and cured; the Bandit's
+result card carrying the request's traits; Apply pressed twice on a still Blinded Tess posting
+the same small card each time, and landing Frightened 2 once she was cured. **Not driven**: a
+table with no GM connected; an adversary's Maneuver performed as part of another (no row has
+one; mended by reading); a creature rolling with its own token targeted; a spell with the
+trait (no spell ships enabled); the journal page on screen (read from the pack source).
+
+---
+
 ## 0.34.0 (2026-11-19): a Maneuver's check is declared
 
 Built from **Player's Handbook v4.25**, which did not move. Mike, of Gain Control and of new

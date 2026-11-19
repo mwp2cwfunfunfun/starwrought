@@ -457,6 +457,15 @@ def why(message, text, data, vocab, item_name=""):
         return "no kind yet", "this asks for something no tag or keyword of the grammar does; a kind would have to be written for it"
     if "is not a trait word" in low:
         return "mis-typed", "a trait is letters, digits, spaces, apostrophes and hyphens"
+    # Immunity to a trait (0.35.0), read on a row of data/conditions.xlsx alone.
+    if "is read on a condition's row for now" in low:
+        return "not yet readable", "immunity to a trait is read on a row of data/conditions.xlsx alone for now; mark this cell N/A until a Talent's is built"
+    if "names one trait to a line" in low:
+        return "wrong shape", "one trait to a line: write `[EFFECT IMMUNE: TRAIT(Visual)]` and a second line for a second trait"
+    if "is not a trait's name" in low or "trait(...) names a trait" in low:
+        return "mis-typed", "a trait is named by one word, as in `[EFFECT IMMUNE: TRAIT(Visual)]` (Reach, not Reach 5)"
+    if "takes nothing after it on a condition's row" in low:
+        return "wrong shape", "write the line alone, as `[EFFECT IMMUNE: TRAIT(Visual)]`: it acts for whoever has the Condition"
     if "is written" in low or "takes" in low or "needs" in low or "does nothing" in low or "drop the" in low or "write " in low:
         return "wrong shape", "the grammar's message gives the shape"
     return "wrong shape", "the grammar's message says what is wrong"

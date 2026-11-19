@@ -92,7 +92,7 @@ export {
   DEFAULT_CONDITION_ICON, RESERVED_CONDITION_NAMES, CONDITION_TAKES, registerConditions,
   conditionsRegistered, builtInConditionIds, conditionLabel, conditionHasRules, newStatusId,
   newConditionId, conditionRowName, readInclude, RESERVED_CONDITION_FIRST_WORDS, conditionNameFree,
-  conditionNameKey, conditionDescription, conditionHasRow
+  conditionNameKey, conditionEffect, conditionFlavor, conditionHasRow
 } from "./config/conditions.mjs";
 
 export { BONUS_TYPES, LEGACY_BONUS_TYPES, bonusType, resolveModifiers } from "./config/modifiers.mjs";

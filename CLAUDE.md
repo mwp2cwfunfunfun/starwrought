@@ -943,6 +943,93 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.35.0 (Mike, 2026-11-19; rulings 350 to 360): immunity to a trait, and the Conditions sheet's
+two texts.** Mike, revising `data/conditions.xlsx`: "I am changing the name of the "Description"
+column to "Effect", and added a "Description" column for flavor text, to bring it in line with
+other spreadsheets. I am changing the name of Blind to Blinded. For automation, I want to add an
+automation to make the person immune to attacks/spells/effects/etc. with the Visual trait. We
+already have [IMMUNE] in automation grammar, so should we extend it to allow for adding of
+Traits in there?" Planned first (`dazzling-floating-simon.md`; his decisions by question: the
+line is `[EFFECT IMMUNE: TRAIT(Visual)]` and a Condition after `IMMUNE:` stays a bare word;
+immunity stops Maneuvers and attacks; say it and go on; on an attack the attacker's own side
+stands as rolled; the flavor in the journal and on the sheet; a Condition's row only). **No kind
+and no hook point is new.** **The two texts**: the sheet's columns are Condition | Takes |
+Description | Effect | Includes | Automation | System | Listed? | Icon | Notes; **Effect is the
+rules text and is required** (a sheet with no Effect column is a converter error that says what
+to rename, never a guess), **Description is one line of flavor**. `CONDITION_COLUMNS` and
+`parse_conditions_workbook` in `assets/xlsx_to_trees.py` stage both; `assets/lib/conditions_build.mjs`
+(`textsOf`, `listedText`, `listedRows`, `registryRows`) writes each record of
+`assets/conditions.json` with `description` (the flavor) and `effect`, keeps the roster's
+`conditions` block at two slots (`[name, effect]`, so the web app, the docx and the smoke test
+read what they read before), and reads a record of the older one-text shape as Effect with no
+flavor; the registry record (`module/config/conditions.mjs`) holds `effect` and `flavor`, and
+**`conditionDescription` is gone for `conditionEffect(id)` and `conditionFlavor(id)`**, so a
+reader that was missed fails at import. The flavor shows in two places: `conditionInfo` in
+`module/helpers/effects.mjs` (the Effects tab's tooltip: flavor in `<em>`, then the Effect, each
+escaped) and `conditionPageRows` in `assets/build_foundry.mjs` (the Rules Reference journal's
+Conditions page, built from the registry rows, with a warning when they and the roster block
+disagree); the hover card (`module/canvas/glance.mjs`), the web app and the docx keep the Effect
+alone. `RESERVED_CONDITION_NAMES` gains "expose" and "trait". **The line** (`module/rules/kinds/prevent.mjs`;
+`IMMUNE` joins `CONDITION_ROW_TAGS` in `module/rules/syntax.mjs`): `[EFFECT IMMUNE:
+TRAIT(<Trait>)]` is read ON A CONDITION'S ROW ALONE, one trait named by ONE WORD (the word
+`traitKey` compares: `TRAIT(Reach)`, never `TRAIT(Reach 5)`; the name is stored with its first
+letter a capital), nothing after it; any descriptor that begins the form (`isTraitWord`) is told
+first where the form is read, then one trait to a line, then the name; refused on a
+Talent, a Maneuver and a custom effect ("is read on a Condition's row for now"); `IMMUNE:
+<Condition>` and `expose` are refused on a Condition's row; stored as the kind's own rule with
+two more fields, `{ kind: "prevent", effect: "trait", trait: "visual", name: "Visual" }`, so
+every rule stored before is unchanged. **The question** is the existing `prevent` hook point
+asked as a calculation: `ruleTraitImmunity(actor, traits, { other })` in `module/rules/engine.mjs`
+calls `rulePreventers` with `effect: "trait"`, the thing's trait keys in `threat.traits` and NO
+scene and NO encounter (every client answers the same, nothing is spent);
+`module/rules/immunity.mjs` is the pure half (`traitGroups`, `traitKeysOf`, `coveredGroup`,
+`joinNames`, `immunityWords`); `module/rules/prevent.mjs` has `traitImmunity`, `immunityNote`
+and **`immunityRecord(target, name, traits, { other, key })` -> `{ targetUuid, target, traits,
+by, note }` or null, the one thing a caller asks**. **A thing's separate traits are
+alternatives; one trait written "Auditory or Visual" needs both** (ruling 357). **The hook
+passes over a Condition held only "against X"** (`carrier.condition.against`) unless
+`context.other` is one of those creatures (ruling 359). **Where it is asked, each for itself**
+(ruling 358: judged when a thing would land): the roll window (`#rollPlanned` in
+`module/documents/item.mjs`, which also sets `usedOn`, and `partOfTraits` for a subordinate,
+whose parent hands its traits through `partOf.traits`; `defendFromCard`); the card as it is
+posted (`immunityOf` and `itemTraitsOf` in `module/dice/check/card.mjs`: `cfg.immunity`,
+`flags.immune`, `flags.itemTraits`, `flags.usedOn`; a player's Defense rolled for an
+adversary's Maneuver asks about the roller); a request card as it is drawn (`drawRequest`; the
+record stores `traits`); **the write** (`applyOnce` in `module/documents/cards/apply.mjs`, the
+target side alone, hands `applySide` no lines and one note, so the record card is posted and the
+button gives way; `giveOnce` in `cards/give.mjs` refuses with the note); and **the attack**
+(`AttackCoordinator.#resolvePairing` asks and `SwCheck.resolveAgainst({ immune })` carries it:
+the note, no damage buttons, and `position()` in `module/dice/check/position.mjs` offers no
+Expose of the defender, and no Control's Zone note beside "no damage"). **A reroll asks again,
+never copies** (the review: a defender Blinded by mistake stayed "immune" on every reroll):
+`rerollCard` asks with the attack's traits as the first card kept them (`flags.threat.traits`),
+`rerollCheck` hands `itemTraits` and `usedOn` back and reads a withheld Threshold with
+`flags.itemTraits`. **A request carries one list of traits** (`postCheckRequest({ traits })`
+adds a parent's to the Item's; the window, the player's roll card's Threat and the adversary's
+result card's `itemTraits` all read `request.traits`), and **a waiting request card is drawn
+again when a Condition comes to its target or goes** (`conditionsMoved` in
+`registerCheckRequestCards`). **Nothing is refused** (ruling 354), and the attacker's own side
+stands as rolled (ruling 355). **There is no override**: while the creature has the Condition,
+Apply applies nothing however often it is pressed (take the Condition off, apply, put it back);
+deleting the small "immune" card brings the button back only for a creature since cured. **A
+new place that lands something on a creature asks `immunityRecord` first, and a new card that an
+Apply or a Give can be pressed from must carry `flags.itemTraits`.** The lang keys are
+`STARWROUGHT.Immune.note|attack|applied|given|givenRefused`. The build's trait census
+(`assets/build_foundry.mjs`) keeps two lists, held to what the table compares: `traitsAsked`
+(an `IFT: TRAIT(...)`, which reads a carried trait by its first word) and `immuneAsked` (an
+immunity, which reads "Auditory or Visual" as both keys); its warning now reads `TRAIT(<name>):
+no shipping weapon, Maneuver, attack or Talent carries the trait ...`, with its row in `RULES`.
+`pageRows` (the journal's Conditions page rows) is in `assets/lib/conditions_build.mjs` beside
+`listedRows`, so the self-test drives it. **In `assets/build_report.py` an `automation:` line
+now takes the recommendation of its own `RULES` row** when one is filed under "Automation cell"
+(through 0.34.0 every such line took the generic one, so those rows were never reached), and
+`why` in `assets/highlight_automation.py` has hints for the four immunity messages. A new
+Condition's name is refused when the ID it makes is a reserved word too
+(`conditionNameFree(id)`: "Trai't").
+**The sheet was built as Mike saved it** (`build_all.mjs --conditions`): 26 Conditions, each
+with both texts, 12 rules on 6 rows, Blinded's line read, **Deafened's cell still `N/A`**. His
+four workbooks in progress were not converted, built, staged or written.
+
 **0.34.0 (Mike, 2026-11-19; rulings 337 to 349): a Maneuver's check is declared.** Mike: "when
 I add new talents I don't want to hard-code what the check is. So wouldn't it make sense if the
 check was also using automation grammar, as well as the success/failure effects?", then "make
@@ -2259,16 +2346,19 @@ content build writes them again.
 - **`data/conditions.xlsx` is the Conditions workbook** (Mike, 2026-11-18; system 0.33.0; rulings
   322 and 323), the ONLY source for what a Condition says and does. Index-less, recognised by its
   `Conditions` sheet (an About sheet is ignored): Condition | Takes (blank, N, Zone, X) |
-  Description | Includes | Automation | System | Listed? | Icon | Notes, one row for each
+  Description (one line of flavor; 0.35.0) | Effect (the rules text players read; required;
+  the column headed Description through 0.34.0) | Includes | Automation | System | Listed? |
+  Icon | Notes, one row for each
   Condition; the suffix the handbook's table prints ("Frightened N", "Bound [X]") reads off the
   name and is put back from Takes wherever a table is printed. The converter STAGES the rows
   (`build/conditions.staged.json`) and `assets/parse_rules.mjs` writes `assets/conditions.json`
   (every row, with its parsed `rules`, and a new Condition's static status id) and the roster's
-  `conditions` block (the Listed rows, `[name, description]`) together, only when the whole sheet
+  `conditions` block (the Listed rows, `[name, effect]`) together, only when the whole sheet
   reads; `build_foundry.mjs` writes `content/conditions.json` for the client. A row that names no
   Condition the system has MAKES one (the build prints `NEW CONDITION`); a row the system needs
   may not be deleted (the build refuses). A Condition's row reads `CHECK`, `ATK`, `DEF` and
-  `INIT`, with `-N` for its own value; Includes is how one Condition counts as another, with
+  `INIT`, with `-N` for its own value, and since 0.35.0 `IMMUNE` for a trait (`[EFFECT IMMUNE:
+  TRAIT(Visual)]`); Includes is how one Condition counts as another, with
   `against X` (`AUTOMATION_GRAMMAR.md`, section 11). **`node assets/build_all.mjs --conditions`
   (`sync_conditions.cmd`) builds this workbook alone.** The handbook still prints its Conditions
   table; the sheet wins, and nothing checks the book against it.
@@ -2603,6 +2693,40 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.35.0 leaves to the table or to Mike** (immunity to a trait, and the two texts):
+  **Deafened's row needs its line** (`[EFFECT IMMUNE: TRAIT(Auditory)]` in place of the `N/A`),
+  and it will reach further than Blinded's: Demoralize, Rally, Talk Them Down, Command the
+  Field, Anticipate, Battle Cry, Bolster and Direct Animal are all Auditory. **At the table
+  today the feature is mostly the note**: no Visual or Auditory Maneuver on the sheets carries
+  an `APPLY`, `REMOVE` or `GIVE` line, and no weapon, attack or spell carries either trait; only
+  Calm Animal triggers Blinded (Point Out and Glimmer target nobody, Captivate needs both senses
+  gone, No Quarter reaches its target through Demoralize). Rulings 356 to 360 are Claude's
+  readings and his to overrule (`assets/open_decisions.json`); the one to know is 357 (Calm
+  Animal, Auditory and Visual, does nothing to a creature that is only Blinded). **The About
+  sheet of `data/conditions.xlsx` is his to reword** (three sentences; the wording is in the
+  0.35.0 changelog entry), and the Prone row's Effect still ends "or Roll Over to become Prone".
+  Not built: the line on a Talent, a Maneuver or a custom effect; anything after it; several
+  traits in one line; `IMMUNE: <Condition>` on a Condition's row; a Maneuver whose whole use is a
+  `MARK`, a `PERMIT` or a `SUBORDINATE` line reaching an immune creature; another creature's
+  aura or bonus; damage applied by hand; marking a defender immune before it commits. **There
+  is no override** (the plan's "delete the small immune card" works only for a creature since
+  cured; while it has the Condition the way round is to take the Condition off, apply, and put
+  it back): whether the GM should have an "Apply anyway" is an open decision. The note names the
+  one token targeted at the use, whether or not the Maneuver is aimed at it. An immune defender
+  still pays for the Reaction it answers with. Tokens that already carry "Blind" keep that name
+  on the effect until toggled off and on. **The test world keeps fixtures from the 0.35.0
+  drive on purpose** (flagged `testFixture: "0.35.0"`): a world Maneuver "Dazzle" (❶, the Visual
+  trait, `[CHECK Performance vs Awareness]` with `[EFFECT APPLY: frightened 1, target; IF:
+  RESULT(success)]` and `frightened 2` on a Critical Success), the Bandit's own copy of it, and
+  the Bandit's typed Performance 13. To try 0.35.0 there: toggle Blinded on the Bandit from its
+  token, target it and use Dazzle from Tess's Maneuvers tab (the window's line, the card's, and
+  "Apply to Bandit" applying nothing); toggle Blinded on Tess, open the Bandit's sheet, target
+  Tess and press Use on its Dazzle (the request card says she is immune, and stops saying so
+  when Blinded is taken off); hover a Condition on a sheet's Effects tab for the flavor in
+  italics. The drive deleted its Combats, its test weapon and every card it posted, then ran
+  Sync content for the two journals, which left one "Content synced" card (436 messages); it
+  left Mike's Combat with testpc8 the active one at round 4, the tokens where they were, the
+  Bandit Prone as found, and Foundry running on 0.35.0 with the GM joined.
 - **0.34.0 leaves to the table or to Mike** (a Maneuver's check, declared): **the cells wait
   for him to paste** into `data/actions_maneuvers.xlsx` (the 0.34.0 changelog entry and
   `AUTOMATION_GRAMMAR.md` section 5, "Declaring a check": 32 rows; ten change what is read
@@ -2641,7 +2765,7 @@ content build writes them again.
   for melee Attacks against adjacent creatures; "cannot Move or Step" and "no action other than
   Escape" are by hand; Frightened and Slowed do not drop by 1 at a round's end; Stunned,
   Heedless and Deafened do nothing; Evade unavailable while Grabbed is still code
-  (`unavailableEvade`), as are Slowed's lost actions, Blind's sight, Hidden and Undetected, and
+  (`unavailableEvade`), as are Slowed's lost actions, Blinded's sight, Hidden and Undetected, and
   Fatigued's maximum, Wind check and rests. **Five things wait in `assets/open_decisions.json`**:
   Claude's readings (rulings 325, 327 to 329, 331, 332, 334, 335), of which 329 is the one to
   know (the row is the word: emptying the Off-Guard, Frightened or Fatigued row's Automation
@@ -2973,6 +3097,37 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (immunity to a trait, and the Conditions sheet's two texts, system 0.35.0;
+rulings 350 to 360 in the 0.35.0 changelog entry; planned in `dazzling-floating-simon.md`,
+Mike's decisions by question: `[EFFECT IMMUNE: TRAIT(Visual)]` with a Condition staying a bare
+word, Maneuvers and attacks, say it and go on, the attacker's side stands as rolled, the flavor
+in the journal and on the sheet, a Condition's row only): the Conditions sheet's one text,
+which his renamed columns would have turned into flavor shipped as rules, now two, Effect (the
+rules, required) and Description (a line of flavor), with the flavor in italics on the journal's
+Conditions page and in the sheet's tooltip; "You are immune to Visual effects" as prose in the
+Blinded row, now `[EFFECT IMMUNE: TRAIT(Visual)]`, the `prevent` kind's third form, read on a
+Condition's row alone and asked through the existing `prevent` hook point as a calculation; a
+Visual Maneuver used on a Blinded creature rolled and applied as on anyone, now rolled and paid
+for with the window and the card saying the creature is immune and nothing landing on it; a
+Visual attack on a Blinded defender, now resolved as rolled with the note, no damage buttons and
+no Expose of the defender, the attacker's side standing; the row "Blind", now "Blinded". Found
+by the live drive and mended: a Maneuver with a typed Threshold named no creature on its card
+(`usedOn`), and a Critical Hit on an immune defender still offered to Expose its Zone.
+Checked by 248 self-test checks, `node --check` on every module, `build_all.mjs --check`, the
+style check (one failure, the em-dash in Dwarf Lore B13), the smoke test on the rebuilt app,
+the Conditions build run for real on the saved sheet before the review and after its mends
+(25 of 26 Effects are the old Description's text, Blinded's is his rewording; the roster block
+and the web app move in Blinded's row only), an independent review by two readers (fifteen
+findings, two of them medium: the "delete the immune card" way round an immunity that the plan
+described does not work, and two `TRAIT(...)` on one line were told to write what they had
+written; all mended but three stated) and live in the test world with a GM tab and a player
+tab, before the review and again for its mends (the 0.35.0 changelog entry lists what, and what
+was not driven: a table with no GM, an adversary's subordinate, a spell with the trait). Not built, and said so: the line on a Talent, a Maneuver or a custom effect, and
+anything after it. His four workbooks were not converted, built, staged or written; the
+Conditions sheet was built as he saved it. No handbook moved and `data/SYNC.json` is untouched.
+Committed on 2026-11-19 at his word and tagged `v0.35.0`, his edits to the four workbooks and
+the v4.24 draft left out; not pushed until he says.
 
 Cleared 2026-11-19 (a Maneuver's check is declared, system 0.34.0; rulings 337 to 349 in the
 0.34.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:
