@@ -7,6 +7,121 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.35.1 (2026-11-19): `[X]` in a Condition's text is the creature it is about
+
+Built from **Player's Handbook v4.25**, which did not move. Mike, of Bound's Effect ("Your
+implement is in a neutral Bind with X’s"): "Instead of "X" should we make it some sort of
+variable? like $bind_partner?", then "There might be a day where I want to just have an "X"
+somewhere though... I prefer some sort of character to proceed it, or since we use brackets for
+automation, how about [X]". Planned first; his decisions, by question: the reference tables
+print `[X]` as typed; when nobody is named it reads "that creature"; only `[X]` this release.
+**This is text, not grammar**: no rule kind, tag, word or hook point is new, and the Automation
+cell is untouched. The release carries the code alone: the four cells are printed below for him
+to paste. None of his workbooks was written.
+
+Through 0.35.0 the four rows that are about one other creature (their Takes is X) wrote that
+creature as a bare letter, and nothing filled it in. Now a row writes `[X]` where the name
+should appear.
+
+| | 0.35.0 | 0.35.1 |
+|---|---|---|
+| The sheet's tooltip and the token's hover card | "X Controls your weapon." | "Tess Controls your weapon." |
+| A Condition toggled from the token by hand | "X Controls your weapon." | "That creature Controls your weapon." |
+| The journal, the web app, the compendium document | "X Controls your weapon." | "[X] Controls your weapon.", as typed |
+| A bare X in a text | The creature, by convention | A letter, never filled in |
+
+**The four cells to paste**, into the Effect column of `data/conditions.xlsx`:
+
+```
+  Bound          Your implement is in a neutral Bind with [X]’s. The Bind ends if either of you
+                 Moves, Steps, or Recenters, or when either of you attacks.
+  Controlled     [X] Controls your weapon. You have an Exposed Zone of [X]’s choice while the Bind
+                 lasts, and your attacks with that weapon take a −2 Situation penalty.
+                 Recenter ❶, Move, or Step to end it.
+  Controlling    You Control [X]’s weapon: [X] has an Exposed Zone of your choice. You may Close ❶
+                 on [X]. The Bind ends if a third party attacks you.
+  Wrong-Footed   Off-Guard against [X] only.
+```
+
+Only the X’s change in the first three. Wrong-Footed’s "that creature" becomes `[X]`. Save,
+double-click `sync_conditions.cmd`, then run Sync content in the open world.
+
+**What you will see.**
+
+- **Tess, in a neutral Bind with the Bandit**: "Your implement is in a neutral Bind with
+  Bandit’s."
+- **The Bandit, Controlled by Tess**: "Tess Controls your weapon. You have an Exposed Zone of
+  Tess’s choice ..."
+- **The Bandit, Wrong-Footed by Tess’s Feint**: "Off-Guard against Tess only."
+- **A Wrong-Footed or a Bound toggled from the token by hand** names nobody: "Off-Guard against
+  that creature only.", "That creature Controls your weapon."
+- **The reference tables** print `[X]` as you typed it, under the row’s printed name:
+  "Controlled [X]: [X] Controls your weapon."
+
+**The rulings** (361 to 363 are Mike’s; 364 and 365 are Claude’s readings and his to
+overrule).
+
+- **361. `[X]` in a Condition’s text is the creature the Condition is about, and a bare X is a
+  letter** (Mike). Only `[X]` this release: a Condition’s value and a Zone stay as prose.
+- **362. The reference tables print `[X]` as typed** (Mike): the journal, the web app and the
+  compendium document have no creature in mind.
+- **363. When nobody is named it reads "that creature"** (Mike), with a capital where it begins
+  a sentence.
+- **364. Who X is.** For Bound, Controlled and Controlling it is the Bind partner, and only
+  while the creature is in that Bind: one toggled from the token by hand names nobody. For any
+  other row that takes X (Wrong-Footed today) it is whoever put the Condition on with a
+  Maneuver. The name is the one the sheet already shows for that creature beside it (the Bind
+  line, the "Applied" tag), printed as it stands.
+- **365. Where it is read.** In the Effect and the Description of a row whose Takes is X, on the
+  sheet’s Effects tab and the token’s hover card (which is also the limited sheet). On a row
+  whose Takes is not X it prints as typed, and the build says so. A row that takes X and still
+  writes a bare X with no `[X]` anywhere is told to write `[X]`; once it has one, a bare X beside
+  it is taken as meant. Neither stops the build.
+
+**Worth knowing.**
+
+- **Nothing looks different until the four cells are changed.** Until then the build warns on
+  Bound, Controlled and Controlling, and their tooltips read as before.
+- **Players see the name on the hover card.** A Bind and a Condition a Maneuver applied are
+  already public, so this shows nothing new.
+- **A creature’s name is printed as it stands**, with no "the" in front: "a neutral Bind with
+  Bandit’s". That is how the cards already name creatures.
+- **Foundry’s own effect window is unchanged.** The description inside a Bind’s effect there
+  keeps its built-in text.
+- **The About sheet is yours.** One sentence to add under Effect: "Write [X] where the name of
+  the creature the Condition is about should appear (a row whose Takes is X)."
+
+**In the code.** `fillConditionText`, `hasConditionTextX`, `conditionTakesCreature` and
+`CONDITION_TEXT_X` in `module/config/conditions.mjs` (pure, in the barrel); `conditionCreature`
+and `conditionTexts` in `module/helpers/effects.mjs`, which `conditionInfo` (the tooltip) and
+`glanceData` in `module/canvas/glance.mjs` (the hover card) both fill their text through before
+they escape it; the two warnings in `buildConditions` (`assets/lib/conditions_build.mjs`), with
+their rows in `assets/build_report.py`; one lang key, `STARWROUGHT.Conditions.unnamedCreature`.
+
+**Not built.** `[N]` for a Condition’s value and `[Zone]` for a Zone. `[X]` naming anybody in
+a reference table, or in a chat card (no card prints a Condition’s text). A second creature in
+one Condition, or a choice of the token’s name over the sheet’s.
+
+**Checked.** 249 self-test checks (one new, for the filling: every `[X]`, its possessive, a bare
+X left alone, the fallback’s capital at a sentence start and nowhere else, a name never read
+as a pattern; and four more assertions in the Conditions build’s check, for the two warnings
+and a converted row); `node --check` on every module; `build_all.mjs --check`; the style check
+(one failure, the em-dash in Dwarf Lore B13 of Mike’s uncommitted workbook); the smoke test;
+and the Conditions build on the sheet as saved, which warns on the three rows still in the old
+form and builds. **Live in the test world with a GM tab and a player tab**, Foundry restarted
+for the 0.35.1 manifest, the four new texts given to the open world’s registry in memory with
+no file written: a neutral Bind between Tess and the Bandit (both tooltips and both hover
+cards), then Control (Controlling on Tess, Controlled on the Bandit); a Bound, a Controlled and
+a Wrong-Footed toggled by hand on Wren ("that creature", with its capital); Tess’s Feint on
+the Bandit through its card’s Apply button ("Off-Guard against Tess only."); and the same
+hover cards read from a player’s seat. Found there and mended: the fallback read "the creature
+that put it on", an older string of the sheet’s, where "that creature" was chosen. **Not
+driven**: the journal page with `[X]` (it prints the sheet, which still writes the bare X); the
+hover card on screen (its data was read; the hidden pane cannot hover). No independent review:
+a small change, with two readers of one pure function.
+
+---
+
 ## 0.35.0 (2026-11-19): immunity to a trait, and the Conditions sheet's two texts
 
 Built from **Player's Handbook v4.25**, which did not move. Mike, revising

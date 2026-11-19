@@ -8,11 +8,12 @@ entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 en
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
 297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321, the 0.33.0 entry 322
-to 336, the 0.34.0 entry 337 to 349 and the 0.35.0 entry 350 to 360). Since
+to 336, the 0.34.0 entry 337 to 349, the 0.35.0 entry 350 to 360 and the 0.35.1 entry 361 to
+365). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
 their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
-too (section 5). System version **0.35.0**.
+too (section 5). System version **0.35.1**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2379,6 +2380,12 @@ What the sheet's rows do today, for a character and for an adversary alike:
   read-only, is what the Condition is doing: its lines at its value, then what it counts as.
   The token's hover card carries the Effect alone. A Condition's lines have no On / Skip / Off:
   the Condition is the switch.
+- **The creature a Condition is about** (0.35.1; rulings 361 to 365). On a row whose Takes is X
+  the text writes `[X]`, and the tooltip and the hover card print the creature's name in its
+  place: "Tess Controls your weapon. You have an Exposed Zone of Tess’s choice ...". For Bound,
+  Controlled and Controlling that is the Bind partner; for any other row (Wrong-Footed) it is
+  whoever put the Condition on with a Maneuver. One toggled from the token by hand names nobody
+  and reads "that creature". The reference tables print `[X]` as typed. A bare X is a letter.
 - **A reroll meets the number the first die met**, though the creature's Conditions have moved
   since: the card keeps the attack answered and what the adversary's Conditions were worth.
 - **Drop Flat** gives its +4 against the attack that triggered it and nothing of Prone's; Prone
@@ -3433,6 +3440,11 @@ before; the sources and the index are.
   Condition's row reads CHECK, ATK, DEF and INIT and nothing that asks about an owner. An
   adversary's own Talents stay unread. Fatigued's maximum of 3 is kept only where the system
   raises it.
+- **What `[X]` leaves to the table** (0.35.1): only `[X]` is filled in; a Condition's value (N)
+  and a Zone stay as prose. The name is the one the sheet already shows for that creature
+  beside it (the Bind line, the "Applied" tag), printed as it stands with no "the" in front.
+  The description inside a Bind's effect in Foundry's own effect window keeps its built-in
+  text. Until the four rows of the sheet write `[X]`, their tooltips read as before.
 - **What immunity to a trait leaves to the table** (0.35.0): it is mostly the note today, since
   no Visual or Auditory Maneuver on the sheets carries an `APPLY`, `REMOVE` or `GIVE` line and
   no weapon, attack or spell carries either trait. Deafened is immune to nothing until its row

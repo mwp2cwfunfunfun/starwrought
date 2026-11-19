@@ -436,6 +436,54 @@ export function conditionFlavor(id) {
   return String(CONDITIONS[id]?.flavor ?? "");
 }
 
+/**
+ * `[X]` IN A CONDITION'S TEXT IS THE CREATURE IT IS ABOUT (0.35.1; rulings 361 to 365). Mike, of
+ * Bound's "Your implement is in a neutral Bind with X's": "should we make it some sort of
+ * variable?", then "There might be a day where I want to just have an "X" somewhere though ...
+ * since we use brackets for automation, how about [X]". So a row whose Takes is X writes `[X]`
+ * where the creature's name should appear, and a bare X stays the letter it is.
+ *
+ * Where a text is shown FOR ONE CREATURE (a sheet's tooltip, the token's hover card) the caller
+ * fills it with `fillConditionText`; a reference table has no creature in mind and prints the text
+ * as typed (Mike). Who the creature is belongs to the caller, which has the Actor
+ * (module/helpers/effects.mjs, `conditionCreature`).
+ */
+export const CONDITION_TEXT_X = "[X]";
+const TEXT_X = /\[\s*x\s*\]/gi;
+
+/** Does this Condition take a creature (its row's Takes is X)? Then `[X]` in its texts is that creature. */
+export function conditionTakesCreature(id) {
+  return String(CONDITIONS[id]?.takes ?? "").toLowerCase() === "x";
+}
+
+/** Does a text write the placeholder at all? */
+export function hasConditionTextX(text) {
+  return /\[\s*x\s*\]/i.test(String(text ?? ""));
+}
+
+/**
+ * A Condition's text with every `[X]` filled in. Pure, and it escapes nothing: the caller escapes
+ * the result, so a name with a mark in it is as safe as the text.
+ * @param {string} text  The row's Effect or Description, as typed.
+ * @param {object} [fill]
+ * @param {string} [fill.x]         The creature's name. Printed as it stands.
+ * @param {string} [fill.fallback]  What to say when nobody is named ("that creature"): given a
+ *        capital where the placeholder begins a sentence, and nowhere else.
+ * @returns {string}  The text; unchanged when it writes no `[X]`, or when neither is given.
+ */
+export function fillConditionText(text, { x = "", fallback = "" } = {}) {
+  const source = String(text ?? "");
+  const name = String(x ?? "").trim();
+  const other = String(fallback ?? "").trim();
+  if (!name && !other) return source;
+  return source.replace(TEXT_X, (match, offset) => {
+    if (name) return name;
+    const before = source.slice(0, offset);
+    const opens = !before.trim() || /[.!?]["')\u2019\u201d]*\s+$/.test(before) || /\n\s*$/.test(before);
+    return opens ? other[0].toUpperCase() + other.slice(1) : other;
+  });
+}
+
 /** The names a cell may write a Condition by, in order, for a message: "prone, grabbed, ...". */
 export function conditionWords() {
   return Object.values(CONDITIONS).filter(c => !c.zone).map(c => (c.builtIn ? keyWord(c) : c.id).toLowerCase());

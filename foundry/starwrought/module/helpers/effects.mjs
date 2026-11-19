@@ -211,6 +211,65 @@ function linesOf(id, value = 1) {
   });
 }
 
+/** The Bind's three Conditions, each with the state of `system.bind` it mirrors. */
+const BIND_STATE = Object.freeze({ bound: "neutral", controlling: "controlling", controlled: "controlled" });
+
+/** The creature's own effect for a Condition, by the Condition's id or its status id; null when it has none on. */
+function ownEffectOf(actor, id) {
+  const record = SW.CONDITIONS[id];
+  const ids = [id, record?.statusId].filter(Boolean);
+  const effects = actor?.appliedEffects ?? [...(actor?.effects ?? [])];
+  for (const effect of effects) {
+    if (effect?.disabled || effect?.isSuppressed) continue;
+    if (ids.some(status => effect?.statuses?.has?.(status))) return effect;
+  }
+  return null;
+}
+
+/**
+ * WHO `[X]` IS (0.35.1; ruling 364): the name of the creature a Condition on this Actor is about,
+ * or "" when nobody is named. Only a Condition whose row's Takes is X has one.
+ *
+ *  - Bound, Controlled, Controlling: the Bind partner (`system.bind.partnerUuid`), while the
+ *    Bind's state is that Condition's. Named as the sheet's Bind line names it
+ *    (helpers/actor-context.mjs, `bindContext`). One toggled from the token by hand is no Bind.
+ *  - Any other (Wrong-Footed today): whoever put it on with a Maneuver, by the applied record on
+ *    the Condition's own effect (`byName`, the name the "Applied" tag shows). One toggled by hand
+ *    has no record.
+ *
+ * @param {Actor} actor
+ * @param {string} id  The Condition's id.
+ * @param {ActiveEffect|object|null} [effect]  The Condition's own effect, when the caller has it.
+ * @returns {string}
+ */
+export function conditionCreature(actor, id, effect = null) {
+  if (!SW.conditionTakesCreature(id)) return "";
+  if (Object.hasOwn(BIND_STATE, id)) {
+    const bind = actor?.system?.bind;
+    if (!bind?.partnerUuid || (bind.state !== BIND_STATE[id])) return "";
+    let partner = null;
+    try { partner = fromUuidSync(bind.partnerUuid); } catch { partner = null; }
+    return String(partner?.name ?? "").trim();
+  }
+  return String(appliedOf(effect ?? ownEffectOf(actor, id))?.byName ?? "").trim();
+}
+
+/**
+ * A Condition's two texts as they read ON THIS CREATURE (0.35.1): the row's Effect and its flavor
+ * line with every `[X]` filled in with the creature the Condition is about, or "that creature"
+ * when nobody is named (Mike). A row whose Takes is not X is returned as typed. Raw text: the
+ * caller escapes it.
+ * @returns {{effect: string, flavor: string}}
+ */
+export function conditionTexts(actor, id, effect = null) {
+  const texts = { effect: SW.conditionEffect(id), flavor: SW.conditionFlavor(id) };
+  if (!SW.conditionTakesCreature(id) || !(SW.hasConditionTextX(texts.effect) || SW.hasConditionTextX(texts.flavor))) return texts;
+  // "that creature" (Mike), a key of its own: `Conditions.thatCreature` is the longer phrase the
+  // "Counts as ... against" line uses ("the creature that put it on").
+  const fill = { x: conditionCreature(actor, id, effect), fallback: L("STARWROUGHT.Conditions.unnamedCreature") };
+  return { effect: SW.fillConditionText(texts.effect, fill), flavor: SW.fillConditionText(texts.flavor, fill) };
+}
+
 /**
  * What a sheet says of a Condition's own effect (0.33.0): the texts its row of the Conditions
  * workbook gives it (the flavor line, then the Effect; 0.35.0), as the row's tooltip, and under
@@ -232,9 +291,12 @@ export function conditionInfo(actor, effect) {
   const fallback = (hintKey && game.i18n.has?.(hintKey)) ? L(hintKey) : "";
   // The row's flavor line in italics, then its Effect (0.35.0; Mike: the flavor shows in the
   // journal and on the sheet). Each is escaped here, so the only markup is this function's own.
+  // `[X]` in either text is the creature this Condition is about (0.35.1): filled in BEFORE the
+  // escape, so the name is escaped with the text.
   const esc = text => foundry.utils.escapeHTML(String(text ?? "")).replace(/\n+/g, "<br>");
-  const effectText = esc(SW.conditionEffect(record.id) || fallback);
-  const flavor = esc(SW.conditionFlavor(record.id));
+  const texts = conditionTexts(actor, record.id, effect);
+  const effectText = esc(texts.effect || fallback);
+  const flavor = esc(texts.flavor);
   const description = flavor ? `<em>${flavor}</em>${effectText ? `<br>${effectText}` : ""}` : effectText;
   const lines = [];
   if (!effect.disabled && !effect.isSuppressed && !record.zone) {

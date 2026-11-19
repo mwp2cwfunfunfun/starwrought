@@ -943,6 +943,41 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.35.1 (Mike, 2026-11-19; rulings 361 to 365): `[X]` in a Condition's text is the creature it
+is about.** Mike, of Bound's "Your implement is in a neutral Bind with X's": "should we make it
+some sort of variable? like $bind_partner?", then "There might be a day where I want to just
+have an "X" somewhere though ... since we use brackets for automation, how about [X]". Planned
+first (`dazzling-floating-simon.md`; his decisions by question: the reference tables print `[X]`
+as typed, nobody named reads "that creature", only `[X]` this release). **It is TEXT, not
+grammar: no kind, tag, word or hook point is new, and the Automation cell never reads it.** On a
+row whose Takes is X the Effect (or the Description) writes `[X]`; a bare X is a letter and is
+never touched. **The pure half is in `module/config/conditions.mjs`** (in the barrel):
+`CONDITION_TEXT_X`, `conditionTakesCreature(id)` (the row's Takes is X; a built-in with no row
+takes none), `hasConditionTextX(text)` and `fillConditionText(text, { x, fallback })`, which
+fills every `[X]` with the name, else with the fallback given a capital where the placeholder
+begins a sentence or a paragraph, and escapes nothing (the caller escapes the filled text).
+**Who X is** is `conditionCreature(actor, id, effect)` in `module/helpers/effects.mjs` (ruling
+364): for `bound`, `controlling` and `controlled` the Bind partner
+(`fromUuidSync(system.bind.partnerUuid).name`, as `bindContext` names it, and only while the
+Bind's state is that Condition's, so one toggled by hand names nobody); for any other row that
+takes X (Wrong-Footed) the applied record on the Condition's own effect (`appliedOf(...).byName`;
+`ownEffectOf` finds the effect when the caller has none). `conditionTexts(actor, id, effect)`
+returns both texts filled, with `STARWROUGHT.Conditions.unnamedCreature` ("that creature") as
+the fallback (`Conditions.thatCreature` is the longer phrase of the "Counts as ... against"
+line). **Two screens show a Condition's text for one creature and both go through it**:
+`conditionInfo` (the Effects tab's tooltip) and `glanceData` in `module/canvas/glance.mjs` (the
+hover card and the LIMITED sheet), each filling BEFORE it escapes. **Every reference table prints
+the text as typed** (`listedRows`, `pageRows`, the web app, the docx): nothing there changed.
+**A new reader that shows a Condition's text for one creature calls `conditionTexts`; one with
+no creature in mind prints `conditionEffect` as typed.** `buildConditions` in
+`assets/lib/conditions_build.mjs` warns, and never fails, on a row that takes X and writes a
+bare X with no `[X]` anywhere (`BARE_X`; the form of every such row through 0.35.0; quiet once
+the row has one `[X]`) and on `[X]` in a row whose Takes is not X; both have rows in `RULES`.
+**The release carries the code alone**: the four cells (Bound, Controlled, Controlling,
+Wrong-Footed) are printed in the 0.35.1 changelog entry for Mike to paste, his sheet still
+writes the bare X, and until he saves it the Conditions build warns on three rows and the
+tooltips read as before.
+
 **0.35.0 (Mike, 2026-11-19; rulings 350 to 360): immunity to a trait, and the Conditions sheet's
 two texts.** Mike, revising `data/conditions.xlsx`: "I am changing the name of the "Description"
 column to "Effect", and added a "Description" column for flavor text, to bring it in line with
@@ -2347,6 +2382,7 @@ content build writes them again.
   322 and 323), the ONLY source for what a Condition says and does. Index-less, recognised by its
   `Conditions` sheet (an About sheet is ignored): Condition | Takes (blank, N, Zone, X) |
   Description (one line of flavor; 0.35.0) | Effect (the rules text players read; required;
+  `[X]` in it is the creature the Condition is about, on a row whose Takes is X, 0.35.1;
   the column headed Description through 0.34.0) | Includes | Automation | System | Listed? |
   Icon | Notes, one row for each
   Condition; the suffix the handbook's table prints ("Frightened N", "Bound [X]") reads off the
@@ -2693,6 +2729,19 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.35.1 leaves to the table or to Mike** (`[X]` in a Condition's text): **the four cells wait
+  for him to paste** into `data/conditions.xlsx` (the 0.35.1 changelog entry: Bound, Controlled
+  and Controlling with `[X]` for each X, and Wrong-Footed as "Off-Guard against [X] only.").
+  Until he saves them the build warns on Bound, Controlled and Controlling and the tooltips read
+  as before; then run `node assets/build_all.mjs --conditions` and Sync content. Rulings 364 and
+  365 are Claude's readings and his to overrule (who X is; where `[X]` is read). The About
+  sheet wants one more sentence (the changelog has it). Not built: `[N]` and `[Zone]`; a choice
+  of the token's name over the sheet's; `[X]` in the reference tables naming anybody. The
+  description inside a Bind's own ActiveEffect (Foundry's effect window) keeps the lang Hints.
+  The test world was driven on 0.35.1 with the four new texts in the registry IN MEMORY (no
+  file written) and left as found but for one "Content synced" card (the Grammar journal; 437
+  messages): Mike's Combat with testpc8 active at round 4, the 0.35.0 fixtures untouched,
+  Foundry restarted for the 0.35.1 manifest and left running with the GM joined.
 - **0.35.0 leaves to the table or to Mike** (immunity to a trait, and the two texts):
   **Deafened's row needs its line** (`[EFFECT IMMUNE: TRAIT(Auditory)]` in place of the `N/A`),
   and it will reach further than Blinded's: Demoralize, Rally, Talk Them Down, Command the
@@ -3097,6 +3146,24 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (`[X]` in a Condition's text, system 0.35.1; rulings 361 to 365 in the
+0.35.1 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:
+`[X]` and never a bare X, the tables print it as typed, "that creature" when nobody is named,
+only `[X]` this release): the bare X in the four rows that are about one other creature, which
+nothing filled in, now `[X]`, printed as the creature's name on the sheet's tooltip and the
+token's hover card (the Bind partner for Bound, Controlled and Controlling; whoever applied it
+for Wrong-Footed; "that creature" for one toggled by hand) and as typed in every reference
+table. Found by the live drive and mended: the fallback read "the creature that put it on", an
+older string of the sheet's, where Mike chose "that creature". Checked by 249 self-test checks,
+`node --check`, `build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf
+Lore B13), the smoke test, the Conditions build on the sheet as saved (three warnings, the rows
+still in the old form) and live in the test world with a GM tab and a player tab, the four new
+texts given to the registry in memory (the 0.35.1 changelog entry lists what). No independent
+review: a small change with two readers of one pure function. The release carries the code
+alone: the four cells are his to paste, and his workbooks were not written. No handbook moved
+and `data/SYNC.json` is untouched. Committed on 2026-11-19 at his word and tagged `v0.35.1`,
+his edits to the four workbooks and the v4.24 draft left out; not pushed until he says.
 
 Cleared 2026-11-19 (immunity to a trait, and the Conditions sheet's two texts, system 0.35.0;
 rulings 350 to 360 in the 0.35.0 changelog entry; planned in `dazzling-floating-simon.md`,

@@ -61,6 +61,12 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
                  the token's hover card, and the reference tables. REQUIRED under this name since
                  0.35.0 (through 0.34.0 this column was headed Description): a sheet with no Effect
                  column stops the build, which will not guess which text a lone Description holds.
+                 [X] (0.35.1): on a row whose Takes is X, write [X] where the name of the creature
+                 the Condition is about should appear ("[X] Controls your weapon"). The sheet's
+                 tooltip and the token's hover card print the name (the Bind partner for Bound,
+                 Controlled and Controlling; whoever applied it for any other row; "that creature"
+                 when nobody is named). The reference tables print [X] as typed. A bare X is only
+                 a letter. The Description cell reads [X] the same way.
     Includes     other Conditions this one also counts as, comma separated. Prone: Off-Guard. A
                  creature is Off-Guard once, however many ways it got there. "Off-Guard against X"
                  means only against the creature that put this Condition on, and needs Takes = X.

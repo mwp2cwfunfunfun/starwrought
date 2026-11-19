@@ -18,6 +18,8 @@
 
 import * as SW from "../config.mjs";
 import { effectsOn, namedEffects } from "../rules/effect-list.mjs";
+// A Condition's text as it reads on this creature (0.35.1): `[X]` filled in with who it is about.
+import { conditionTexts } from "../helpers/effects.mjs";
 
 const ELEMENT_ID = "sw-glance";
 const TEMPLATE = "systems/starwrought/templates/actor/glance.hbs";
@@ -119,7 +121,8 @@ export function glanceData(actor, { full = false } = {}) {
         id, label: condition ? localize(SW.conditionNameKey(condition.id)) : id, img: condition?.img ?? "", value: value > 0 ? value : null,
         // The text its row of the Conditions workbook gives it (0.33.0), for the tag's tooltip.
         // The rules text alone (0.35.0: a row's flavor line is the journal's and the sheet's).
-        description: condition ? foundry.utils.escapeHTML(SW.conditionEffect(condition.id)).replace(/\n+/g, "<br>") : ""
+        // `[X]` is the creature the Condition is about (0.35.1), filled in before the escape.
+        description: condition ? foundry.utils.escapeHTML(conditionTexts(actor, condition.id).effect).replace(/\n+/g, "<br>") : ""
       };
     })
     .sort((a, b) => a.label.localeCompare(b.label));

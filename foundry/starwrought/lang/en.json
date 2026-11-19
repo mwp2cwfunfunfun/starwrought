@@ -283,6 +283,7 @@
   "STARWROUGHT.Conditions.countsAs": "Counts as {name}{lines}",
   "STARWROUGHT.Conditions.countsAsAgainst": "Counts as {name} against {who} and nobody else{lines}",
   "STARWROUGHT.Conditions.thatCreature": "the creature that put it on",
+  "STARWROUGHT.Conditions.unnamedCreature": "that creature",
   "STARWROUGHT.Conditions.againstNobody": "Put on by hand, so it names no creature and counts as nothing more. One a Maneuver applies names the creature.",
   "STARWROUGHT.Conditions.linesHint": "What this Condition is doing, from its row of the Conditions workbook. A Condition's lines have no switch: take the Condition off to end them.",
   "STARWROUGHT.Condition.offGuard": "Off-Guard",

@@ -2105,6 +2105,10 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   "Auditory or Visual" needs both (357). The system says it and goes on (354). On the sheet, the
   rules text is the **Effect** column and **Description** is one line of flavor, as on every
   other sheet (350).
+- **0.35.1** (2026-11-19): `[X]` in a Condition's Effect or Description is the creature the
+  Condition is about (rulings 361 to 365; Mike: "since we use brackets for automation, how about
+  [X]"). It is text, not grammar: no kind, tag or word is new, and the Automation cell is
+  untouched. Section 11 says where it is filled in.
 
 ## 11. The Conditions workbook
 
@@ -2118,7 +2122,7 @@ follows. One sheet, `Conditions`, one row for each Condition:
 | Condition | its name: `Frightened`. The suffix the handbook's table prints (`Frightened N`, `Exposed [Zone]`, `Bound [X]`) reads too, and is put back from Takes wherever a table is printed |
 | Takes | blank, `N` (a value: Frightened 2), `Zone` (the system's own only), or `X` (a creature: Wrong-Footed to X) |
 | Description | one line of flavor, as on a Talent's sheet (0.35.0). It shows in italics above the Effect in the Rules Reference journal and in the Condition's tooltip on a sheet; it may be blank |
-| Effect | the rules text players read: the tooltip on the Condition's row of a sheet and on the token's hover card, and the reference tables. Through 0.34.0 this column was headed Description; the build now requires it under this name |
+| Effect | the rules text players read: the tooltip on the Condition's row of a sheet and on the token's hover card, and the reference tables. Through 0.34.0 this column was headed Description; the build now requires it under this name. On a row whose Takes is `X`, write `[X]` where the creature's name should appear (0.35.1, below) |
 | Includes | other Conditions this one also counts as, comma separated |
 | Automation | lines in this grammar, one to a line; `N/A` for a row that needs none |
 | System | `Yes` for the Conditions the system itself puts on and takes off (Dying, Wounded, Spent, Preparing, the Bind's three, Exposed, Dead). Their rows hold the text; the system runs them |
@@ -2173,6 +2177,29 @@ Off-Guard goes when Prone does.
   row (ruling 327), as they were in code: the creature has Off-Guard while either stands.
 - **Whose it is.** An included Condition is whose its includer is: an Off-Guard that comes from a
   Prone you applied is yours for `EFFECT(off-guard, mine)` (ruling 331).
+
+**`[X]` in a row's text is the creature the Condition is about** (0.35.1; rulings 361 to 365).
+On a row whose Takes is `X`, write `[X]` in the Effect (or the Description) wherever the
+creature's name should appear:
+
+```
+Controlled    [X] Controls your weapon. You have an Exposed Zone of [X]’s choice ...
+Wrong-Footed  Off-Guard against [X] only.
+```
+
+- **On a sheet's Effects tab and on the token's hover card** it is filled in: "Tess Controls
+  your weapon." For Bound, Controlled and Controlling the creature is the Bind partner; for any
+  other row it is whoever put the Condition on with a Maneuver (a Feint's Wrong-Footed).
+- **When nobody is named** (the Condition was toggled from the token by hand) it reads "that
+  creature", with a capital where it begins a sentence.
+- **In the reference tables** (the journal, the web app, the compendium document) there is no
+  creature in mind, and `[X]` prints as typed, under the row's printed name: "Controlled [X]".
+- **A bare X is a letter**, and is never filled in. The build says so once for a row that takes
+  a creature and still writes a bare X with no `[X]` anywhere, the form every such row had
+  through 0.35.0, and says so for `[X]` on a row whose Takes is not X, where nothing can fill it.
+  Neither stops the build.
+- This is text, not grammar: the Automation cell does not read `[X]`, and `against X` in
+  Includes is written as it was.
 
 **A new row makes a new Condition** (ruling 323): a status on the token palette, a name every
 cell can write (`[EFFECT APPLY: Supine]`, `[REQUIRES supine]`, `IFT: EFFECT(supine)`), the lines

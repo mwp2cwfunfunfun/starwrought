@@ -1,5 +1,25 @@
 [
   {
+    "id": "conditions-x-cells",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Data",
+    "where": "data/conditions.xlsx, the Effect cells of Bound, Controlled, Controlling and Wrong-Footed; printed in foundry/starwrought/CHANGELOG.md (0.35.1)",
+    "question": "Since 0.35.1 [X] in a Condition's Effect is the creature the Condition is about, and the sheet's tooltip and the token's hover card print its name. The four rows that take a creature still write a bare X (or 'that creature'), so nothing is filled in yet and the build warns on three of them.",
+    "recommendation": "In those four Effect cells write [X] for each X (Wrong-Footed: 'Off-Guard against [X] only.'), save, double-click sync_conditions.cmd, then run Sync content in the open world.",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.35.1-claudes-readings",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.35.1, rulings 364 and 365",
+    "question": "Two readings 0.35.1 makes that Mike did not rule on. 364: who [X] is. For Bound, Controlled and Controlling it is the Bind partner, and only while the creature is in that Bind (one toggled from the token by hand names nobody); for any other row that takes X it is whoever put the Condition on with a Maneuver. The name is the one the sheet already shows for that creature beside it, with no 'the' in front. 365: [X] is read in the Effect and the Description of a row whose Takes is X; anywhere else it prints as typed and the build says so; the 'that creature' fallback takes a capital where it begins a sentence.",
+    "recommendation": "Leave both. Say so if the token's name should be shown in place of the sheet's (they differ for an unlinked token renamed on the map, such as 'Bandit 2').",
+    "decidedBy": ""
+  },
+  {
     "id": "0.35.0-immunity-claudes-readings",
     "since": "2026-11-19",
     "status": "open",
@@ -36,7 +56,7 @@
     "category": "Data",
     "where": "data/conditions.xlsx, the About sheet",
     "question": "Three sentences of the About sheet describe the sheet as it was before the Effect column: 'Description: the text players read ...' (that is Effect now; Description is the flavor line), and the Automation sentence, which lists CHECK, ATK, DEF and INIT and not IMMUNE for a trait.",
-    "recommendation": "Reword when convenient; nothing reads the About sheet. Suggested wording is in the 0.35.0 changelog entry, under Worth knowing.",
+    "recommendation": "Reword when convenient; nothing reads the About sheet. Suggested wording is in the 0.35.0 changelog entry, under Worth knowing. Since 0.35.1 it also wants one sentence under Effect for [X] (the 0.35.1 changelog entry has it).",
     "decidedBy": ""
   },
   {

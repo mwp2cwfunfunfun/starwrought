@@ -196,6 +196,14 @@ RULES = [
      "Description is the older shape, and the build will not guess which text it holds."),
     (r"the roster's conditions block and assets/conditions\.json disagree", "Fix", "Build",
      "Run node assets/build_all.mjs --conditions (sync_conditions.cmd): the two are written together, and one of them is from an older build."),
+    # 0.35.1: `[X]` in a Condition's text is the creature it is about.
+    (r"the text writes a bare X and no \[X\]", "Fix", "Data",
+     "In that row's Effect cell of data/conditions.xlsx write [X] wherever the creature's name should appear "
+     "(\"[X] Controls your weapon\"). The sheet's tooltip and the token's hover card then print the name; the "
+     "reference tables print [X] as typed."),
+    (r"the text writes \[X\], and this Condition's Takes is not X", "Fix", "Data",
+     "Either set the row's Takes cell to X (the Condition is about one other creature) or take the [X] out of its text: "
+     "with no creature to name, it prints as typed everywhere."),
     # 0.35.0: immunity to a trait.
     (r"`IMMUNE: TRAIT\(\.\.\.\)` is read on a Condition's row for now", "Fix", "Automation cell",
      "Immunity to a trait is read on a row of data/conditions.xlsx alone for now (Blinded: [EFFECT IMMUNE: TRAIT(Visual)]). "

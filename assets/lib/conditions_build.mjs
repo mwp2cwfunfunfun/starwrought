@@ -37,8 +37,14 @@ import { readEffectName } from "../../foundry/starwrought/module/rules/effect-li
 // The registry is the config's CONDITIONS (module/rules/effects.mjs exports a list of condition
 // WORDS under the same name; it is not that).
 import {
-  CONDITIONS as REGISTRY, registerConditions, conditionLabel, conditionRowName, readInclude
+  CONDITIONS as REGISTRY, registerConditions, conditionLabel, conditionRowName, readInclude, hasConditionTextX
 } from "../../foundry/starwrought/module/config.mjs";
+
+/**
+ * A bare X in a text: the capital letter standing alone, as the four rows that take a creature
+ * wrote it through 0.35.0 ("X Controls your weapon", "X’s choice"). Never the one inside `[X]`.
+ */
+const BARE_X = /(^|[^\[\w])X(?![\w\]])/;
 
 /** The suffix the reference tables print after a Condition's name, by what it takes. */
 const SUFFIX = Object.freeze({ n: " N", zone: " [Zone]", x: " [X]" });
@@ -163,6 +169,17 @@ export function buildConditions({ staged, resolve = null } = {}) {
     const includes = (Array.isArray(row.includes) ? row.includes : []).map(readInclude).filter(Boolean);
     if (includes.some(i => i.against) && (takes !== "x")) {
       errors.push(`${where}: Includes says "against X", and this Condition's Takes is not X: there is no creature for X to be`);
+    }
+    // `[X]` in a row's texts is the creature the Condition is about (0.35.1; Mike). Two slips are
+    // said, and neither stops the build: the placeholder on a row that takes no creature, where
+    // nothing can fill it; and a row that takes one and still writes it as a bare X with no `[X]`
+    // anywhere, the form of every such row through 0.35.0. A row with one `[X]` is taken to mean
+    // any bare X it also has (Mike: "There might be a day where I want to just have an "X"").
+    const written = `${textsOf(row).effect}\n${textsOf(row).description}`;
+    if (hasConditionTextX(written) && (takes !== "x")) {
+      warnings.push(`${where}: the text writes [X], and this Condition's Takes is not X: there is no creature for [X] to be, so it prints as typed`);
+    } else if ((takes === "x") && !hasConditionTextX(written) && BARE_X.test(written)) {
+      warnings.push(`${where}: the text writes a bare X and no [X]: write [X] where the creature's name should appear (a bare X is printed as the letter)`);
     }
     // The author's traps: two lines of one row that both reach one roll are both counted.
     const scopes = new Set(parsed.rules.filter(r => r.to?.type === "scope").map(r => r.to.slug));

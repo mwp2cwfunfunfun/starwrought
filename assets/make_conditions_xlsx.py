@@ -110,7 +110,8 @@ ABOUT = [
     "Condition: its name. The suffix the handbook's table prints (Frightened N, Exposed [Zone], Bound [X]) is put back from Takes wherever a table is printed.",
     "Takes: blank, N (a value: Frightened 2), Zone (the system's own only), or X (a creature: Wrong-Footed to X).",
     "Description: one line of flavor, as on a Talent's sheet. It shows in italics above the Effect in the Rules Reference journal and in a Condition's tooltip on a sheet. It may be blank.",
-    "Effect: the rules text players read: the tooltip on a Condition's row and on the token's hover card, and the reference tables.",
+    "Effect: the rules text players read: the tooltip on a Condition's row and on the token's hover card, and the reference tables. "
+    "Write [X] where the name of the creature the Condition is about should appear (a row whose Takes is X).",
     "Includes: other Conditions this one also counts as, comma separated. Prone: Off-Guard. A creature is Off-Guard once, however many ways it got there. "
     "\"Off-Guard against X\" means only against the creature that put this Condition on (Wrong-Footed), and needs Takes = X.",
     "Automation: lines in the grammar, one to a line, as on a Talent (AUTOMATION_GRAMMAR.md). A Condition's row reads CHECK, ATK, DEF and INIT, "

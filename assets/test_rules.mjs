@@ -107,7 +107,7 @@ import { conditionCarriers, conditionModifiers, isConditionCarrier, CONDITION_CA
 import { conditionIdsFor, conditionOfRef } from "../foundry/starwrought/module/rules/effect-list.mjs";
 // The build's reading of the Conditions workbook's staged rows (pure Node, no file is touched).
 import { buildConditions, registryRows, listedName, listedRows, listedText, textsOf, pageRows } from "./lib/conditions_build.mjs";
-import { conditionNameFree, conditionNameKey, conditionEffect, conditionFlavor, conditionHasRow } from "../foundry/starwrought/module/config.mjs";
+import { conditionNameFree, conditionNameKey, conditionEffect, conditionFlavor, conditionHasRow, CONDITION_TEXT_X, conditionTakesCreature, hasConditionTextX, fillConditionText } from "../foundry/starwrought/module/config.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -5163,6 +5163,19 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     const trapped = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT CHECK: -N condition]\n[EFFECT INIT: -N condition]\n[EFFECT DEF: -N condition]\n[EFFECT DEF: -N condition, evade]" } : r)) });
     same([trapped.errors, trapped.warnings.length], [[], 2], "two lines of one row that both reach one roll");
     must(/a CHECK line and an INIT line/.test(trapped.warnings[0]) && /a DEF line for every Defense and a DEF line for one of them/.test(trapped.warnings[1]), "each said");
+    // `[X]` (0.35.1): the creature a Condition is about. A row that takes one and still writes it
+    // as a bare X is told to write [X]; a row that takes none and writes [X] is told it prints as
+    // typed. Both are warnings, and the sheet still builds.
+    const oldForm = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Wrong-Footed") ? { ...r, effect: "Off-Guard against X only, at X’s reach." } : r)) });
+    same([oldForm.errors, oldForm.warnings.length], [[], 1], "a bare X on a row that takes a creature still builds");
+    must(/Wrong-Footed: the text writes a bare X and no \[X\]: write \[X\] where the creature's name should appear/.test(oldForm.warnings[0]), `the old form is said: ${oldForm.warnings[0]}`);
+    const converted = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Wrong-Footed") ? { ...r, effect: "Off-Guard against [X] only. Plan X stands.", description: "[X] has you." } : r)) });
+    same([converted.errors, converted.warnings, converted.block.find(r => r[0] === "Wrong-Footed [X]")[1], converted.json.conditions.find(c => c.name === "Wrong-Footed").description],
+      [[], [], "Off-Guard against [X] only. Plan X stands.", "[X] has you."], "a converted row is quiet, a bare X beside its [X] is the author's own, and the tables print [X] as typed");
+    const noCreature = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Grabbed") ? { ...r, effect: "Held by [X]." } : r)) });
+    same([noCreature.errors, noCreature.warnings.length], [[], 1], "[X] on a row that takes no creature still builds");
+    must(/Grabbed: the text writes \[X\], and this Condition's Takes is not X/.test(noCreature.warnings[0]), `and is said: ${noCreature.warnings[0]}`);
+    same(buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Grabbed") ? { ...r, effect: "Mark the X on the map. eXtra." } : r)) }).warnings, [], "a bare X on a row that takes no creature is only a letter");
     // A row that makes a second new Condition, and a new one that takes a value.
     const more = buildConditions({ staged: sheet(rows => [...rows, row("Dazed", { takes: "N", automation: "[EFFECT ATK: -N condition]" })]) });
     same([more.errors, more.created, CONDITION_REGISTRY.dazed?.numeric], [[], ["Supine", "Dazed"], true], "a new Condition may take a value of its own");
@@ -5178,6 +5191,25 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     registerConditions([]);
   }
   must(!conditionsRegistered(), "the registry is put back for whatever runs next");
+});
+
+check("conditions: `[X]` in a Condition's text is the creature it is about, and a bare X is a letter (rulings 361 to 365)", () => {
+  const fill = (text, x = "") => fillConditionText(text, { x, fallback: "that creature" });
+  same(CONDITION_TEXT_X, "[X]", "the placeholder");
+  same(fill("Your implement is in a neutral Bind with [X]’s. The Bind ends.", "Bandit"), "Your implement is in a neutral Bind with Bandit’s. The Bind ends.", "the name, with its possessive");
+  same(fill("You Control [X]’s weapon: [X] has an Exposed Zone. You may Close on [X].", "Tess"), "You Control Tess’s weapon: Tess has an Exposed Zone. You may Close on Tess.", "every one of them");
+  same(fill("[X] Controls your weapon. You have a Zone of [X]’s choice: [X] picks. [X] waits.\n[X] again", ""),
+    "That creature Controls your weapon. You have a Zone of that creature’s choice: that creature picks. That creature waits.\nThat creature again",
+    "nobody named: the fallback, with a capital where it begins a sentence or a paragraph and nowhere else");
+  same([fill("X marks the spot; see [x] and [ X ].", "Tess"), fill("Plan X.", ""), fill("", "Tess"), fill(null, "Tess")], ["X marks the spot; see Tess and Tess.", "Plan X.", "", ""], "a bare X is never touched; the placeholder is read in either case");
+  same([fillConditionText("[X] stays", {}), fillConditionText("[X] stays"), fillConditionText("[X] goes", { x: "  ", fallback: "someone" })], ["[X] stays", "[X] stays", "Someone goes"], "with neither a name nor a fallback the text is as typed");
+  same(fill("Held by [X].", "A <b> & \"C\""), "Held by A <b> & \"C\".", "the name is printed as it stands: the caller escapes the whole text");
+  same(fill("[X] costs $& and $1.", "$&"), "$& costs $& and $1.", "a name is never read as a pattern");
+  same([hasConditionTextX("with [X]’s"), hasConditionTextX("with [ x ]"), hasConditionTextX("with X’s"), hasConditionTextX(""), hasConditionTextX(null)], [true, true, false, false, false], "which texts write it");
+  seeded(() => {
+    same([conditionTakesCreature("wrongFooted"), conditionTakesCreature("bound"), conditionTakesCreature("prone"), conditionTakesCreature("frightened"), conditionTakesCreature("nothing")], [true, true, false, false, false], "a Condition takes a creature when its row's Takes is X");
+  }, [...seedRows(), { name: "Bound [X]", takes: "X" }]);
+  same(conditionTakesCreature("wrongFooted"), false, "the row is the word: with no row, none does");
 });
 
 /* -------------------------------------------- */
