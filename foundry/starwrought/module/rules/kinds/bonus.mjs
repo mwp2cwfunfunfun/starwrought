@@ -54,7 +54,7 @@
  * ../operators.mjs (both pure) and the config, never the grammar or the registry (no circle).
  */
 
-import { RuleSyntaxError } from "../syntax.mjs";
+import { RuleSyntaxError, CONDITION_ROW } from "../syntax.mjs";
 import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, effectHolds, readsOtherEffects, refuseOutcome, summarizeOperators, titled, readTargetName, readBonusType } from "../operators.mjs";
 import { effectsOn } from "../effect-list.mjs";
 import { slugify, plainName, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
@@ -173,12 +173,37 @@ export default {
       if (other && e.ops.claim) {
         throw new RuleSyntaxError(`${TAG} does not read IFT: EFFECT(${other.name}) beside IF: CLAIM(...): a claim is asked at the die, before the other party is known`);
       }
+      // A CONDITION'S ROW (0.33.0; rulings 322 to 326): the line acts for whoever HAS the Condition,
+      // a character or an adversary, so it may ask about the attack answered (a Threat, a trait)
+      // and nothing about an owner: no rank, no choice, no reach to others, no once-a-round. Each
+      // is refused by name, since this kind reads its ops with no refusal list.
+      if (context?.itemType === CONDITION_ROW) {
+        const whens = Array.isArray(e.ops.when) ? e.ops.when : (e.ops.when ? [e.ops.when] : []);
+        const refused = whens.some(w => !w?.trait) ? "IF: RANK(...)"
+          : e.ops.for ? "FOR:"
+            : e.ops.while ? "IF: ALLIES(...), ENEMIES(...) or ALL(...)"
+              : e.ops.seen ? "IF: SEEN"
+                : e.ops.limit ? "LIMIT:"
+                  : e.ops.claim ? "IF: CLAIM(...)"
+                    : e.ops.marked ? "IFT: MARKED"
+                      : e.ops.has ? "EFFECT(...)"
+                        : null;
+        if (refused) {
+          throw new RuleSyntaxError(`${TAG} on a Condition's row does not take ${refused} yet: the line acts for whoever has the Condition, and may ask only about the attack it answers (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...))`);
+        }
+        if (e.scale && (context.takes !== undefined) && (String(context.takes ?? "").trim().toLowerCase() !== "n")) {
+          throw new RuleSyntaxError(`\`${e.value < 0 ? "-" : ""}N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number`);
+        }
+      }
       // THE RETURN IS A FIXED LIST OF FIELDS: a component this kind reads must be copied here, or
       // it is dropped in silence and the bonus applies always. `has` rides only when the line asks
       // for one, so a rule that asks for none is stored exactly as it was before 0.31.0.
       return {
         value: e.value, type, to, when: e.ops.when, for: e.ops.for, while: e.ops.while, against: e.ops.against, seen: e.ops.seen, limit: e.ops.limit,
-        claim: e.ops.claim, marked: e.ops.marked, ...(e.ops.has ? { has: e.ops.has } : {})
+        claim: e.ops.claim, marked: e.ops.marked, ...(e.ops.has ? { has: e.ops.has } : {}),
+        // `scale: "N"` (0.33.0): `value` is the sign, and the hook multiplies it by the value of
+        // the Condition whose row this is. Copied only when set, as `has` is.
+        ...(e.scale ? { scale: e.scale } : {})
       };
     }
     // A bonus is an effect: a feature block names no bonus, and the 0.13.0 form is refused by the
@@ -191,7 +216,9 @@ export default {
     const value = Number(rule?.value) || 0;
     const word = value < 0 ? "penalty" : "bonus";
     const tail = summarizeOperators(rule);
-    return `${signed(value)} ${titled(rule?.type)} ${word} to ${rule?.to?.name ?? ""}${tail ? `, ${tail}` : ""}`;
+    // A scaled line says its letter: "-N Condition penalty to Defenses" (0.33.0).
+    const shown = (rule?.scale === "N") ? `${value < 0 ? "-" : "+"}N` : signed(value);
+    return `${shown} ${titled(rule?.type)} ${word} to ${rule?.to?.name ?? ""}${tail ? `, ${tail}` : ""}`;
   },
 
   hooks: {
@@ -223,7 +250,13 @@ export default {
         if (!rule || (typeof rule.value !== "number") || !rule.to?.slug) continue;
         const owner = entry.owner ?? actor;
         const ownRoll = owner === actor;
-        const moment = needsMoment(rule);
+        // A CONDITION'S OWN LINE (0.33.0): the carrier is the Condition the creature has
+        // (../engine.mjs, `conditionCarriers`), with its value and, for one held "against X" alone
+        // (Wrong-Footed's Off-Guard), the creatures it is held against. Such a line can be read
+        // only where the roll's other party is known, as an `IFT: EFFECT(...)` line is.
+        const held = (carrier?.type === CONDITION_ROW) ? (carrier.condition ?? null) : null;
+        const against = Array.isArray(held?.against) ? held.against : null;
+        const moment = needsMoment(rule) || !!against;
         if (context?.staticOnly && moment) continue;
         if (context?.momentOnly && !moment) {
           // A static rule is the sheet's Defense pass's, which folded it into the Threshold and the
@@ -246,14 +279,23 @@ export default {
         // A pairing asks for the rules about the other party alone (0.15.0, ruling 175): the one
         // blind die already carried everything else, and a claim was the dialog's. Since 0.31.0 a
         // rule that reads the other party's Effects (`IFT: EFFECT(...)`) is one of them.
-        if (context?.pairingOnly && !(rule.marked || readsOtherEffects(rule))) continue;
+        if (context?.pairingOnly && !(rule.marked || readsOtherEffects(rule) || against)) continue;
+        // AGAINST X (0.33.0): the roll's other party must be one of the creatures this Condition is
+        // held against. With nobody known (the blind attack die, the sheet) it does not hold.
+        if (against) {
+          const otherUuid = context?.other?.uuid ?? context?.other?.actor?.uuid ?? null;
+          if (!otherUuid || !against.includes(String(otherUuid))) continue;
+        }
         // MARKED (0.15.0): the other party must be the creature this Talent marked.
         if (!markedHolds(rule, { item: carrier, owner }, context)) continue;
         // EFFECT (0.31.0; ruling 307): the roller has it (`IF:`), the other party has it (`IFT:`).
         // The lists are read once for the call, and only when a rule asks. With no other party
         // known (the blind attack die) an `IFT:` rule does not hold, and the pairing reads it.
         if (rule.has !== undefined && rule.has !== null) {
-          lists ??= { self: effectsOn(actor), other: effectsOn(context?.other?.actor ?? null), by: actor?.uuid ?? null };
+          lists ??= {
+            self: effectsOn(actor), other: effectsOn(context?.other?.actor ?? null), by: actor?.uuid ?? null,
+            otherBy: context?.other?.uuid ?? context?.other?.actor?.uuid ?? null
+          };
           if (!effectHolds(rule, lists)) continue;
         }
 
@@ -331,7 +373,10 @@ export default {
         const label = ownRoll ? plainName(carrier?.name ?? "") : `${plainName(carrier?.name ?? "")} (${owner?.name ?? ""})`;
         const carrierKey = ruleCarrierKey(carrier);
         const source = `rule:${carrierKey}:${target.slug}`;
-        const modifier = { label, value: rule.value, type: rule.type, source, ...(mark ? { mark } : {}) };
+        // `-N` (0.33.0): the Condition's own value, so Frightened 2 is -2. Read off the carrier, so
+        // a line written with `N` anywhere else (the parse refuses one) counts once.
+        const scaled = (rule.scale === "N") ? rule.value * Math.max(1, Number(held?.value) || 1) : rule.value;
+        const modifier = { label, value: scaled, type: rule.type, source, ...(mark ? { mark } : {}) };
 
         // The target: a scope word on the roll's kind; a Constellation on its slug; a Maneuver when
         // the roll carries that Maneuver's Item, else OFFERED on a check (ruling 122).

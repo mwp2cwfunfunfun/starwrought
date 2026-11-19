@@ -1411,28 +1411,40 @@ export class AttackCoordinator {
    * instead, and a Kneel's rooted Speed is the card's note (the table's to hold). The coordinator
    * applies for what it owns; another owner steps in only where the coordinator does not own the
    * actor.
+   *
+   * DROP FLAT'S PRONE GOES ON ONCE ITS PAIRING HAS RESOLVED (0.33.0; ruling 330; Mike, by
+   * question: "The +4 alone"). Through 0.32.1 it went on at the reveal, which changed no number
+   * because Prone changed none. Prone's row of the Conditions workbook now makes a creature
+   * Off-Guard (-2 to Evade and Guard) and gives +2 Evade against a ranged Attack, and the attack
+   * that triggered Drop Flat must meet the +4 and nothing of Prone's: Prone counts from the next
+   * attack. So the Zone is Exposed at the reveal, as ever, and Prone waits for the pairing's
+   * outcome, which this client sees on the state the resolution broadcasts.
    */
   static #applyReveal(pub) {
-    if (!["revealed", "rolling"].includes(pub?.phase)) return;
+    const revealing = ["revealed", "rolling"].includes(pub?.phase);
+    if (!revealing && (pub?.phase !== "complete")) return;
     const coordinator = pub.coordinatorUserId ? game.users.get(pub.coordinatorUserId) : null;
     const iCoordinate = pub.coordinatorUserId === game.user.id;
     for (const target of (pub.targets ?? [])) {
       const posture = target.revealed?.posture;
       if (!posture) continue;
-      const zone = (posture.zone in SW.ZONES) ? posture.zone : null;
-      const prone = posture.drawback === "prone";
+      const zone = (revealing && (posture.zone in SW.ZONES)) ? posture.zone : null;
+      const prone = (posture.drawback === "prone") && !!target.outcome;
       if (!zone && !prone) continue;
       const key = `${pub.id}:${target.id}:${target.revealed.revision ?? pub.revision}`;
-      if (AttackCoordinator.#applied.has(key)) continue;
+      const zoneDue = !!zone && !AttackCoordinator.#applied.has(`${key}:zone`);
+      const proneDue = prone && !AttackCoordinator.#applied.has(`${key}:prone`);
+      if (!zoneDue && !proneDue) continue;
       const actor = resolveActor(target.actorUuid);
       if (!actor?.isOwner) continue;
       if (!iCoordinate && coordinator?.active && actor.testUserPermission(coordinator, "OWNER")) continue;
-      AttackCoordinator.#applied.add(key);
-      if (zone) {
+      if (zoneDue) {
+        AttackCoordinator.#applied.add(`${key}:zone`);
         actor.setExposed(zone, true, { posture: true })
           .catch(err => console.error(`STARWROUGHT | ${actor.name}: the Posture's Zone could not be Exposed`, err));
       }
-      if (prone) {
+      if (proneDue) {
+        AttackCoordinator.#applied.add(`${key}:prone`);
         Promise.resolve(actor.setCondition?.("prone", true))
           .catch(err => console.error(`STARWROUGHT | ${actor.name}: Drop Flat could not make them Prone`, err));
       }
@@ -1449,16 +1461,19 @@ export class AttackCoordinator {
    * coordinator once the pairing resolves (never at the reveal, which may be read again).
    * @returns {{key: string, threshold: number, note: string|null, marks: Array}|null}
    */
-  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null, attacker = null) {
+  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null, attacker = null, { conditionShift = null } = {}) {
     if (!actor) return null;
     const allowed = (Array.isArray(permitted) && permitted.length) ? permitted : [...SW.THREATS.blow.defenses];
     if (typeof actor.defenseThresholdFor === "function") {
       // `attacker` (0.15.0): the other party, for a rule about who is attacking (`MARKED`).
-      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed, threat, attacker });
+      // `conditionShift` (0.33.0): a reroll's, the total an adversary's Conditions put on the
+      // first reading; the answer's own is handed back for the card to keep.
+      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed, threat, attacker, conditionShift });
       if (reading && Number.isFinite(Number(reading.threshold))) {
         return {
           key: reading.key ?? defense, threshold: Number(reading.threshold),
-          note: reading.note ?? reading.unavailable ?? null, marks: reading.marks ?? []
+          note: reading.note ?? reading.unavailable ?? null, marks: reading.marks ?? [],
+          conditionShift: Number.isFinite(reading.conditionShift) ? reading.conditionShift : null
         };
       }
     }
@@ -1537,9 +1552,13 @@ export class AttackCoordinator {
     if (flags.kind === "attack") {
       const defender = resolveActor(flags.defenderUuid);
       // The card's Defense is the one the die met; every Defense is permitted for a reread.
+      // The Threat the first die answered and what the defender's Conditions put on its Threshold
+      // then (0.33.0, ruling 335): both from the card, so the reroll meets the same number. A card
+      // from before 0.33.0 carries neither and is read as it stands, as it always was.
       const reading = AttackCoordinator.#thresholdFor(defender, {
         defense: flags.defense, reaction: flags.reaction ?? null, posture: flags.posture ?? null
-      }, Object.keys(SW.DEFENSES), null, resolveActor(flags.actorUuid));
+      }, Object.keys(SW.DEFENSES), flags.threat ?? null, resolveActor(flags.actorUuid),
+      { conditionShift: Number.isFinite(flags.conditionShift) ? flags.conditionShift : null });
       return Number.isFinite(reading?.threshold) ? reading.threshold : null;
     }
     if (flags.kind === "defense") {
@@ -1551,7 +1570,9 @@ export class AttackCoordinator {
       // ended as the attack resolved, so reading it again would read 2 too high. A card from
       // before 0.27.0 says nothing and is read live, as it always was.
       const controlled = (typeof flags.controlledAttack === "boolean") ? { controlled: flags.controlledAttack } : {};
-      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId }, controlled) : null;
+      // And what its Conditions put on its attacks then (0.33.0), for the same reason.
+      const conditions = Number.isFinite(flags.conditionShift) ? { conditions: flags.conditionShift } : {};
+      return attacker ? AttackCoordinator.#attackThreshold(attacker, { attackId: flags.attackId }, { ...controlled, ...conditions }) : null;
     }
     return null;
   }
@@ -1772,9 +1793,13 @@ export class AttackCoordinator {
 
     let kind, threshold, showThreshold, speakerActor;
     let pairingModifiers = [];
+    // What a reroll of this pairing's card must meet again (0.33.0, ruling 335).
+    const threat = threatContext(maneuver);
+    let conditionShift = null;
     if (target.roller === "attacker") {
       kind = "attack";
-      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threatContext(maneuver), attackerToken ?? attacker);
+      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threat, attackerToken ?? attacker);
+      conditionShift = reading?.conditionShift ?? null;
       threshold = reading?.threshold ?? target.threshold ?? 10;
       target.threshold = threshold;
       showThreshold = !!target.isPlayer && showPcThresholds;
@@ -1798,7 +1823,9 @@ export class AttackCoordinator {
       kind = "defense";
       // The Controlled implement's -2 is the plan's (0.27.0): the Bind it came from ended before
       // this card, so a live read would lose it for every defender of the attack.
-      threshold = AttackCoordinator.#attackThreshold(attacker, maneuver, { controlled: !!workflow.bind?.controlledAttack });
+      // The adversary's Conditions as they stand now (0.33.0): read once here, and kept on the card.
+      conditionShift = Number(attacker.system?.attackShift) || 0;
+      threshold = AttackCoordinator.#attackThreshold(attacker, maneuver, { controlled: !!workflow.bind?.controlledAttack, conditions: conditionShift });
       showThreshold = false;
       speakerActor = defender;
     }
@@ -1827,7 +1854,9 @@ export class AttackCoordinator {
       // Control held open on this defender, and whether the attack was made with a Controlled
       // implement. Both ride on the card, since the Bind itself ended before it.
       controlZone: workflow.bind?.zones?.[target.id] ?? null,
-      controlledAttack: !!workflow.bind?.controlledAttack
+      controlledAttack: !!workflow.bind?.controlledAttack,
+      threat,
+      conditionShift
     });
 
     const outcome = result?.outcome;

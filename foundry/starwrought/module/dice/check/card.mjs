@@ -219,6 +219,12 @@ export function cardFlags(result, position) {
     // adversary's Threshold with it). Always written, so a reroll can tell "no" from "not said".
     flags.controlZone = cfg.controlZone ?? null;
     flags.controlledAttack = !!cfg.controlledAttack;
+    // What a reroll must meet again (0.33.0, ruling 335): the Threat answered, and the total the
+    // Conditions of the adversary on the other side put on the Threshold the die was read against.
+    if (cfg.threat && (typeof cfg.threat === "object")) {
+      flags.threat = { threat: cfg.threat.threat ?? null, melee: !!cfg.threat.melee, traits: [...(cfg.threat.traits ?? [])] };
+    }
+    if (Number.isFinite(cfg.conditionShift)) flags.conditionShift = cfg.conditionShift;
   }
   // A check's own extras and the Threshold it was withheld (0.15.0): a reroll of the check keeps
   // its formula and reads the Threshold again from the target when the card could not print it.

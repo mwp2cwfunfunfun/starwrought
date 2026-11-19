@@ -32,7 +32,7 @@
 
 import * as SW from "../config.mjs";
 import { cardHtml } from "./cards.mjs";
-import { reloadContentIndexes } from "./content.mjs";
+import { reloadContentIndexes, conditionsLoaded } from "./content.mjs";
 
 const { escapeHTML, getProperty, setProperty, hasProperty, deepClone } = foundry.utils;
 const localize = key => game.i18n.localize(key);
@@ -44,6 +44,13 @@ const HASH_PATH = `flags.${SW.SYSTEM_ID}.${HASH_FLAG}`;
 /** The two world settings the sync records (registered in starwrought.mjs). */
 export const SETTING_BUILD = "contentBuild";
 export const SETTING_STAMP = "contentStamp";
+/**
+ * The hash of the Conditions the world's clients were last told to read (0.33.0). The Conditions
+ * are a file each client reads for itself, so "has it moved?" cannot be asked of this client's own
+ * copy: a GM who has just reloaded holds the new file while every connected player still holds
+ * the old one (the review of 0.33.0). The world remembers what it last announced instead.
+ */
+export const SETTING_CONDITIONS = "conditionsBuild";
 /** Source files fetched at once. Hundreds of small files; a few dozen in flight is plenty. */
 const FETCH_BATCH = 24;
 
@@ -64,6 +71,42 @@ const PRESERVED_PATHS = Object.freeze([
   // The shots in a ranged weapon (0.29.0): the character's own, never the book's.
   "loaded"
 ]);
+
+/* -------------------------------------------- */
+/*  The Conditions (0.33.0)                     */
+/* -------------------------------------------- */
+
+/** The hash of the Conditions this world last announced to its clients, or "". */
+function announcedConditions() {
+  try {
+    return String(game.settings.get(SW.SYSTEM_ID, SETTING_CONDITIONS) ?? "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Tell every other connected client to read the Conditions again, and remember which build of
+ * them the world has now announced. The message carries nothing to trust: each client reads the
+ * file itself (starwrought.mjs routes `content:conditions` to `loadConditions`). Called by the
+ * sync, and by the GM's load offer when the Conditions are all that moved, so a GM who reloads
+ * after `sync_conditions.cmd` brings the connected players along without pressing anything.
+ * @param {string} build  The index's `conditions` hash.
+ * @returns {Promise<void>}
+ */
+export async function announceConditions(build) {
+  try {
+    game.socket.emit(`system.${SW.SYSTEM_ID}`, { type: "content:conditions" });
+  } catch (error) {
+    console.warn("STARWROUGHT | the other clients could not be told to reload the Conditions", error);
+  }
+  if (!build || !game.user?.isGM) return;
+  try {
+    if (announcedConditions() !== build) await game.settings.set(SW.SYSTEM_ID, SETTING_CONDITIONS, build);
+  } catch (error) {
+    console.warn("STARWROUGHT | the announced Conditions build could not be recorded", error);
+  }
+}
 
 /* -------------------------------------------- */
 /*  The index                                   */
@@ -197,8 +240,20 @@ export async function planContentSync(index) {
     indexById: new Map(),
     /** "type|lowercased name" to the same, for a copy with no recorded source. */
     byTypeName: new Map(),
-    copies: { count: 0, actorCount: 0, actors: [], names: [] }
+    copies: { count: 0, actorCount: 0, actors: [], names: [] },
+    /**
+     * The Conditions (0.33.0): no pack document, so no diff. The index names the hash of
+     * content/conditions.json; when it is not the one this client last read, the sync has work,
+     * which is to read the file again here and tell every other connected client to.
+     */
+    conditions: { build: String(index?.conditions ?? ""), changed: false }
   };
+  // Moved since the world last announced them (`SETTING_CONDITIONS`), or not what this client
+  // itself holds: either way there are clients to tell.
+  if (plan.conditions.build && ((plan.conditions.build !== announcedConditions()) || (plan.conditions.build !== conditionsLoaded().build))) {
+    plan.conditions.changed = true;
+    plan.empty = false;
+  }
 
   for (const [name, entry] of Object.entries(index?.packs ?? {})) {
     const pack = game.packs.get(packKey(name));
@@ -665,6 +720,11 @@ export async function applyContentSync(plan, { refreshCopies: withCopies = true,
   } catch (error) {
     console.error("STARWROUGHT | the content indexes could not be re-read after the sync", error);
   }
+  // THE CONDITIONS REACH EVERY CLIENT (0.33.0): they are a file each client reads for itself, and
+  // only this one has just read it again. The others are told to (`announceConditions`), so a
+  // player's sheet and the GM's never disagree about what Frightened does. Said whether or not
+  // the file moved: it is one small read.
+  await announceConditions(plan.conditions?.build ?? "");
   rerenderOpenSheets();
   await postSyncCard(result);
   return result;

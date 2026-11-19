@@ -15,7 +15,7 @@
 
 import * as SW from "../config.mjs";
 import { rangesOf } from "../helpers/ranges.mjs";
-import { collectRules } from "../rules/engine.mjs";
+import { collectRules, conditionModifiers } from "../rules/engine.mjs";
 // The character's derived-data passes, one module each (0.10.1), called in order by
 // SwCharacterData#prepareDerivedData below; the adversary shares the Evade availability.
 import { prepareConstellations } from "./character/constellations.mjs";
@@ -26,7 +26,7 @@ import { prepareWind } from "./character/wind.mjs";
 import { prepareVigor } from "./character/vigor.mjs";
 import { prepareActions } from "./character/actions.mjs";
 import { prepareOffense } from "./character/offense.mjs";
-import { unavailableEvade } from "./character/shared.mjs";
+import { unavailableEvade, heldConditions } from "./character/shared.mjs";
 import { ownedReactions } from "../helpers/answers.mjs";
 
 /** Re-exported so the canvas can import the ranges list from the model that derives it (0.5.1). */
@@ -937,21 +937,41 @@ export class SwNpcData extends SwActorData {
     this._prepareWounds();
 
     // Adversaries answer with Thresholds, but the sheet still speaks the same language.
+    // THE CONDITIONS AN ADVERSARY HAS MOVE ITS NUMBERS (0.33.0; rulings 324 and 335; Mike, by
+    // question: "Yes, adversaries too"). `base` is the Threshold the GM typed, which is what the
+    // sheet's field edits and saves; `threshold` is the one IN EFFECT, the typed number with the
+    // standing lines of the Conditions the creature has (an Off-Guard Bandit's Evade and Guard at
+    // -2, a Frightened 2 one's four at -2), which is what every reader of an adversary's Defense
+    // meets. Its own Talents stay unread, as they always were: `conditionModifiers` answers for
+    // the Conditions alone. The lines that need the attack (Prone's +2 Evade against a ranged
+    // Attack) are folded in where the attack is known (SwActor#defenseThresholdFor).
     this.defenses = {};
     for (const [key, def] of Object.entries(SW.DEFENSES)) {
+      const base = this.thresholds[key];
+      const conditions = conditionModifiers(this.parent, { kind: "defense", slug: def.slug, item: null, staticOnly: true });
+      const shift = conditions.length ? SW.resolveModifiers(conditions).total : 0;
       this.defenses[key] = {
         key,
         slug: def.slug,
         label: def.label,
         hint: def.hint,
         attribute: def.attribute,
-        threshold: this.thresholds[key],
-        mod: this.thresholds[key] - 10,
+        base,
+        threshold: base + shift,
+        mod: base + shift - 10,
+        shift,
+        conditions,
         unavailable: null
       };
     }
+    // What the Conditions put on its attacks, standing (Frightened's and Fatigued's -N, Prone's
+    // -2): read by `attackThreshold` and by its own die, and shown on the sheet's attack rows.
+    this.attackModifiers = conditionModifiers(this.parent, { kind: "attack", slug: "", item: null, staticOnly: true });
+    this.attackShift = this.attackModifiers.length ? SW.resolveModifiers(this.attackModifiers).total : 0;
+    for (const attack of this.attacks) attack.inEffect = (Number(attack.threshold) || 0) + this.attackShift;
     const statuses = this.parent.statuses ?? new Set();
-    this.defenses.evade.unavailable = unavailableEvade(statuses);
+    // Asked of what the creature HAS since 0.33.0: a Condition that includes Grabbed counts.
+    this.defenses.evade.unavailable = unavailableEvade(heldConditions(this.parent));
 
     // An adversary's Reactions are the GM's to declare, so every answer stands available unless
     // a Head Wound, or the Head's Critical Hit effect until a Recenter (0.26.0), forbids them. No

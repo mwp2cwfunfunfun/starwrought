@@ -1,4 +1,44 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0)
+
+**0.33.0 (2026-11-18).** No new kind and no new hook point: THE CONDITIONS ARE DATA (rulings 322
+to 336). `data/conditions.xlsx` is the only source for what a Condition says and does, and its
+rows fill a live registry (`../config/conditions.mjs`: `registerConditions(rows)` rebuilds from the
+built-ins plus the rows; a row that names none makes a Condition, Supine the first). Four things
+in this folder carry it:
+
+- **A Condition's row is an item type** (`CONDITION_ROW` in `syntax.mjs`, `itemType: "condition"`).
+  It reads the `bonus` tags alone (`CONDITION_ROW_TAGS`: CHECK, ATK, DEF, INIT; `grammar.mjs`
+  refuses the rest and every feature block), and `kinds/bonus.mjs` refuses on it every component
+  that asks about an owner (RANK, FOR, ALLIES, SEEN, LIMIT, CLAIM, MARKED, EFFECT).
+- **`N` is a value** (`effects.mjs`), read on such a row alone: stored `value: -1, scale: "N"`,
+  copied by `bonus`'s `parse` (which returns a fixed list of fields) and multiplied in its hook by
+  the carrier's value. `summarize` says `-N`.
+- **What a creature HAS** is `condition-set.mjs` (pure): `closeConditions({ direct, torso })`
+  closes its statuses over each Condition's `includes`, adds Off-Guard for a Wounded or struck
+  Torso (the STORED `zones.torso.wounds` and `.critical`, since the rules are collected before the
+  Wounds are derived), and keeps an inclusion written "against X" apart, keyed by the uuid of the
+  creature that applied the including Condition (`flags.starwrought.applied.by`). `effectList`
+  reads the same closure, so `EFFECT(...)`, `[REQUIRES ...]` and the numbers agree; `listHas`
+  takes a `viewer` for "against X". `APPLY` and `REMOVE` stay on the raw statuses.
+- **The carrier.** `collectRules` adds one for each Condition in that set that carries lines
+  (`conditionCarriers` in `engine.mjs`: `{ id: "condition:<id>", type: "condition", condition:
+  { id, value, against, via, direct } }`), so the `modifiers` hook point reads a Condition's
+  lines as it reads a Talent's. One Condition is one `source`. The `bonus` hook treats an
+  "against X" carrier as a rule read only where the roll's other party is known, and lets it
+  through `pairingOnly`. A Condition's line has no state: `rulesOfKind` never reads one for it
+  and `helpers/effects.mjs` lists the lines read-only (`conditionInfo`). **Do not add
+  "condition" to `RULE_ITEM_TYPES`**: it is no Item.
+
+`conditionModifiers(actor, context)` is `ruleModifiers` held to the Condition carriers, with no
+scene: what an adversary's numbers read (its own Talents stay unread) and what a character's
+weapon rows add. **The old hard-coded numbers are guards now, not gone**: the Off-Guard,
+Frightened and Fatigued blocks in `data/character/defenses.mjs`, `dice/check/modifiers.mjs` and
+`data/character/offense.mjs` stand only while `conditionHasRow(id)` is false (no row of the
+workbook describes the Condition; a row whose cell is `N/A` IS the word), so a world whose
+Conditions file could not be read keeps the numbers it had and nothing counts twice. **A stored
+reference parsed before a row made a Condition of its name means the Condition** (`conditionOfRef`
+in `effect-list.mjs`: `listHas`, `applyEffectTo`, `removeEffectFrom`, the `apply` kind's lines,
+`bare()` in `requires.mjs`). The build's half is `assets/lib/conditions_build.mjs`.
 
 **0.32.0 (2026-11-17).** The twenty-fourth kind, `apply` (rulings 311 to 321), and the seventh
 hook point, `applies`: named Effects, step two, the writing half. Two tags name the one kind,
@@ -172,6 +212,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/requires.mjs` | The `requires` kind (0.28.0): what a Maneuver needs before it can be used, by the block `[REQUIRES <condition> or <condition>]` on the Maneuver's own row. No hook: the Maneuvers tab reads the rule. |
 | `requires.mjs` | The pure half of it (0.28.0), and of the tab: `readRequires` (the words), `requireWords` and `termWords` (the same in English), `checkCondition` (true, false, or null for "cannot tell"), `availability` (a block fails only when every alternative is known false), `requiresFor(rules, engine)` (the row's own blocks, else the engine's), `maneuverStatus(row, situation)` (the four reasons a row is left out), `freeHands` and `arrangeManeuvers` (Favorites first, no row twice). Imports `syntax.mjs` and the config. |
 | `effect-list.mjs` | The Effects list (0.31.0), pure: `effectList({ statuses, conditionValue, effects, rows })` (a creature's Conditions with their values, and its named Effects by slug), `effectsOn(actor)` (the same, gathered from an Actor: `statuses`, `appliedEffects` else `effects`, the custom effect rows), `readEffectName(written)` (a Condition first, else a named Effect; the name's shape, the reserved words, an Exposed Zone refused), `listHas(list, ref)` (true, false, or null with no list), `namedEffects(list)`, `effectSlug`, `conditionTitle`. Imports `syntax.mjs` and the config; `requires.mjs`, `effects.mjs`, `operators.mjs` and `kinds/bonus.mjs` import it. |
+| `condition-set.mjs` | What a creature HAS (0.33.0), pure: `closeConditions({ direct, torso }, registry)` (its Conditions closed over what each includes; `held`, `against` by uuid, `unknown`), `conditionSetOf(actor)`, `holdsCondition(set, id, viewer)`, `heldIds`, `heldIdsFor`. Imports the config alone; `effect-list.mjs`, `engine.mjs`, `data/character/shared.mjs` and `helpers/effects.mjs` import it. |
 | `maneuver-move.mjs` | The pure half of it (0.24.0): `moveRecord`, `recordLive(record, encounter)`, `moveRoleFor(tokenId, { records, used, encounter })` (the user's own Move, the permitted one, or neither) and `asManeuverMove(move, held)` (a Move however short, never a Rush, a Step only with the alteration, the user's prepaid), `usedNonces` and `withUsed` (the ally's mark, a short list of the uses it has moved for). Imports nothing. The record is taken off its holder when its Opportunity ends by `endManeuverMoves` in `effects-state.mjs` (every turn change, a lone fighter's step, the Combat's end). |
 | `given.mjs` | The pure half of both (0.22.0): `buildTable(lines, alterations)` (the results by degree), `alterationTouches`, `pendingEntry` (what the recipient holds), `pendingRule` and `givenCarrier` (the one-roll carrier the engine indexes it through), `settle(entry, { combat, ended, began })` (what a turn change does to its window), `appliesNow`, and the words (`resultWords`, `windowWords`, `pendingWindowWords`). Since 0.25.0 also the used Effect (`usedEntry(entry, moment, holder)`, what a roll leaves when it uses a result up, or null; `usedLive(record, encounter)`; `usedOf`, `usedEffects`, `isUsedKey`, `usedFlagKey`) and `limitOf(rule, alterations)` (the LIMIT that stands once the owner's `ALTER: <Maneuver>.limit` is read, with the marks a Skip owes). Imports `operators.mjs` alone. |
 | `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |

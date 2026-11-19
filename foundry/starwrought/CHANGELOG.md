@@ -7,6 +7,230 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.33.0 (2026-11-18): the Conditions workbook
+
+Built from **Player's Handbook v4.25**, which did not move. Mike: "can we build a
+conditions.xlsx that includes every condition, and the automation effects (if any) of it?",
+then "Yes, the source". Planned first; his decisions, by question: the workbook is the only
+authority for a Condition's text; a Condition's lines move adversaries' numbers too; Conditions
+only for now (no named Effects sheet); a new row makes a new Condition; Drop Flat keeps its +4
+alone against the attack that triggered it; and 0.32.1 was committed first. **No rule kind and
+no hook point is new.** None of his four workbooks in progress was converted, built, staged or
+written. Of the pack content the Rules Reference journal (its Conditions page) and the Grammar
+journal moved.
+
+`data/conditions.xlsx` is the only source for what a Condition says and does. It was filled once
+from the handbook's v4.25 Conditions table (22 rows, Supine among them) and the four Conditions
+the system has and the table does not (Concealed, Hidden, Undetected, Dead). One row for each:
+Condition, Takes, Description, Includes, Automation, System, Listed?, Icon, Notes.
+
+| | 0.32.1 | 0.33.0 |
+|---|---|---|
+| What a Condition does | Written by hand in four files, for three Conditions | The lines of its row, read by the rules as a Talent's are |
+| A Condition's text | Twice: the system's strings and a hand-kept list for the web app, the compendium and the journal, which disagreed | The row's Description, everywhere |
+| Off-Guard, Frightened N, Fatigued N on a character | Hard-coded | The same numbers, from the sheet (checked number for number) |
+| Prone | Changed no number | Off-Guard; -2 Situation to attacks; +2 Situation to Evade against a ranged Attack |
+| Grabbed, Restrained, Blind, Unconscious | Did not make a creature Off-Guard | They do: each counts as what its row includes |
+| Supine | A named Effect, a label | A Condition, on the token palette, with Prone's lines |
+| Wrong-Footed | Did nothing | Off-Guard against the creature that put it on, and nobody else |
+| An adversary under a Condition | Its numbers never moved | Its Thresholds, its attacks, its own die and its Initiative move; its sheet shows the typed number and the one in effect |
+| A new Condition | A change to the code | A new row |
+| Drop Flat | Prone at the reveal (which changed nothing) | +4 alone on that attack; Prone once it has resolved |
+| A reroll against a hidden Threshold | Read the creature as it stood at the reroll, with no Threat | Meets the number the first die met |
+| A rerolled Strike with a bonus against that defender | Listed the bonus twice and left it out of the total (since 0.31.0) | Listed once, and counted |
+
+**The rulings** (322 to 324, 330 and 336 are Mike's, by question; the rest are Claude's
+readings and his to overrule).
+
+- **322. The workbook is the only source for a Condition** (Mike: "The workbook"). The handbook's
+  Conditions table is where it was first filled from and is no longer what the system follows.
+  A change to a row is the Conditions build's and never a handbook sync; no redline is proposed
+  for one. The HANDBOOK RULE has a fourth part.
+- **323. A new row makes a new Condition** (Mike). Its id is its name's letters and digits; its
+  static status id is a hash of the id alone, so adding a row never moves another's. The build
+  prints `NEW CONDITION: "<Name>"` every time. A name may not be, or begin with, a word a
+  `[REQUIRES ...]` block reads as something else. A row deleted is gone at the next build,
+  except the Conditions the system itself has: the build refuses a sheet that leaves one of
+  those without a row.
+- **324. A Condition's lines act for whoever has it, adversaries too** (Mike). So a row reads
+  the four modifier tags (`CHECK`, `ATK`, `DEF`, `INIT`) and, after `IFT:`, only what the attack
+  answered is (`RANGED`, `MELEE`, `BLOW`, `BLAST`, `BLIGHT`, `BEGUILEMENT`, `TRAIT(...)`).
+  Everything that asks about an owner is refused by name (`IF: RANK`, `FOR:`, `IF: ALLIES`, `IF:
+  SEEN`, `LIMIT:`, `IF: CLAIM`, `IFT: MARKED`, `EFFECT(...)`), with every other tag and every
+  feature block. An adversary's own Talents stay unread, as they always were.
+- **325. Includes: a Condition that includes another IS that Condition, once.** Prone includes
+  Off-Guard, so a Prone creature takes Off-Guard's lines once however many ways it came to be
+  Off-Guard, `[REQUIRES off-guard]` holds for it and `IFT: EFFECT(off-guard)` holds against it.
+  It goes down the chain (Restrained, Grabbed, Off-Guard; Unconscious, Prone, Off-Guard).
+  `REMOVE: off-guard` does not stand a Prone creature up. `APPLY` and `REMOVE` still act on the
+  status itself.
+- **326. `-N` is the Condition's own value.** `[EFFECT DEF: -N condition]` on Frightened is -2 at
+  Frightened 2. Read only on a row whose Takes is N; refused on a Talent, a Maneuver, a custom
+  effect, and a row that takes no value.
+- **327. A first Torso Wound and the Torso's Critical Hit effect count as Off-Guard** through the
+  Off-Guard row, as they did in code. New with it: such a creature is Off-Guard to
+  `EFFECT(off-guard)` and `[REQUIRES off-guard]` too, which it was not.
+- **328. `against X`.** An inclusion written `Off-Guard against X` (Wrong-Footed's) holds only
+  against the creature that put the including Condition on with a Maneuver's `APPLY`, and to
+  nobody else: read where the roll's other party is known (the Threshold that creature's attack
+  is read against) and never in the number on the sheet. A Wrong-Footed toggled from the token
+  palette names nobody and counts as nothing more. One creature at a time: the last to apply it.
+- **329. The row is the word, and the old numbers are a fallback for a world with no rows.**
+  Once a row describes a Condition, the row says what it does: its lines, or nothing at all when
+  its cell is blank or `N/A`, even for Off-Guard, Frightened and Fatigued. Only while NO row
+  describes one of those three (the Conditions file could not be read) do the numbers the system
+  had for it stand. So nothing ever counts twice, a world with no Conditions file is 0.32.1,
+  and a character and an adversary never disagree about a Condition.
+- **330. Drop Flat: the +4 alone** (Mike). Prone goes on once the pairing has resolved, never
+  at the reveal, so the attack that triggered Drop Flat meets the +4 and nothing of Prone's.
+- **331. An included Condition is whose its includer is.** An Off-Guard that comes from a Prone
+  you applied counts as yours for `EFFECT(off-guard, mine)`.
+- **332. Unconscious can still be applied by a Maneuver.** It is not one of the Conditions the
+  system alone may put on (`SYSTEM_CONDITIONS` stays the eight).
+- **333. Supine is a Condition.** A cell parsed while it was a named Effect (0.32.1) means the
+  Condition wherever the system reads it, with no rewrite, and an effect left on a creature
+  from then is turned into the Condition's own the first time the world loads.
+- **334. A Condition's lines have no On / Skip / Off.** The Condition is the switch. The Effects
+  tab lists the lines under the Condition's row, read-only.
+- **335. An adversary's numbers: typed, and in effect.** The field on its sheet is the number the
+  GM typed and is never written from the number in effect, which is shown beside it. A reroll
+  meets the number the first die met: the card keeps the attack answered and what the
+  Conditions of the creature on the other side were worth then, an adversary's or a character's
+  (a character who Dropped Flat is Prone by the time of a reroll, and the first die met the +4
+  alone). An adversary's Initiative is read as a character's default one is, an Awareness roll;
+  its Gain Control takes the lines a check takes, as a character's does.
+- **336. Conditions only, for now** (Mike). No sheet for named Effects in this release.
+
+**In the system.**
+
+- `module/config/conditions.mjs` is a live registry: the built-ins stay in code, and
+  `registerConditions(rows)` rebuilds from them plus the workbook's rows, refusing a row it
+  cannot take and changing nothing when it does.
+- `module/rules/condition-set.mjs` (new, pure) says what a creature has: its statuses closed
+  over what each includes, Off-Guard for its Torso, and the "against X" ones kept apart.
+  `effectList`, the Maneuvers tab's situation and "Evade unavailable" read the same answer.
+- `collectRules` adds one carrier for each Condition a creature has that carries lines, so the
+  `bonus` kind's existing `modifiers` hook applies them. `conditionModifiers` is the same held to
+  the Conditions alone, for an adversary's numbers and a character's weapon rows.
+- The three hard-coded blocks (`data/character/defenses.mjs`, `dice/check/modifiers.mjs`,
+  `data/character/offense.mjs`) stand only while no row of the workbook describes their Condition.
+- The client reads `content/conditions.json` at startup, always past the cache, rebuilds the
+  token palette, and prepares again every creature that has a Condition, on every scene. Sync
+  content reads it again and tells every other connected client to; and when the Conditions are
+  all that moved, the GM's next load tells them without a question (the world remembers which
+  build it last announced, the world setting `conditionsBuild`). A file that cannot be read is
+  said in a notice that stays, to the GM and to a player whose client could not read it.
+- A weapon row on the character sheet now counts the standing attack lines of the Conditions the
+  character has (Frightened's -N was on the die and not on the row).
+
+**The pipeline.** `assets/make_conditions_xlsx.py` scaffolded the workbook once and refuses to
+run over it. `xlsx_to_trees.py` knows the workbook by its `Conditions` sheet and stages its rows;
+`assets/lib/conditions_build.mjs` reads the cells, registers them and builds
+`assets/conditions.json` and the roster's `conditions` block, which `parse_rules.mjs` writes
+together and only when the whole sheet reads. `node assets/build_all.mjs --conditions`
+(`sync_conditions.cmd`) builds this workbook alone. The style check, the red-cell tool and the
+build report know it.
+
+**Worth knowing.**
+
+- The handbook's Prone row ends "or Roll Over to become Prone", which reads like a slip for
+  Supine. It was copied as written; the sheet is where to mend it.
+- Supine's -2 to attacks has no exception for melee Attacks against adjacent creatures, and
+  Supine does not stop movement: the grammar has no word for either yet.
+- Frightened and Slowed still do not drop by 1 each round; Stunned, Heedless and Deafened still
+  do nothing. Words for what a Condition forbids and how it fades are the next release.
+- `N/A` on a row means the Condition changes no number, Off-Guard, Frightened and Fatigued
+  included (ruling 329). Their old numbers come back only when the workbook cannot be read.
+- A creature that has two Conditions takes the lines of both: one that is both Prone and Supine
+  (an Unconscious creature laid on its back; both toggled from the token) takes -2 to attacks
+  twice. Drop Prone and Drop Supine each take the other off, so a Maneuver never leaves both.
+- `IFT: RANGED` is a ranged Blow. Prone's +2 Evade does not reach a Blast thrown from range.
+- "Against X" is the creature that applied the Condition, by its own identity: a Feint rolled
+  from an adversary's sheet in the sidebar and not from its token names another body.
+- "Blind" and "Deaf" are now names of Blinded and Deafened, so a hand-made effect merely called
+  either is read by nothing.
+- An adversary's printed Attack Threshold, its Intercept and its Initiative use the number in
+  effect.
+
+Verified: `node assets/test_rules.mjs`, 235 checks (eight new, in the section "The Conditions
+workbook": the registry, a Condition's row and `-N`, what a creature has, the carrier, a stored
+name read as the Condition, and the build's reading of the staged rows); `node --check` on all
+178 modules; `node assets/build_all.mjs --check`; the style check (one failure, the em-dash in
+Dwarf Lore B13 of Mike's uncommitted workbook); the smoke test on the rebuilt web app (SMOKE
+CLEAN); `node assets/build_all.mjs --conditions` run for real, with no other workbook opened
+(the Rules Reference journal and the Grammar journal are the only pack documents that move; the
+red-cell tool finds no unreadable cell on the Conditions sheet). The full pipeline's own path
+through the Conditions step, which cannot be run on Mike's sheets in progress, was run in a
+scratch copy of the generated files: the lenient parse wrote the same `conditions.json` and
+roster and the same rules for every tree (the eight unread cells' stored messages aside, which
+list today's tags); the strict parse stopped on those eight cells with nothing written; and a
+slip put into the staged sheet left `conditions.json` and the roster as they were, as a warning
+in the lenient run and as a failure in the Conditions run. And live in the test world on
+0.33.0, Foundry restarted first, with a GM tab and a player tab:
+
+- **Number for number.** Tess's four Defense Thresholds and her attack, check and Initiative
+  previews (with Awareness and with Stealth) were read with the workbook's rows registered and
+  with the registry put back to the system's own, under no Condition, Off-Guard, Frightened 2,
+  Fatigued 2, a Torso Wound, and Off-Guard with a Torso Wound and Frightened 1 together. Every
+  number agreed in every case.
+- **The Bandit.** Prone: Evade 13 typed, 11 in effect; Guard 12, 10; its Club 14, 12; against a
+  ranged Attack its Evade read 13 and its Guard 10. Frightened 2 on top: 9, 8, 12 and 9 on the
+  four, and the Club at 10. Its sheet showed 13 in the field with "11 in effect" beside it, and
+  saving a change to another field left the typed Thresholds as they were. Its Effects tab
+  listed Prone's two lines and "Counts as Off-Guard" under the row.
+- **A Feint's Wrong-Footed**, applied to the Bandit in Tess's name: Guard 10 against Tess, 12
+  against Wren and on the sheet. Toggled by hand: 12 against Tess, and the row said why.
+- **Supine** from the token: the status under its own id, Wren's Evade 13 to 11 and Guard 10 to
+  8; Stand listed and Drop Supine not. The world's Drop Supine and Stand, whose cells were
+  parsed in 0.32.1, put the Condition on and took it off, and their cards read as before.
+- **A Strike through the attack flow** (declared, the Bandit's Guard committed by the GM, the
+  die thrown): a Hit against 10, the card carrying the Threat and -2. With the Bandit stood up
+  afterwards a reroll still met 10 (12 as it then stood; 12 for a card with no such record), and
+  with the same die it gave the same total, the bonus against that defender listed once.
+- **Drop Flat** (a test Talent on Wren, the Bandit's Club): at the reveal Wren was not Prone and
+  her Evade read 17; the Defense roll carried Trained +3 and Drop Flat +4 and nothing else; once
+  the pairing had resolved she was Prone and her Evade 11.
+- **Sync content**: the plan named the Rules Reference journal; a player's tab whose registry
+  had been emptied on purpose held the 26 Conditions again a moment after the GM's sync.
+- **A file that cannot be read**: the read was made to fail, the GM was told in a permanent
+  notice, and the Conditions already in force stood.
+
+**An independent review of the finished change** found no crash and no path where a Condition's
+line counts twice or is lost, and twelve findings of medium to low severity. Mended: a GM who
+reloaded after a Conditions build left connected players on the old lines (the plan asked the
+GM's own client whether the file had moved; the world now remembers what it announced, and a
+load announces by itself); a reroll against a character defender read its Conditions as they
+then stood (Drop Flat's Prone); the fallback was keyed on a row's lines and not on the row
+(ruling 329, as it now reads); a row named "Off'Guard" took Off-Guard's word and detached every
+Condition that includes it (refused); what a creature has depended on the order of its statuses
+when an includer is itself included, and only the first applier owned an included Condition; an
+adversary's Initiative and Gain Control read different lines from a character's; the Intercept
+button printed the typed Threshold; a Bandit on a scene not in view kept its old numbers after a
+sync; two notices for one failed read, and none for a player; the migration switched a disabled
+effect on and dropped an authored one's changes; the build wrote `conditions.json` before the
+roster; the build report gave the equipment sheet's duplicate the Conditions' advice. Stated and
+not changed: the four under Worth knowing above; a reroll of an adversary's Gain Control reads
+its Conditions as they then stand; a slip in `conditions.xlsx` stops the full converter, as a
+slip in any workbook does.
+
+Driven again in the test world for the mends: the numbers still agreed in every case with the
+fallback keyed on the row; with the Off-Guard, Frightened and Fatigued rows' cells emptied, each
+of those and a Torso Wound changed no number of Tess's; a reroll against Wren, who had become
+Prone since the first die, met 13 where she then stood at 11; the Bandit's Initiative read 10
+Prone, 8 at Fatigued 2 and 8 at Frightened 2, and its Gain Control 14, 14 and 12; after a sync
+the world held the build it had announced; and a reload of the GM's tab with the two recorded
+builds made stale asked nothing, recorded both, and said it had told every connected client.
+
+Not driven: a table with no GM connected; an unlinked token on a scene nobody is viewing; a
+world that had a Supine effect from 0.32.1 to adopt (the step ran and found none); the roll
+dialog on screen with a Condition's line in it (the totals were read through the function the
+dialog draws from); the Intercept card's button with a Condition on the adversary.
+
+The test world was left as found: Mike's Combat with testpc8 active at round 4, the tokens where
+they were, the Bandit Prone as it was, the test Talent, the drive's Combat and the 11 cards it
+posted removed, 434 messages (the 433 and one "Content synced" card), its content level with
+these sources and its two recorded builds current.
+
 ## 0.32.1 (2026-11-18): Stand's two lines, and Supine as a named Effect
 
 Built from **Player's Handbook v4.25**, which did not move. No ruling, and no kind, tag or word

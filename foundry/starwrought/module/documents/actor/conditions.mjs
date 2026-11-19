@@ -120,7 +120,7 @@ export const ConditionsMixin = Base => class extends Base {
     const update = foundry.utils.deepClone(data ?? {});
     if (config.numeric) {
       const n = Number(value) || 1;
-      update.name ??= `${game.i18n.localize(config.name)} ${n}`;
+      update.name ??= `${game.i18n.localize(SW.conditionNameKey(id))} ${n}`;
       foundry.utils.setProperty(update, `flags.${SW.SYSTEM_ID}.value`, n);
     }
     if (existing) {
@@ -144,7 +144,7 @@ export const ConditionsMixin = Base => class extends Base {
     }
 
     const source = foundry.utils.mergeObject({
-      _id: staticId, name: game.i18n.localize(config.name), img: config.img, statuses: [id]
+      _id: staticId, name: game.i18n.localize(SW.conditionNameKey(id)), img: config.img, statuses: [id]
     }, update);
     try {
       // `swChecked`: the prevent rules were asked above, so the preCreateActiveEffect hook that

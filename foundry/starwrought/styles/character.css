@@ -16,7 +16,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-character: "0.32.1"; }
+:root { --sw-css-version-character: "0.33.0"; }
 
 /* --------------------------------------------------------------------------
    Header: level and Milestones (0.5.1, T11), Hero Points (T9).
@@ -783,3 +783,17 @@
 /* An Effect a Maneuver applied (0.32.0): its tag says who, with what and until when on hover. */
 .starwrought .sw-effect-applied { font-size: 0.72rem; white-space: nowrap; color: var(--sw-green); }
 .starwrought .sw-given-line .sw-effect-kind { text-transform: none; letter-spacing: 0; color: var(--sw-gold); border-color: var(--sw-gold-dim); }
+/* What a Condition is doing (0.33.0): its lines from the Conditions workbook, read-only, under its
+   row on the Effects list of a character's and an adversary's sheet. */
+.starwrought .sw-condition-note {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: -0.1rem 0 0.25rem 2.1rem;
+  padding: 0.1rem 0 0.1rem 0.5rem;
+  border-left: 2px solid var(--sw-edge);
+  list-style: none;
+}
+.starwrought .sw-condition-line { font-size: 0.72rem; color: var(--sw-ink-dim); }
+/* An adversary's number in effect beside the one typed, while its Conditions move it (0.33.0). */
+.starwrought .sw-in-effect { font-size: 0.7rem; color: var(--sw-gold); white-space: nowrap; }

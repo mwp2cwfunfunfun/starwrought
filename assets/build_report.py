@@ -144,6 +144,46 @@ RULES = [
      "Add an Ammunition row whose Group is {1}; until then those weapons Reload with nothing to take, and say so each time."),
     (r"ship to Foundry, but no weapon that takes them is enabled", "Note", "Data",
      "Nothing is wrong: the ammunition ships and waits. Set Enabled? = Yes on a bow, crossbow or sling on the Weapons sheet when it should be usable in Foundry."),
+    # The Conditions workbook (0.33.0): data/conditions.xlsx is the only source for a Condition.
+    (r'NEW CONDITION: "([^"]+)" is made by its row', "Note", "Data",
+     "Nothing is wrong if {1} is meant to be a new Condition: it gets its own status on the token palette. If it is a slip "
+     "for another row's name, mend the Condition cell in data/conditions.xlsx and build again."),
+    (r"no row for (.+?)\. Every Condition the system has needs its row", "Error", "Data",
+     "Add a row to data/conditions.xlsx for {1}, or restore the one that was deleted: the system puts these on and takes "
+     "them off itself, and the workbook is the only place their text is kept."),
+    (r'Includes says "against X", and this Condition\'s Takes is not X', "Error", "Data",
+     "Set the row's Takes to X, or take 'against X' out of its Includes cell: X is the creature that put the Condition on."),
+    (r'includes "([^"]+)", which is no Condition', "Error", "Data",
+     "The Includes cell names {1}, which is no row of the Conditions sheet: fix the spelling, or add the row."),
+    (r"includes itself", "Error", "Data", "Take the Condition's own name out of its Includes cell."),
+    (r"two rows describe the Condition|would be read as the Condition|/ Conditions / [^:]+: also defined", "Error", "Data",
+     "Two rows carry one name (a suffix such as N or [X] does not make a new one): keep one row."),
+    (r"Takes is blank, N, Zone or X|Takes says '.*' and the name ends", "Error", "Data",
+     "Set the row's Takes cell to blank, N, Zone or X, and keep it the same as any suffix in the name."),
+    (r"Takes is N, and the system keeps no value for", "Error", "Data",
+     "This Condition carries no value in the system, so -N would always count 1: clear the Takes cell and write whole numbers, "
+     "or ask Claude to give the Condition a value."),
+    (r"cannot name a Condition|the name reads as a named Effect|would read the name as something else|the name cannot be written in a cell|cannot read the name",
+     "Error", "Data", "Rename the Condition: the name already means something else where a cell is read (a REQUIRES word, a weapon or a "
+     "creature phrase, Exposed), so nothing could ever ask for it."),
+    (r"is marked System, and the system knows no Condition of that name", "Error", "Data",
+     "Clear the System cell: only the Conditions the system itself runs are System, and they are fixed in code."),
+    (r"the Exposed row describes the four Zones", "Fix", "Automation cell",
+     "Set the Exposed row's Automation cell to N/A: an Exposed Zone is read off the Zone, and the row only holds the text."),
+    (r"a CHECK line and an INIT line", "Fix", "Automation cell",
+     "Delete the INIT line unless Initiative should take the Condition twice: an Initiative is a check, so the CHECK line already reaches it."),
+    (r"a DEF line for every Defense and a DEF line for one of them", "Fix", "Automation cell",
+     "Keep one of the two DEF lines, or accept that the named Defense takes both."),
+    (r"no Description; players will read nothing for this Condition", "Fix", "Data",
+     "Write the Description cell: it is the tooltip on the Condition's row and on the token's hover card, and the reference tables' text."),
+    (r"is not read on a Condition's row yet|on a Condition's row does not take|a Condition's row takes", "Fix", "Automation cell",
+     "A Condition's row reads CHECK, ATK, DEF and INIT lines, which act for whoever has the Condition. What this line asks for has no "
+     "word there yet: say what the Condition should do and Claude will propose it, and mark the cell N/A meanwhile."),
+    (r"is a Condition's own value|this Condition takes none", "Fix", "Automation cell",
+     "-N is the Condition's own value: write it only on a row of data/conditions.xlsx whose Takes is N; anywhere else write a whole number."),
+    (r"assets/conditions\.json could not be registered|no Conditions workbook in data/", "Fix", "Build",
+     "Run node assets/build_all.mjs --conditions (sync_conditions.cmd) to rebuild assets/conditions.json from data/conditions.xlsx."),
+    (r"CONDITION ERRORS", None, None, None),      # a banner, skipped
     (r"is now ([\w.]+xlsx) \(renamed", "Note", "Data",
      "Nothing to do: the workbook was renamed and its actions are read under the new name. The line goes once a full content build has written actions.json again."),
     (r"also defined in ([\w.]+xlsx)$|also defined in ([\w.]+xlsx)\b(?!, which)", "Error", "Data",
@@ -186,7 +226,9 @@ SKIP = re.compile(r"^\s*(PASS|wrote |written |rendered|compiled |sheets written|
                   r"  \w+\s+\d+ documents|  index\.json|  \d+ documents written|  enabled for Foundry|  equipment:|  automation:|  grammar journal|"
                   r"  \d+ of \d+ action|  retired by|rules framework|rules: |Sources and index|\(the GM is also|the compendia on disk|Done\.|"
                   r"Content rebuilt|sync the open world|All steps clean|style clean|automation cells:|  \w+\.xlsx: \d+ actions|"
-                  r"Each is stored|in play; the full|=+$|Pipeline stopped|Bump SYSTEM_VERSION|CLAUDE\.md:|STYLE VIOLATIONS|NOTES \(advisory)")
+                  r"Each is stored|in play; the full|=+$|Pipeline stopped|Bump SYSTEM_VERSION|CLAUDE\.md:|STYLE VIOLATIONS|NOTES \(advisory|"
+                  r"staged |  conditions\.json |  \w+\.xlsx: \d+ Conditions|Conditions rebuilt|in Foundry, sync|Conditions on every|"
+                  r"assets/conditions\.json and the roster's conditions block are left)")
 
 WHERE_RE = re.compile(r"^(?:WARNING:\s*)?(?P<where>[^:]+?(?: / [^:/]+?)*?):\s(?P<msg>.+)$")
 

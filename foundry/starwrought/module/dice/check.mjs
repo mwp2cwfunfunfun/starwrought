@@ -372,7 +372,14 @@ export class SwCheck {
     // ("A Strike against the other Bind participant resolves before the Bind ends": the card's
     // damage may be placed there), and whether the attack was made with a Controlled implement (an
     // adversary's Attack Threshold, read again by a reroll).
-    controlZone = null, controlledAttack = false
+    controlZone = null, controlledAttack = false,
+    // WHAT A REROLL MUST MEET AGAIN (0.33.0, ruling 335): the Threat this pairing answered (for a
+    // Condition's line that asks about the attack: Prone's +2 Evade against a ranged Attack), and
+    // the total the Conditions of the adversary on the other side put on the hidden Threshold.
+    // A reroll reads that Threshold again from actor data, and the creature's Conditions may have
+    // moved since (a Hit that left a Torso Wound made it Off-Guard): the card keeps the first
+    // reading's total, a small number that gives the Threshold itself away to nobody.
+    threat = null, conditionShift = null
   } = {}) {
     if (!rollData) throw new Error("STARWROUGHT | resolveAgainst needs the roll's data.");
     // The roller may have sent its whole submission rather than the bare Roll data.
@@ -535,7 +542,10 @@ export class SwCheck {
       // Zone by the Strike rules, so it keeps none.
       controlZone: (!isSpell && (controlZone in SW.ZONES)) ? controlZone : null,
       controlZoneName: defenderName,
-      controlledAttack: !!controlledAttack
+      controlledAttack: !!controlledAttack,
+      // 0.33.0: kept on the card for a reroll (above).
+      threat: (threat && (typeof threat === "object")) ? threat : null,
+      conditionShift: Number.isFinite(conditionShift) ? conditionShift : null
     };
 
     const applied = [...(Array.isArray(modifiers) ? modifiers : []), ...pairing];
@@ -744,7 +754,14 @@ export class SwCheck {
       cast: isSpell ? (flags.cast ?? SW.DEFAULT_CAST) : null,
       outcomes: talent ? castOutcomes(talent, flags.cast ?? SW.DEFAULT_CAST) : null,
       rollData,
-      modifiers: Array.isArray(flags.modifiers) ? flags.modifiers : null,
+      // The card lists the die's own modifiers and then the pairing's (`resolveAgainst`: `applied`).
+      // A reroll hands the two back APART (0.33.0; found by the live drive, a defect since 0.31.0):
+      // handed back whole, the pairing's lines were taken for the die's own, so the new card listed
+      // them twice and, sharing a source, they added nothing to the total: a rerolled Strike lost
+      // its `IFT: EFFECT(...)` or `MARKED` bonus.
+      modifiers: Array.isArray(flags.modifiers)
+        ? flags.modifiers.slice(0, Math.max(0, flags.modifiers.length - (Array.isArray(flags.pairingModifiers) ? flags.pairingModifiers.length : 0)))
+        : null,
       pairingModifiers: Array.isArray(flags.pairingModifiers) ? flags.pairingModifiers : null,
       kind: flags.kind,
       defense: flags.defense ?? null,
@@ -763,7 +780,10 @@ export class SwCheck {
       rerollReason: reason,
       // 0.27.0: copied, never worked out again: the Bind they came from is gone.
       controlZone: flags.controlZone ?? null,
-      controlledAttack: !!flags.controlledAttack
+      controlledAttack: !!flags.controlledAttack,
+      // 0.33.0: copied too, so a second reroll meets what the first die met.
+      threat: flags.threat ?? null,
+      conditionShift: Number.isFinite(flags.conditionShift) ? flags.conditionShift : null
     });
 
     if (message.isAuthor || game.user.isGM) {

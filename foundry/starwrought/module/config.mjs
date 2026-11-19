@@ -86,7 +86,14 @@ export {
 
 export { TYPE_ICONS, FEATURE_TYPES, PHYSICAL_TYPES, CARRY_STATES, ACTIVE_STATE } from "./config/items.mjs";
 
-export { CONDITIONS, ZONE_CONDITIONS, statusEffectId, conditionIdOf, conditionWords } from "./config/conditions.mjs";
+export {
+  CONDITIONS, ZONE_CONDITIONS, statusEffectId, conditionIdOf, conditionWords,
+  // The registry (0.33.0): the workbook's rows laid over the built-ins, and new Conditions from rows.
+  DEFAULT_CONDITION_ICON, RESERVED_CONDITION_NAMES, CONDITION_TAKES, registerConditions,
+  conditionsRegistered, builtInConditionIds, conditionLabel, conditionHasRules, newStatusId,
+  newConditionId, conditionRowName, readInclude, RESERVED_CONDITION_FIRST_WORDS, conditionNameFree,
+  conditionNameKey, conditionDescription, conditionHasRow
+} from "./config/conditions.mjs";
 
 export { BONUS_TYPES, LEGACY_BONUS_TYPES, bonusType, resolveModifiers } from "./config/modifiers.mjs";
 

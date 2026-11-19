@@ -75,12 +75,14 @@ import { SwCombatPrompt } from "./module/apps/combat-prompt.mjs";
 // THE CONTENT LOOP (0.8.0): the open world's compendia synced from the pack sources on disk, no
 // restart (content-loop brief; rulings 115 to 117). The window, and the two reads the load offer makes.
 import { ContentSync } from "./module/apps/content-sync.mjs";
-import { fetchContentIndex, planContentSync, formatWhen } from "./module/helpers/content-sync.mjs";
+import { fetchContentIndex, planContentSync, formatWhen, announceConditions } from "./module/helpers/content-sync.mjs";
 import { registerHandlebarsHelpers, preloadTemplates } from "./module/helpers/handlebars.mjs";
 import {
   loadConstellationIndex, refreshConstellationRegistry, checkContent, checkSceneGrid, rulesVersion,
   loadChassisIndex, invalidateChassisIndex, chassisByName,
-  invalidateBasicActions, loadTerrainKinds, unarmedStrikeData
+  invalidateBasicActions, loadTerrainKinds, unarmedStrikeData,
+  // THE CONDITIONS (0.33.0): the workbook's rows, the palette's list, and putting them to work.
+  loadConditions, conditionsReady, applyConditions, statusEffectList
 } from "./module/helpers/content.mjs";
 // THE UNARMED STRIKE (0.29.0): who already has a natural weapon, for the one-time gift, and the
 // one client that gives it.
@@ -178,13 +180,11 @@ Hooks.once("init", async () => {
   };
 
   /* Conditions, as toggleable token statuses. The static id is the one SwActor#setCondition creates
-     under too, so a status set by the rules and one toggled from the palette are one effect (0.5.1). */
-  CONFIG.statusEffects = Object.values(SW.CONDITIONS).map(c => ({
-    id: c.id,
-    name: c.name,
-    img: c.img,
-    _id: SW.statusEffectId(c.id)
-  }));
+     under too, so a status set by the rules and one toggled from the palette are one effect (0.5.1).
+     Built here from the Conditions the system ships with, since this hook cannot wait for a file;
+     built again once the Conditions workbook's rows are registered (0.33.0; `loadConditions`
+     below and `applyConditions` at ready), when a Condition a row made joins the palette. */
+  CONFIG.statusEffects = statusEffectList();
   CONFIG.specialStatusEffects.DEFEATED = "dead";
   CONFIG.specialStatusEffects.BLIND = "blinded";
 
@@ -230,7 +230,10 @@ Hooks.once("init", async () => {
   // the registry before the world's regions are built, so a Kind select, the overlay and the ruler
   // read the roster's names (helpers/content.mjs; re-read after a content sync). Fetched beside
   // the Constellation index, since neither waits on the other (0.18.1).
-  await Promise.all([loadTerrainKinds(), loadConstellationIndex()]);
+  // THE CONDITIONS (0.33.0): content/conditions.json, the Conditions workbook's rows, read beside
+  // them and always past the cache. Foundry does not wait for this hook, so `ready` waits for the
+  // read itself (`conditionsReady`) before anything is done with the world.
+  await Promise.all([loadTerrainKinds(), loadConstellationIndex(), loadConditions()]);
   await preloadTemplates();
 });
 
@@ -239,6 +242,12 @@ Hooks.once("init", async () => {
 /* -------------------------------------------- */
 
 Hooks.once("ready", async () => {
+  // THE CONDITIONS (0.33.0), first: the read that init began is finished, the palette's list is
+  // rebuilt, and every creature that has a Condition is prepared again, since the world's Actors
+  // may have been prepared before the workbook's rows were known. A file that could not be read is
+  // said here, to the GM, where a notification can be seen.
+  await conditionsReady();
+  applyConditions();
   await refreshConstellationRegistry();
   // The chassis by name, for the sheet's locked fields to explain themselves.
   await loadChassisIndex();
@@ -278,6 +287,11 @@ Hooks.once("ready", async () => {
     const type = String(message?.type ?? "");
     // `give:*` (0.22.0): a Maneuver's result given to another player's character, on a client that may write it.
     // `effect:*` (0.32.0): what a Maneuver puts on another creature, written on the client that may write it.
+    // `content:conditions` (0.33.0): the GM's Sync content has read the Conditions again; so does
+    // this client, from the file itself (the message carries nothing to trust).
+    if (type === "content:conditions") {
+      return loadConditions({ fresh: true }).catch(err => console.error("STARWROUGHT | the Conditions could not be reloaded", err));
+    }
     if (/^(damage|reroll|expose|give|effect):/.test(type)) return onChatSocket(message, senderId);
     if (/^party:/.test(type)) return onPartySocket(message, senderId);
     if (/^rules:/.test(type)) return onRulesSocket(message, senderId);
@@ -345,10 +359,20 @@ async function offerContentSync() {
     const synced = game.settings.get(SW.SYSTEM_ID, "contentBuild");
     if (index.build === synced) return;
     const plan = await planContentSync(index);
-    if (plan.empty) {
+    // No pack has work: recorded silently. When the CONDITIONS are what moved (0.33.0; the
+    // review), there is still something to do and it needs no question: this client read the new
+    // file as it loaded, and every connected player is told to read it too. Without this a GM
+    // who reloaded after `sync_conditions.cmd` left the players on the old lines, with nothing
+    // on screen to say so.
+    if (!plan.packs.some(p => p.work > 0)) {
       await game.settings.set(SW.SYSTEM_ID, "contentBuild", plan.build);
       await game.settings.set(SW.SYSTEM_ID, "contentStamp", plan.stamp);
-      console.log(`STARWROUGHT | the compendia already match the content build ${plan.build.slice(0, 8)}; recorded.`);
+      if (plan.conditions?.changed) {
+        await announceConditions(plan.conditions.build);
+        console.log(`STARWROUGHT | the Conditions moved (build ${plan.conditions.build.slice(0, 8)}); every connected client was told to read them again.`);
+      } else {
+        console.log(`STARWROUGHT | the compendia already match the content build ${plan.build.slice(0, 8)}; recorded.`);
+      }
       return;
     }
     const yes = await foundry.applications.api.DialogV2.confirm({
@@ -424,7 +448,7 @@ async function migrateWorld() {
   const done = game.settings.get(SW.SYSTEM_ID, "systemVersion") || "0.0.0";
   // Each step runs once, for a world last opened under a version older than the one it names.
   const needs = version => foundry.utils.isNewerVersion(version, done);
-  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0") && !needs("0.18.1") && !needs("0.29.0")) {
+  if (!needs("0.4.0") && !needs("0.5.1") && !needs("0.6.0") && !needs("0.10.1") && !needs("0.11.0") && !needs("0.12.0") && !needs("0.18.1") && !needs("0.29.0") && !needs("0.33.0")) {
     // Nothing to change, but the stamp still names the release the world last ran under.
     if (done !== game.system.version) await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
     return;
@@ -684,9 +708,52 @@ async function migrateWorld() {
     }
   }
 
+  // 0.33.0 (ruling 333): an effect that is merely CALLED by the name of a Condition a row of the
+  // Conditions workbook made becomes that Condition's own. Through 0.32.1 Supine was a named
+  // Effect, an ActiveEffect called "Supine" with no status, which a Maneuver's `[EFFECT APPLY:
+  // Supine]` put on; now that Supine is a Condition its name is reserved, and such an effect would
+  // be read by nothing. The record of who applied it rides across. Only the elected GM client
+  // writes, and only once the workbook's rows are registered: with no such Condition known (the
+  // Conditions file could not be read) the step is left for the next load.
+  let renamed = 0;
+  let conditionsDeferred = false;
+  if (needs("0.33.0")) {
+    const made = Object.values(SW.CONDITIONS).filter(c => !c.builtIn);
+    if (!isElected() || !SW.conditionsRegistered()) {
+      conditionsDeferred = true;
+    } else if (made.length) {
+      const adopt = async actor => {
+        if (!actor || (actor.type === SW.PARTY_TYPE)) return;
+        for (const effect of [...actor.effects]) {
+          if (effect.statuses?.size) continue;
+          // Only what an `APPLY` line or a hand left as a bare label: an effect that is switched
+          // off, or one a GM authored with changes of its own, is theirs and is left as it is
+          // (the review of 0.33.0: adopted, a disabled one came back on, and an authored one
+          // lost its changes).
+          if (effect.disabled || effect.changes?.length) continue;
+          const id = SW.conditionIdOf(SW.plainName(String(effect.name ?? "")));
+          if (!id || SW.CONDITIONS[id]?.builtIn !== false) continue;
+          const record = effect.flags?.[SW.SYSTEM_ID]?.applied ?? null;
+          try {
+            await actor.setCondition(id, true, record ? { flags: { [SW.SYSTEM_ID]: { applied: record } } } : {}, { force: true });
+            await effect.delete({ swAnnounced: true });
+            renamed++;
+          } catch (error) {
+            console.error(`STARWROUGHT | ${actor.name}: the effect "${effect.name}" could not be made the Condition's own`, error);
+          }
+        }
+      };
+      for (const actor of game.actors) await adopt(actor);
+      for (const scene of game.scenes) {
+        for (const token of scene.tokens) if (!token.actorLink && token.actor) await adopt(token.actor);
+      }
+    }
+  }
+
   // The stamp names the release the world last ran under. When the Unarmed Strike could not be
   // given (no compendium to read) the stamp stops at the release before it, so the next load runs
-  // that one step again and none of the older ones.
+  // that one step again and none of the older ones; and so for the Conditions (0.33.0), whose
+  // step waits for the workbook's rows.
   if (fistMissing || fistDeferred) {
     const before = "0.28.0";
     await game.settings.set(SW.SYSTEM_ID, "systemVersion", foundry.utils.isNewerVersion(done, before) ? done : before);
@@ -695,8 +762,16 @@ async function migrateWorld() {
       console.warn(`STARWROUGHT | ${message}`);
       ui.notifications.warn(message, { permanent: true });
     }
+  } else if (conditionsDeferred) {
+    const before = "0.32.1";
+    await game.settings.set(SW.SYSTEM_ID, "systemVersion", foundry.utils.isNewerVersion(done, before) ? done : before);
   } else {
     await game.settings.set(SW.SYSTEM_ID, "systemVersion", game.system.version);
+  }
+  if (renamed > 0) {
+    const message = game.i18n.format("STARWROUGHT.Migration.conditionsAdopted", { version: game.system.version, count: renamed });
+    console.log(`STARWROUGHT | ${message}`);
+    ui.notifications.info(message);
   }
   if (fists > 0) {
     const message = game.i18n.format("STARWROUGHT.Migration.unarmed", { version: game.system.version, count: fists });
@@ -876,7 +951,7 @@ function registerExposedStatuses() {
       spendSkips(actor, marks);
       return;
     }
-    sayPrevented(actor, preventer, game.i18n.localize(config.name))
+    sayPrevented(actor, preventer, game.i18n.localize(SW.conditionNameKey(id)))
       .then(() => spendSkips(actor, [...marks, ...(preventer.mark ? [preventer.mark] : [])]))
       .catch(err => console.error(`STARWROUGHT | ${actor.name}: the prevented ${id} could not be said`, err));
     return false;
@@ -1319,6 +1394,13 @@ function registerSettings() {
     default: ""
   });
   game.settings.register(SW.SYSTEM_ID, "contentStamp", {
+    scope: "world",
+    config: false,
+    type: String,
+    default: ""
+  });
+  // The Conditions build the world last told its clients to read (0.33.0; helpers/content-sync.mjs).
+  game.settings.register(SW.SYSTEM_ID, "conditionsBuild", {
     scope: "world",
     config: false,
     type: String,

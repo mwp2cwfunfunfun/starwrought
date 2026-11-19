@@ -39,7 +39,7 @@
  */
 
 import { KIND_WORD, kindOf } from "./kinds/index.mjs";
-import { RuleSyntaxError, isNotApplicable } from "./syntax.mjs";
+import { RuleSyntaxError, isNotApplicable, CONDITION_ROW, CONDITION_ROW_TAGS } from "./syntax.mjs";
 // 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
 import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
 import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS } from "./effects.mjs";
@@ -120,6 +120,7 @@ export function parseAutomation(text, context = {}) {
   const warnings = [];
   const lines = String(text ?? "").split(/\r?\n/);
   const bareIsTheForm = context?.itemType === BARE_CARRIER;
+  const onConditionRow = context?.itemType === CONDITION_ROW;
   // The first line that says "no automation" (0.26.1), for the one warning below.
   let notApplicable = null;
 
@@ -142,6 +143,11 @@ export function parseAutomation(text, context = {}) {
       let effect;
       try {
         effect = readEffectLine(effectText, { context });
+        // A Condition's row (0.33.0): bonuses and penalties to rolls and Thresholds, and no
+        // other tag yet. Each other word comes with the release that gives it a meaning there.
+        if (onConditionRow && !CONDITION_ROW_TAGS.includes(effect.tag)) {
+          throw new RuleSyntaxError(`${effect.tag.toUpperCase()} is not read on a Condition's row yet: a Condition's lines are ${CONDITION_ROW_TAGS.map(t => t.toUpperCase()).join(", ")}`);
+        }
         if (ring) {
           if (effect.ops.for) throw new RuleSyntaxError("the ring is the FOR: an effect inside [AURA ...] reaches whom the ring is about, within its range; drop the FOR");
           effect.ops.for = { who: ring.affects, range: ring.range };
@@ -222,6 +228,12 @@ export function parseAutomation(text, context = {}) {
         const kind = kindOf(block.kind);
         if (!kind) {
           errors.push({ line, text: block.text, message: `the "${block.kind}" kind is not registered (a bug in the kinds, not in the cell)` });
+          continue;
+        }
+        // A Condition's row carries effect lines alone (0.33.0): a feature block says what owning
+        // a Talent makes a character, and a Condition is owned by nobody.
+        if (onConditionRow) {
+          errors.push({ line, text: block.text, message: `a Condition's row takes \`[EFFECT ...]\` lines (${CONDITION_ROW_TAGS.map(t => t.toUpperCase()).join(", ")}); this block is not read on a Condition's row yet` });
           continue;
         }
         // An aura block may carry its effect after a semicolon (0.18.0; Mike: "the Effects should

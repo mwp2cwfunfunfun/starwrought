@@ -34,7 +34,14 @@
  * authored once, on its sheet. The text as written is kept beside it as `effectSource`. A name
  * that is no row is an ERROR naming the cell.
  *
- * Usage:  node assets/parse_rules.mjs
+ * THE CONDITIONS (0.33.0). The converter stages the rows of data/conditions.xlsx; this step reads
+ * their cells first, lays them over the system's own Conditions and writes assets/conditions.json
+ * and the roster's `conditions` block together (assets/lib/conditions_build.mjs, and the section
+ * below).
+ *
+ * Usage:  node assets/parse_rules.mjs               every cell
+ *         node assets/parse_rules.mjs --lenient     the content loop: an unread line is stored, not fatal
+ *         node assets/parse_rules.mjs --conditions  the Conditions workbook alone; nothing else is parsed or written
  */
 
 import fs from "node:fs";
@@ -43,11 +50,16 @@ import { fileURLToPath } from "node:url";
 
 import { parseAutomation, ruleEntries, isNotApplicableCell } from "../foundry/starwrought/module/rules/grammar.mjs";
 import { knownKinds } from "../foundry/starwrought/module/rules/kinds/index.mjs";
-import { plainName, costGlyphs, registerTerrainKinds } from "../foundry/starwrought/module/config.mjs";
+import { plainName, costGlyphs, registerTerrainKinds, registerConditions } from "../foundry/starwrought/module/config.mjs";
 import { buildResolver } from "./lib/rule_targets.mjs";
+// 0.33.0: the Conditions workbook's rows, read (the cells, the registry, the two outputs).
+import { buildConditions, registryRows } from "./lib/conditions_build.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ASSETS = HERE;
+/** The converter's staged Conditions rows, and the file this step writes from them. */
+const CONDITIONS_STAGED = path.join(HERE, "..", "build", "conditions.staged.json");
+const CONDITIONS_OUT = path.join(ASSETS, "conditions.json");
 
 /* -------------------------------------------- */
 /*  The files                                   */
@@ -59,8 +71,12 @@ const ASSETS = HERE;
  * back here, each file keeping the line ending it had, so a run that adds nothing changes nothing
  * and the diff of a run that does is the rules alone.
  */
-function load(name) {
+function load(name, fallback = undefined) {
   const file = path.join(ASSETS, name);
+  // `--conditions` reads the trees, the actions and the backgrounds only to resolve a name a
+  // Condition's line may write (`DEF: -2 situation, evade`), and writes none of them: a checkout
+  // that has not built them yet still builds its Conditions.
+  if ((fallback !== undefined) && !fs.existsSync(file)) return { file, name, data: fallback, crlf: true };
   const text = fs.readFileSync(file, "utf8");
   return { file, name, data: JSON.parse(text), crlf: text.includes("\r\n") };
 }
@@ -71,9 +87,10 @@ function save({ file, data, crlf }) {
   fs.writeFileSync(file, text, "utf8");
 }
 
-const trees = load("trees.json");
-const actions = load("actions.json");
-const backgrounds = load("backgrounds.json");
+const conditionsMode = process.argv.includes("--conditions");
+const trees = load("trees.json", conditionsMode ? {} : undefined);
+const actions = load("actions.json", conditionsMode ? { actions: [] } : undefined);
+const backgrounds = load("backgrounds.json", conditionsMode ? [] : undefined);
 const roster = load("roster.json");
 
 const sheetActions = actions.data.actions ?? [];
@@ -88,13 +105,113 @@ try {
     throw new Error("the block is missing or empty (rows of [name, description, difficulty, colour])");
   }
 } catch (error) {
-  console.error(`RULE ERRORS (nothing written):\n  - roster.json terrainKinds: ${error.message}`);
-  process.exit(1);
+  // A Condition's row reads no terrain kind, so the Conditions build does not stop for this.
+  if (!conditionsMode) {
+    console.error(`RULE ERRORS (nothing written):\n  - roster.json terrainKinds: ${error.message}`);
+    process.exit(1);
+  }
 }
 
 const errors = [];
 const warnings = [];
 const tally = { rules: 0, cells: 0, kinds: new Set(), warned: 0, roots: 0, markers: 0, unread: 0, unreadCells: 0 };
+
+/* -------------------------------------------- */
+/*  The Conditions (0.33.0)                     */
+/* -------------------------------------------- */
+
+/**
+ * THE CONDITIONS WORKBOOK, read before any other cell (rulings 322 and 323), so a Talent's
+ * `IFT: EFFECT(supine)` and a Maneuver's `[EFFECT APPLY: Supine]` mean the Condition its row made.
+ * The converter staged the rows (build/conditions.staged.json); `buildConditions` parses their
+ * cells, lays them over the system's own Conditions and builds the two outputs, which are written
+ * TOGETHER and only when the whole sheet reads: assets/conditions.json, and the roster's
+ * `conditions` block (saved with the roster below, or at once by `--conditions`).
+ *
+ *   A sheet that does not read: the release pipeline stops, as for any cell. The content loop
+ *   (`--lenient`) and no staged file at all leave conditions.json as it was and read the
+ *   Conditions from it, so the other workbooks' cells are still checked against the last good set.
+ *
+ * `--conditions` is this part ALONE: no tree, action or background cell is parsed and none of
+ * their files is written, so it runs while those workbooks are still being authored.
+ */
+const conditionsOnly = conditionsMode;
+const conditionNotes = { written: null, created: [], failed: [], summary: "" };
+
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
+}
+
+(function conditionsStep() {
+  const staged = fs.existsSync(CONDITIONS_STAGED) ? readJson(CONDITIONS_STAGED) : null;
+  const lastGood = () => {
+    const kept = readJson(CONDITIONS_OUT);
+    if (!kept) return;
+    try { registerConditions(registryRows(kept)); }
+    catch (error) { warnings.push(`assets/conditions.json could not be registered (${error.message}); the cells are read against the system's own Conditions`); }
+  };
+  if (!staged) {
+    if (conditionsOnly) {
+      console.error("CONDITION ERRORS (nothing written):\n  - no staged rows (build/conditions.staged.json): run `python assets/xlsx_to_trees.py --conditions` first, or `node assets/build_all.mjs --conditions` for both");
+      process.exit(1);
+    }
+    lastGood();
+    return;
+  }
+  const built = buildConditions({ staged, resolve });
+  for (const w of built.warnings) warnings.push(w);
+  if (built.errors.length) {
+    conditionNotes.failed = built.errors;
+    lastGood();
+    return;
+  }
+  conditionNotes.written = built;
+  conditionNotes.created = built.created;
+  conditionNotes.summary = `conditions: ${built.json.conditions.length} Conditions (${built.block.length} listed), ${built.rules} rule${built.rules === 1 ? "" : "s"} on ${built.cells} row${built.cells === 1 ? "" : "s"}`
+    + (built.created.length ? `, ${built.created.length} new` : "");
+})();
+
+/**
+ * Write the Conditions' two outputs, in the order that leaves a failure recoverable (the review
+ * of 0.33.0): the roster's block goes out FIRST (with the roster, by `saveRoster` here or by the
+ * caller's own save), then conditions.json, and only then are the staged rows used up. A write
+ * that fails part way leaves the staged rows in place, so the next run does the whole of it again.
+ * `block`: put the block on the roster in memory. `saveRoster`: save the roster now (the
+ * `--conditions` run). `file`: write conditions.json and use the staged rows up.
+ */
+function writeConditions({ block = false, saveRoster = false, file = false } = {}) {
+  const built = conditionNotes.written;
+  if (!built) return;
+  if (block) {
+    const before = (roster.data.conditions ?? []).length;
+    if (built.block.length < before) {
+      console.log(`WARNING: roster.json had ${before} conditions rows, the sheet lists ${built.block.length}; the sheet wins, so confirm nothing was dropped by accident`);
+    }
+    roster.data.conditions = built.block; // an existing key keeps its position in the file
+  }
+  if (saveRoster) save(roster);
+  if (!file) return;
+  // The line ending the roster has, as every generated JSON beside it (see `load`).
+  const text = JSON.stringify(built.json, null, 1);
+  fs.writeFileSync(CONDITIONS_OUT, roster.crlf ? text.replace(/\n/g, "\r\n") : text, "utf8");
+  // The staged rows are used up: a later run with no Conditions workbook reads conditions.json.
+  try { fs.unlinkSync(CONDITIONS_STAGED); } catch { /* already gone */ }
+  for (const name of built.created) {
+    console.log(`NEW CONDITION: "${name}" is made by its row (the system has no Condition of that name). If it is a slip for another row's name, mend the row.`);
+  }
+  console.log(`wrote assets/conditions.json and the roster's conditions block: ${conditionNotes.summary.replace(/^conditions: /, "")}`);
+}
+
+if (conditionsOnly) {
+  for (const w of warnings) console.log(`WARNING: ${w}`);
+  if (conditionNotes.failed.length) {
+    console.error("CONDITION ERRORS (nothing written):");
+    for (const e of conditionNotes.failed) console.error(`  - ${e}`);
+    process.exit(1);
+  }
+  writeConditions({ block: true, saveRoster: true, file: true });
+  process.exit(0);
+}
 
 /**
  * `--lenient` (2026-11-07; the content loop passes it): a cell line the grammar cannot read does
@@ -414,11 +531,24 @@ for (const background of backgrounds.data) expandMarkers(background, `Background
 /*  The verdict                                 */
 /* -------------------------------------------- */
 
+// The Conditions workbook (0.33.0): a sheet that does not read stops a release as any cell does;
+// the content loop goes on with conditions.json as it was, and says so.
+if (conditionNotes.failed.length && !lenient) errors.push(...conditionNotes.failed);
+
 for (const w of warnings) console.log(`WARNING: ${w}`);
 if (errors.length) {
   console.error("RULE ERRORS (nothing written):");
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
+}
+if (conditionNotes.failed.length) {
+  console.log("");
+  console.log("=".repeat(72));
+  console.log(`CONDITION ERRORS (a warning in content mode): the Conditions workbook did not read, so`);
+  console.log("assets/conditions.json and the roster's conditions block are left as they were.");
+  console.log("=".repeat(72));
+  for (const e of conditionNotes.failed) console.log(`  - ${e}`);
+  console.log("");
 }
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -433,12 +563,18 @@ if (unread.length) {
   console.log("");
 }
 
+// The Conditions' outputs go out with the rest: the block with the roster, then conditions.json
+// once every other file is saved, and the staged rows used up last.
+writeConditions({ block: true });
+
 save(trees);
 save(actions);
 save(backgrounds);
 save(roster);
+writeConditions({ file: true });
 
 const kinds = tally.rules ? `${plural(tally.kinds.size, "kind")} in use` : `${plural(knownKinds().length, "kind")} defined, none in use`;
 console.log(`rules: ${plural(tally.rules, "rule")} on ${plural(tally.cells, "cell")} (${kinds}), `
   + `${plural(tally.warned, "cell")} warned${unread.length ? `, ${plural(unread.length, "line")} unread on ${plural(tally.unreadCells, "cell")}` : ""}; `
-  + `chassis: facts from ${plural(tally.roots, "root")}; markers: ${tally.markers} expanded`);
+  + `chassis: facts from ${plural(tally.roots, "root")}; markers: ${tally.markers} expanded`
+  + (conditionNotes.summary ? `; ${conditionNotes.summary}` : ""));

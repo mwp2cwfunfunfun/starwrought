@@ -925,6 +925,124 @@ def equipment_only():
         print("VALIDATION ERRORS:"); [print("  -", e) for e in errors]; sys.exit(1)
     write_equipment(equipment, equipment_files)
 
+# ---- The Conditions workbook (0.33.0; rulings 322 and 323) -------------------------------------
+# Mike, 2026-11-18: "can we build a conditions.xlsx that includes every condition, and the
+# automation effects (if any) of it?" and, by question: the workbook is the source the system
+# reads, and the ONLY authority for what a Condition says and does. An index-less workbook with a
+# `Conditions` sheet, one row for each Condition:
+#
+#   Condition    its name ("Frightened"; the table's suffix, "Frightened N", is read off)
+#   Takes        blank, N (a value), Zone, or X (a creature)
+#   Description  the text players read
+#   Includes     other Conditions this one also counts as, comma separated ("Off-Guard"; or
+#                "Off-Guard against X": only against the creature that put this Condition on)
+#   Automation   lines in the grammar, as on a Talent; N/A for a row that needs none
+#   System       Yes for the Conditions the system itself puts on and takes off
+#   Listed?      Yes to print the row in the reference tables (web app, compendium, journal)
+#   Icon, Notes  optional; Notes is for the author and is carried, never read
+#
+# The converter reads the cells and knows nothing of the grammar or of which Conditions the system
+# has: it STAGES the rows (build/conditions.staged.json) and assets/parse_rules.mjs parses every
+# Automation cell, lays the rows over the system's own Conditions, refuses a workbook that leaves
+# one of them without a row, and only then writes assets/conditions.json and the roster's
+# `conditions` block together. So a workbook with a slip in it never leaves a half-written file.
+CONDITIONS_SHEET = "Conditions"
+CONDITION_COLUMNS = {"name": "condition", "takes": "takes", "description": "desc", "includes": "include",
+                     "automation": "automation", "system": "system", "listed": "listed", "icon": "icon", "notes": "note"}
+CONDITION_TAKES = {"": "", "n": "N", "zone": "Zone", "x": "X"}
+CONDITION_SUFFIX = re.compile(r"\s*(?:\[\s*(zone|x)\s*\]|\s((?-i:N)))\s*$", re.I)
+CSTAGED = os.path.join(ROOT, "build", "conditions.staged.json")
+
+def is_conditions_workbook(sheetnames):
+    """An index-less workbook with a Conditions sheet."""
+    return CONDITIONS_SHEET in sheetnames
+
+def parse_conditions_workbook(wb, fname, conditions, warnings, errors, defined):
+    """One Condition per row of the Conditions sheet, appended to `conditions` as the staged rows
+    assets/parse_rules.mjs reads: name (the table's suffix off), takes, description, includes (a
+    list, as written), automation (the cell's text), system, listed, icon, notes, and `row`, the
+    sheet row, for a message. `defined` is shared across workbooks (bare lower-case name -> file).
+    Returns how many rows this workbook gave."""
+    ws = wb[CONDITIONS_SHEET]
+    where_sheet = f"{fname} / {CONDITIONS_SHEET}"
+    cm = header_map(ws, CONDITION_COLUMNS, unknown=warnings, where=where_sheet)
+    if "name" not in cm or "description" not in cm:
+        errors.append(f"{where_sheet}: sheet needs Condition and Description columns"); return 0
+    n = 0
+    for i, r in enumerate(ws.iter_rows(min_row=2), start=2):
+        cellv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
+        raw = lambda k: plain(cellv(k))
+        written = raw("name")
+        if not written: continue
+        # "Frightened N", "Exposed [Zone]", "Wrong-Footed [X]": the handbook's table prints what a
+        # Condition takes after its name. The Takes column is the authoring; the suffix reads too.
+        suffix = CONDITION_SUFFIX.search(written)
+        name = CONDITION_SUFFIX.sub("", written).strip() if suffix else written
+        where = f"{where_sheet} / {name}"
+        if not name:
+            errors.append(f"{where_sheet} / row {i}: '{written}' leaves no name"); continue
+        key = name.lower()
+        if key in defined:
+            errors.append(f"{where}: also defined {'on this sheet' if defined[key] == fname else 'in ' + defined[key]}"); continue
+        defined[key] = fname
+        takes_cell = raw("takes").strip().lower()
+        from_suffix = (suffix.group(1) or suffix.group(2)).lower() if suffix else ""
+        if takes_cell not in CONDITION_TAKES:
+            errors.append(f"{where}: Takes is blank, N, Zone or X (got '{raw('takes')}')"); continue
+        if takes_cell and from_suffix and takes_cell != from_suffix:
+            errors.append(f"{where}: Takes says '{raw('takes')}' and the name ends '{written[len(name):].strip()}'; keep one"); continue
+        takes = CONDITION_TAKES[takes_cell or from_suffix]
+        description = raw("description")
+        if not description:
+            warnings.append(f"{where}: no Description; players will read nothing for this Condition")
+        # Includes: comma separated, a comma inside brackets never splitting, as a Traits cell is.
+        includes = [t for t in (blank_none(x) for x in re.split(r",(?![^(]*\))", raw("includes"))) if t]
+        # Automation: the cell as written, line breaks kept. "N/A" (and a blank) is no automation,
+        # which the grammar reads for itself; the text is carried so the report can tell the two apart.
+        v = cellv("automation")
+        automation = "" if v is None or v.value is None else re.sub(r"\r\n?", "\n", str(v.value)).strip()
+        system = raw("system").lower() == "yes"
+        # Listed?: a sheet without the column lists every row; with it, only a Yes.
+        listed = enabled_flag(cellv("listed"), "listed" in cm)
+        conditions.append({"name": name, "takes": takes, "description": description, "includes": includes,
+                           "automation": automation, "system": system, "listed": listed,
+                           "icon": raw("icon"), "notes": raw("notes"), "row": i, "workbook": fname})
+        n += 1
+    return n
+
+def write_conditions_staged(conditions, condition_files):
+    """The staged rows, for assets/parse_rules.mjs (which writes conditions.json and the roster's
+    block once every cell reads). Never the roster, never conditions.json: those are that step's."""
+    os.makedirs(os.path.dirname(CSTAGED), exist_ok=True)
+    json.dump({"source": condition_files, "conditions": conditions}, open(CSTAGED, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    print(f"staged {os.path.relpath(CSTAGED, ROOT)}: {len(conditions)} Conditions from {', '.join(condition_files)} "
+          f"({sum(1 for c in conditions if c['listed'])} listed, {sum(1 for c in conditions if c['system'])} the system's own); "
+          f"assets/parse_rules.mjs reads the cells and writes assets/conditions.json")
+
+def conditions_only():
+    """--conditions (0.33.0): the Conditions workbook ALONE, as --equipment is the equipment
+    workbook alone. No other workbook is loaded (each is told apart by the sheet names in its
+    package), so it runs while the talent and action workbooks are still being authored. Errors
+    block the staging, as in the full run."""
+    for s in (sys.stdout, sys.stderr):
+        if hasattr(s, "reconfigure"): s.reconfigure(encoding="utf-8", errors="replace")
+    files = [f for f in sorted(glob.glob(os.path.join(DATA, "*.xlsx"))) if not os.path.basename(f).startswith("~$")]
+    conditions, condition_files, defined, warnings, errors = [], [], {}, [], []
+    for path in files:
+        names = sheet_names(path)
+        if "_Tree Index" in names or not is_conditions_workbook(names): continue
+        fname = os.path.basename(path)
+        if os.path.exists(os.path.join(DATA, "~$" + fname)):
+            warnings.append(f"{fname}: open in Excel; converting the last saved version")
+        n = parse_conditions_workbook(load_workbook(path, rich_text=True), fname, conditions, warnings, errors, defined)
+        condition_files.append(fname)
+        print(f"  {fname}: {n} Conditions")
+    if not condition_files: sys.exit(f"no Conditions workbook found in {DATA} (a workbook with a Conditions sheet and no _Tree Index)")
+    for w in warnings: print("WARNING:", w)
+    if errors:
+        print("VALIDATION ERRORS:"); [print("  -", e) for e in errors]; sys.exit(1)
+    write_conditions_staged(conditions, condition_files)
+
 # ---- The spell columns (PHB v4.21; the magic workbook) -----------------------------------------
 # A spell is authored as structure beside its Effect prose, the Aura column's precedent, so the Cast
 # Maneuver in Foundry, the web app and the compendium docx all read one shape and no consumer parses
@@ -1021,6 +1139,7 @@ def main():
     # from the previous row while cultures.xlsx has no Languages column of its own (see prior_languages).
     prior_roster = json.load(open(ROSTER, encoding="utf-8")) if os.path.exists(ROSTER) else {}
     equipment, equipment_files, defined_equipment = new_equipment(), [], {}
+    conditions, condition_files, defined_conditions = [], [], {}
     for path in files:
         fname = os.path.basename(path)
         # A workbook open in Excel used to be skipped, which silently wrote a trees.json without
@@ -1056,7 +1175,13 @@ def main():
                 equipment_files.append(fname)
                 print(f"  {fname}: {counts['weapons']} weapons, {counts['armor']} armor, {counts['shields']} shields, "
                       f"{counts['ammunition']} ammunition")
-            if not any(s in wb.sheetnames for s in ("Backgrounds", "Languages")) and not is_equipment_workbook(wb.sheetnames):
+            # An index-less workbook with a Conditions sheet is the Conditions workbook (0.33.0).
+            if is_conditions_workbook(wb.sheetnames):
+                n = parse_conditions_workbook(wb, fname, conditions, warnings, errors, defined_conditions)
+                condition_files.append(fname)
+                print(f"  {fname}: {n} Conditions")
+            if (not any(s in wb.sheetnames for s in ("Backgrounds", "Languages")) and not is_equipment_workbook(wb.sheetnames)
+                    and not is_conditions_workbook(wb.sheetnames)):
                 warnings.append(f"{fname}: no '_Tree Index' sheet; file skipped")
             continue
         idx = wb["_Tree Index"]
@@ -1440,8 +1565,15 @@ def main():
         write_equipment(equipment, equipment_files)
     elif os.path.exists(EOUT):
         print(f"WARNING: no equipment workbook in data/; {EOUT} left as found. It is generated from data/equipment.xlsx, not hand-kept.")
+    # The Conditions workbook's rows are STAGED for assets/parse_rules.mjs, which reads their cells
+    # and writes conditions.json and the roster's `conditions` block (0.33.0).
+    if condition_files:
+        write_conditions_staged(conditions, condition_files)
+    elif os.path.exists(os.path.join(HERE, "conditions.json")):
+        print("WARNING: no Conditions workbook in data/; assets/conditions.json left as found. It is generated from data/conditions.xlsx, not hand-kept.")
     # Patch ONLY the generated blocks of roster.json: ancestries and cultures (0.15.0) here, the four
-    # equipment blocks below. Conditions, materials, handling, callings and the trait tables stay
+    # equipment blocks above (the `conditions` block is assets/parse_rules.mjs's, from the Conditions
+    # workbook, 0.33.0). Materials, handling, callings and the trait tables stay
     # hand-kept. Guarded: an empty parse (chassis columns removed from ancestries.xlsx, no Culture
     # tree read, or no such workbook in data/ at all) leaves that block alone rather than blanking
     # chargen. A workbook open in Excel is no longer a case here: it is read from its last saved copy
@@ -1463,5 +1595,8 @@ if __name__ == "__main__":
     # workbooks are still being authored. Anything else is the full conversion.
     if "--equipment" in sys.argv[1:]:
         equipment_only()
+    # --conditions (0.33.0): the Conditions workbook alone, on the same terms.
+    elif "--conditions" in sys.argv[1:]:
+        conditions_only()
     else:
         main()

@@ -139,6 +139,9 @@ export async function reloadContentIndexes() {
   }
   // The terrain kinds (0.18.0): a kind added to the roster reaches the open world with the sync.
   await loadTerrainKinds({ fresh: true });
+  // The Conditions (0.33.0): the workbook's rows, read again and put to work on this client. The
+  // sync then tells every other connected client to do the same (helpers/content-sync.mjs).
+  await loadConditions({ fresh: true });
   try {
     const { invalidateExplorationActivities } = await import("./party.mjs");
     invalidateExplorationActivities();
@@ -463,6 +466,162 @@ export async function loadTerrainKinds({ fresh = false } = {}) {
   } catch (error) {
     console.warn("STARWROUGHT | Could not read the difficult terrain kinds (content/terrain.json); the registry stands as it was.", error);
     return Object.keys(SW.TERRAIN_KINDS).length;
+  }
+}
+
+/* -------------------------------------------- */
+/*  The Conditions (0.33.0)                     */
+/* -------------------------------------------- */
+
+const CONDITIONS_PATH = "systems/starwrought/content/conditions.json";
+
+/** What the last load of the Conditions found: `ok`, the file's `build` hash, how many, the error. */
+const conditionsState = { ok: false, build: "", count: 0, created: [], error: null, loaded: false };
+/** The load in flight, or the last one finished: `ready` waits on it before the world is used. */
+let conditionsLoad = null;
+/** Is a load in flight? A second ask while one runs joins it (the socket may ask at any time). */
+let conditionsLoading = false;
+/** How many reads have finished, and the last one whose failure was said: one notice for each. */
+let conditionsReads = 0;
+let conditionsSaid = 0;
+
+/** The Conditions' state, for a reader that wants to know whether the workbook was read. */
+export function conditionsLoaded() {
+  return { ...conditionsState };
+}
+
+/**
+ * The token palette's list, from the registry: one status for each Condition, under the static id
+ * `SwActor#setCondition` creates under too. Built from the built-ins at init (the hook cannot
+ * wait for a file) and again once the workbook's rows are registered, when a new Condition
+ * (Supine) joins it and a built-in takes the name its row gives it.
+ * @returns {object[]}
+ */
+export function statusEffectList() {
+  return Object.values(SW.CONDITIONS).map(c => ({
+    id: c.id,
+    name: SW.conditionNameKey(c.id),
+    img: c.img,
+    _id: SW.statusEffectId(c.id)
+  }));
+}
+
+/**
+ * THE CONDITIONS (0.33.0; rulings 322 and 323): `data/conditions.xlsx`, which the build writes to
+ * content/conditions.json as the registry's rows, laid over the Conditions the system ships with
+ * (`SW.registerConditions`; module/config/conditions.mjs). Read at init, awaited at ready, and
+ * again after a content sync, ALWAYS past the browser's cache: the file moves with the content
+ * loop, between releases, and a stale copy would be last week's rules.
+ *
+ * On success the palette's list is rebuilt, and, once the world is up, every creature that has a
+ * Condition (or a Wounded or struck Torso, which is Off-Guard) is prepared again, since its
+ * numbers were worked out before these rows were known; open sheets redraw.
+ *
+ * A file that cannot be read, or rows the registry refuses, leave the registry as it was and say
+ * so LOUDLY to the GM: the system then runs on the Conditions it ships with, whose numbers are
+ * the ones it had before the workbook (ruling 329), and a Condition a row made does not exist.
+ * @param {{fresh?: boolean}} [options]  Kept for the callers' symmetry; the read is always fresh.
+ * @returns {Promise<object>}  `conditionsLoaded()`.
+ */
+export function loadConditions(options = {}) {
+  // One read at a time: `content:conditions` may arrive from any client at any moment, and a
+  // second fetch while one is in flight would only register the same file twice.
+  if (conditionsLoading && conditionsLoad) return conditionsLoad;
+  conditionsLoading = true;
+  conditionsLoad = (async () => {
+    try {
+      const json = await foundry.utils.fetchJsonWithTimeout(`${CONDITIONS_PATH}?t=${Date.now()}`);
+      if (!json || !Array.isArray(json.conditions)) throw new Error("the file holds no list of Conditions");
+      const answer = SW.registerConditions(json.conditions);
+      Object.assign(conditionsState, { ok: true, build: String(json.build ?? ""), count: json.conditions.length, created: answer.created, error: null, loaded: true });
+      console.log(`STARWROUGHT | Registered ${json.conditions.length} Conditions from the workbook`
+        + (answer.created.length ? ` (${answer.created.map(id => SW.conditionLabel(id)).join(", ")} made by ${answer.created.length === 1 ? "its row" : "their rows"})` : "")
+        + `, build ${conditionsState.build || "?"}.`);
+      if (answer.missing.length) {
+        console.warn(`STARWROUGHT | The Conditions file has no row for ${answer.missing.join(", ")}; those run on the system's own text.`);
+      }
+    } catch (error) {
+      Object.assign(conditionsState, { ok: false, error: String(error?.message ?? error), loaded: true });
+      console.error("STARWROUGHT | The Conditions could not be read (content/conditions.json); the registry stands as it was.", error);
+    }
+    conditionsLoading = false;
+    conditionsReads += 1;
+    applyConditions();
+    return conditionsLoaded();
+  })();
+  return conditionsLoad;
+}
+
+/** Wait for the Conditions' load that init began (or the last one asked for). */
+export async function conditionsReady() {
+  try { await conditionsLoad; } catch { /* said by loadConditions */ }
+  return conditionsLoaded();
+}
+
+/**
+ * Put the registry to work: the palette's list, and, once the world is up, the creatures whose
+ * numbers a Condition moves, prepared again, with the open sheets redrawn. Safe at any time.
+ */
+export function applyConditions() {
+  try {
+    CONFIG.statusEffects = statusEffectList();
+  } catch (error) {
+    console.error("STARWROUGHT | the status list could not be rebuilt", error);
+  }
+  if (!globalThis.game?.ready) return;
+  refreshConditionHolders();
+  // A read that failed is said once (`ready` and the read itself both come here), to the GM in
+  // a notice that stays, and to a player too: a client that could not read the Conditions works
+  // out its own sheet and its own dice from the system's old numbers, which would disagree with
+  // the GM's reading of the same attack (the review of 0.33.0).
+  if (!conditionsState.ok && conditionsState.loaded && (conditionsSaid !== conditionsReads)) {
+    conditionsSaid = conditionsReads;
+    // Two cases, said apart: nothing was ever read (the system runs on the Conditions it ships
+    // with), or an earlier read stands and only this one failed (those rows are still in force).
+    const key = SW.conditionsRegistered() ? "STARWROUGHT.Conditions.notReadAgain" : "STARWROUGHT.Conditions.notRead";
+    const message = game.i18n.format(key, { reason: conditionsState.error ?? "" });
+    if (game.user?.isGM) ui.notifications.error(message, { permanent: true });
+    else ui.notifications.warn(`${message} ${game.i18n.localize("STARWROUGHT.Conditions.notReadPlayer")}`, { permanent: true });
+  }
+}
+
+/** Does anything on this Actor make a Condition's lines matter: a status, or a Torso that is Off-Guard? */
+function holdsAnyCondition(actor) {
+  if (!actor || (actor.type === SW.PARTY_TYPE)) return false;
+  if (actor.statuses?.size) return true;
+  const torso = actor.system?.zones?.torso;
+  return !!torso && (((Number(torso.wounds) || 0) > 0) || (torso.critical === true));
+}
+
+/**
+ * Prepare again every creature a Condition's lines reach: the world's Actors, the unlinked tokens'
+ * own Actors on EVERY scene (a Bandit on the map is one; the scene in view first) and every
+ * fighter in a Combat, then redraw what shows them. Every scene, as the 0.29.0 migration walks
+ * them (the review of 0.33.0: with the scene in view alone, a Frightened Bandit on a scene the
+ * GM had left kept its old numbers after a sync until something else touched it).
+ */
+function refreshConditionHolders() {
+  const seen = new Set();
+  const refresh = actor => {
+    if (!actor || seen.has(actor)) return;
+    seen.add(actor);
+    if (!holdsAnyCondition(actor)) return;
+    try {
+      actor.reset();
+      for (const app of Object.values(actor.apps ?? {})) app?.render?.();
+    } catch (error) {
+      console.error(`STARWROUGHT | ${actor.name}: could not be prepared again for the Conditions`, error);
+    }
+  };
+  for (const actor of game.actors ?? []) refresh(actor);
+  const viewed = globalThis.canvas?.scene ?? null;
+  for (const scene of [viewed, ...[...(game.scenes ?? [])].filter(s => s !== viewed)]) {
+    for (const token of scene?.tokens ?? []) {
+      if (!token.actorLink) refresh(token.actor);
+    }
+  }
+  for (const combat of game.combats ?? []) {
+    for (const combatant of combat.combatants ?? []) refresh(combatant.actor);
   }
 }
 

@@ -36,7 +36,9 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { CONDITIONS, SYSTEM_ID, conditionIdOf, slugify, plainName } from "../config.mjs";
+import { CONDITIONS, SYSTEM_ID, conditionIdOf, conditionLabel, slugify, plainName } from "../config.mjs";
+// 0.33.0: a creature's Conditions closed over what each includes (Prone includes Off-Guard).
+import { closeConditions } from "./condition-set.mjs";
 
 /** The words a named Effect may not be called: each means something else where a name is read. */
 export const RESERVED_EFFECT_NAMES = Object.freeze(["and", "or", "not", "self", "target", "mine", "used", "with", "na", "n/a", "none"]);
@@ -48,11 +50,12 @@ export const RESERVED_EFFECT_NAMES = Object.freeze(["and", "or", "not", "self", 
  */
 const NAME_SHAPE = new RegExp(`^[\\p{L}\\p{N}][\\p{L}\\p{N} '${String.fromCharCode(0x2019)}-]*$`, "u");
 
-/** A Condition's printed name from its id: "Prone", "Off-Guard", "Wrong-Footed". */
+/**
+ * A Condition's printed name from its id: "Prone", "Off-Guard", "Wrong-Footed"; since 0.33.0 the
+ * name its row of the Conditions workbook gives it ("Blind"), which the registry answers.
+ */
 export function conditionTitle(id) {
-  const word = String(CONDITIONS[id]?.name ?? id).split(".").at(-1);
-  const spaced = word.replace(/([a-z])([A-Z])/g, "$1-$2");
-  return spaced ? spaced[0].toUpperCase() + spaced.slice(1) : String(id);
+  return conditionLabel(id);
 }
 
 /** The slug a named Effect is matched by: "Taking Cover" and "taking  cover" are `taking-cover`. */
@@ -126,11 +129,38 @@ export function namedEffectOf(name) {
 }
 
 /**
+ * The Condition a stored reference means NOW, or null when it is a named Effect (0.33.0, ruling
+ * 333). A reference is what `readEffectName` answered when its cell was parsed: `{ name, slug,
+ * condition }`. One parsed before a row of the Conditions workbook made a Condition of that name
+ * (`[EFFECT APPLY: Supine]`, written while Supine was a named Effect) carries `condition: null`
+ * and the slug `supine`; it means the Condition as soon as there is one. And one that names a
+ * Condition whose row has since been deleted means a named Effect again.
+ * @param {{name?: string, slug?: string, condition?: string|null}|null} ref
+ * @returns {string|null}  A key of CONDITIONS.
+ */
+export function conditionOfRef(ref) {
+  if (!ref) return null;
+  if (ref.condition) return Object.hasOwn(CONDITIONS, ref.condition) ? ref.condition : null;
+  return conditionIdOf(ref.name ?? "") ?? conditionIdOf(ref.slug ?? "") ?? null;
+}
+
+/**
  * @typedef {object} EffectList
- * @property {Map<string, number>} conditions  Status id -> its value (1 when it carries none).
+ * @property {Map<string, number>} conditions  Condition id -> its value (1 when it carries none):
+ *           the status ids on the creature AND, since 0.33.0, every Condition those include (a
+ *           Prone creature's list holds `offGuard`), and Off-Guard for a Wounded or struck Torso.
  * @property {Map<string, {name: string, applied: object|null, row?: boolean}>} names
  *           Slug -> the named Effect: its name as written on it, the record a Maneuver left when it
  *           applied it (0.32.0; null for a hand-made one), `row` for a custom effect row.
+ * @property {Map<string, object>} applied     Condition id -> the record of the APPLY line that put it on.
+ * @property {Map<string, Set<string>>} against  Condition id -> the uuids of the creatures it is held
+ *           AGAINST and nobody else (0.33.0: Wrong-Footed's "Off-Guard against X").
+ * @property {Map<string, string>} by          Condition id -> the uuid of who put it on, inherited
+ *           through an inclusion (an Off-Guard that comes from a Prone you applied is yours).
+ * @property {Map<string, string[]>} bys       Condition id -> everyone who put it on, so reached.
+ * @property {Map<string, string[]>} via       Condition id -> what it comes through, when it is not
+ *           on the creature itself (the including Conditions' ids, or "torso").
+ * @property {Set<string>} direct              The Condition ids that are on the creature itself.
  */
 
 /**
@@ -142,15 +172,16 @@ export function namedEffectOf(name) {
  * @param {Iterable<{name?: string, disabled?: boolean, suppressed?: boolean, statuses?: Iterable<string>, applied?: object|null}>} [source.effects]
  *        The creature's effects. A disabled or suppressed one counts for nothing.
  * @param {Iterable<{label?: string}>} [source.rows]  A character's custom effect rows.
+ * @param {boolean} [source.torso]  Its Torso carries a Wound or a Critical Hit effect (0.33.0).
  * @returns {EffectList}
  */
-export function effectList({ statuses = [], conditionValue = null, effects = [], rows = [] } = {}) {
-  const conditions = new Map();
+export function effectList({ statuses = [], conditionValue = null, effects = [], rows = [], torso = false } = {}) {
+  const direct = new Map();
   for (const id of statuses ?? []) {
     const key = String(id ?? "");
     if (!key) continue;
     const value = (typeof conditionValue === "function") ? Number(conditionValue(key)) : 1;
-    conditions.set(key, Number.isFinite(value) && (value > 0) ? value : 1);
+    direct.set(key, { value: Number.isFinite(value) && (value > 0) ? value : 1, by: null });
   }
   const names = new Map();
   /** Condition id -> the record of the APPLY line that put it on (0.32.0), where one did. */
@@ -176,7 +207,27 @@ export function effectList({ statuses = [], conditionValue = null, effects = [],
     add(effect.name, { applied: record });
   }
   for (const row of rows ?? []) add(row?.label, { applied: null, row: true });
-  return { conditions, names, applied };
+
+  // What the creature HAS (0.33.0, ./condition-set.mjs): its own Conditions closed over what each
+  // includes, with who put each on (the applied record's `by`), so an inclusion written "against X"
+  // knows its X and an included Condition knows whose doing it is.
+  for (const [id, record] of applied) {
+    if (direct.has(id) && record?.by) direct.get(id).by = String(record.by);
+  }
+  const set = closeConditions({ direct, torso: torso === true });
+  const conditions = new Map();
+  const by = new Map();
+  const bys = new Map();
+  const via = new Map();
+  for (const [id, held] of set.held) {
+    conditions.set(id, held.value);
+    if (held.by) by.set(id, held.by);
+    if (held.bys?.length) bys.set(id, [...held.bys]);
+    if (!held.direct) via.set(id, [...held.via]);
+  }
+  const against = new Map();
+  for (const [id, who] of set.against) against.set(id, new Set(who.keys()));
+  return { conditions, names, applied, against, by, bys, via, direct: new Set(direct.keys()), unknown: set.unknown };
 }
 
 /**
@@ -201,11 +252,14 @@ export function effectsOn(actor) {
       applied: e.flags?.[SYSTEM_ID]?.applied ?? null
     });
   }
+  // The STORED Torso fields: the derived `wounded` is set after the rules are collected.
+  const zone = actor.system?.zones?.torso ?? null;
   return effectList({
     statuses: actor.statuses ?? [],
     conditionValue: (typeof actor.conditionValue === "function") ? id => actor.conditionValue(id) : null,
     effects,
-    rows: Array.isArray(actor.system?.effects) ? actor.system.effects : []
+    rows: Array.isArray(actor.system?.effects) ? actor.system.effects : [],
+    torso: !!zone && (((Number(zone.wounds) || 0) > 0) || (zone.critical === true))
   });
 }
 
@@ -214,20 +268,50 @@ export function effectsOn(actor) {
  * caller treats as "cannot tell" (REQUIRES) or as "does not hold" (a bonus).
  * @param {EffectList|null} list
  * @param {{slug?: string, condition?: string|null, mine?: boolean}} ref  A `readEffectName` answer; `mine` narrows it.
- * @param {{by?: string|null}} [options]  The uuid of the creature asking, for `mine`.
+ * @param {{by?: string|null, viewer?: string|null}} [options]  `by`: the uuid of the creature
+ *        asking, for `mine`. `viewer` (0.33.0): the uuid of the creature the question is asked FOR,
+ *        which a Condition held "against X" needs: a creature Wrong-Footed to Tess is Off-Guard when
+ *        Tess is the viewer, and to nobody else.
  * @returns {boolean|null}
  */
-export function listHas(list, ref, { by = null } = {}) {
+export function listHas(list, ref, { by = null, viewer = null } = {}) {
   if (!list || !ref) return null;
-  const held = ref.condition ? list.conditions.has(ref.condition) : (!!ref.slug && list.names.has(ref.slug));
+  // What the reference means now (0.33.0): a name stored before a row made it a Condition reads as
+  // the Condition, wherever the cell was parsed.
+  const condition = conditionOfRef(ref);
+  if (condition !== (ref.condition ?? null)) ref = { ...ref, condition };
+  let held = ref.condition ? list.conditions.has(ref.condition) : (!!ref.slug && list.names.has(ref.slug));
+  // Held against one creature alone, and that creature is the one this is asked for.
+  const forViewer = !held && !!ref.condition && !!viewer && (list.against?.get(ref.condition)?.has(String(viewer)) === true);
+  if (forViewer) held = true;
   if (!held) return false;
   // `mine` (0.32.0): held, AND put there by the one asking. Only an APPLY line leaves a record, so
-  // a Condition the GM toggled, or a hand-made effect, is nobody's.
+  // a Condition the GM toggled, or a hand-made effect, is nobody's. Since 0.33.0 an included
+  // Condition is whose its includer is (ruling 331), and one held against you alone is yours.
   if (ref.mine) {
-    const record = ref.condition ? (list.applied?.get(ref.condition) ?? null) : (list.names.get(ref.slug)?.applied ?? null);
-    return !!record && !!by && (record.by === by);
+    if (!by) return false;
+    if (!ref.condition) return list.names.get(ref.slug)?.applied?.by === by;
+    if (forViewer) return String(viewer) === by;
+    // Everyone who applied it counts: of two creatures whose Conditions both make a third
+    // Off-Guard, the Off-Guard is each one's.
+    return (list.applied?.get(ref.condition)?.by === by) || (list.bys?.get(ref.condition)?.includes(by) === true)
+      || (list.by?.get(ref.condition) === by);
   }
   return true;
+}
+
+/**
+ * The Condition ids a creature has AS ONE CREATURE SEES IT (0.33.0): those held against everyone,
+ * and those held against `viewer` alone.
+ * @param {EffectList|null} list
+ * @param {string|null} [viewer]  A uuid.
+ * @returns {string[]}
+ */
+export function conditionIdsFor(list, viewer = null) {
+  if (!list) return [];
+  const out = [...list.conditions.keys()];
+  if (viewer) for (const [id, who] of list.against ?? []) if (who.has(String(viewer)) && !out.includes(id)) out.push(id);
+  return out;
 }
 
 /** The named Effects of a list, by name, for a screen: `[{ slug, name, applied, row }]`. */

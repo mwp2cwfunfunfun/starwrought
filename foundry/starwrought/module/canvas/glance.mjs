@@ -115,7 +115,11 @@ export function glanceData(actor, { full = false } = {}) {
     .filter(({ condition }) => !condition?.zone)
     .map(({ id, condition }) => {
       const value = condition?.numeric ? (Number(actor.conditionValue?.(condition.id)) || 0) : 0;
-      return { id, label: condition ? localize(condition.name) : id, img: condition?.img ?? "", value: value > 0 ? value : null };
+      return {
+        id, label: condition ? localize(SW.conditionNameKey(condition.id)) : id, img: condition?.img ?? "", value: value > 0 ? value : null,
+        // The text its row of the Conditions workbook gives it (0.33.0), for the tag's tooltip.
+        description: condition ? foundry.utils.escapeHTML(SW.conditionDescription(condition.id)).replace(/\n+/g, "<br>") : ""
+      };
     })
     .sort((a, b) => a.label.localeCompare(b.label));
 

@@ -50,8 +50,12 @@ import {
   slugify, plainName, parseActionCost, DEFENSES, ACTIVITY_SPEEDS, EXPLORATION_EFFECTS, ACTIVITY_CHOICE,
   // The terrain kinds' registry (0.18.0): the roster's `terrainKinds` block is registered before any
   // Automation cell is parsed, so `[EFFECT IGNORE: terrain, mud]` is checked against the roster.
-  registerTerrainKinds, terrainKindRecord, terrainKinds, TERRAIN_COLOUR_PATTERN
+  registerTerrainKinds, terrainKindRecord, terrainKinds, TERRAIN_COLOUR_PATTERN,
+  // The Conditions' registry (0.33.0): the Conditions workbook's rows, registered before any cell
+  // is parsed, so a cell that names a Condition a row made (Supine) means that Condition.
+  registerConditions
 } from "../foundry/starwrought/module/config.mjs";
+import { registryRows } from "./lib/conditions_build.mjs";
 // The automation grammar (0.9.0; ruling 120) is imported from the system for the same reason: the
 // build and the client must read an Automation cell identically, so there is one parser and it is
 // the system's. grammar.mjs imports the kinds registry itself, so the registry is live here (the
@@ -524,6 +528,30 @@ function registerRosterTerrainKinds() {
   }
 }
 registerRosterTerrainKinds();
+
+/**
+ * THE CONDITIONS (0.33.0; rulings 322 and 323). `data/conditions.xlsx` is the only source for
+ * what a Condition says and does; assets/parse_rules.mjs reads its cells and writes
+ * assets/conditions.json, which is registered here before any cell is parsed (a Talent's
+ * `IFT: EFFECT(supine)` then means the Condition its row made) and written for the client as
+ * content/conditions.json (`writeContentIndex` below), which `loadConditions` in
+ * helpers/content.mjs reads at startup and after a content sync. With no conditions.json (a clone
+ * that has not built the workbook yet) nothing is registered and the file is not written: the
+ * client then runs on the Conditions the system ships with, and says so.
+ */
+const conditionsFile = path.join(ROOT, "assets", "conditions.json");
+const conditionsJson = fs.existsSync(conditionsFile) ? JSON.parse(fs.readFileSync(conditionsFile, "utf8")) : null;
+let conditionsRegistered = null;
+/** The Conditions as the client loads them, and a hash of the lot (also in the content index). */
+const registryConditions = conditionsJson ? registryRows(conditionsJson) : null;
+const conditionsBuild = registryConditions ? crypto.createHash("sha1").update(JSON.stringify(registryConditions)).digest("hex").slice(0, 16) : "";
+if (registryConditions) {
+  try {
+    conditionsRegistered = registerConditions(registryConditions);
+  } catch (error) {
+    fail(`assets/conditions.json: ${error.message} (rebuild it: node assets/build_all.mjs --conditions)`);
+  }
+}
 
 /**
  * THE SPELL (PHB v4.21; the magic workbook's spell columns, read by the converter into `node.spell`,
@@ -1728,6 +1756,13 @@ function writeSources() {
       lines.push(`${pack}|${entry._id}|${entry.hash}`);
     }
   }
+  // The Conditions (0.33.0) are no pack document, and the open world must still be told when they
+  // move: their hash is in the index and in the build, so a change to a Condition's lines alone
+  // makes a new build, and Sync content has something to do (it reloads them on every client).
+  if (conditionsBuild) {
+    index.conditions = conditionsBuild;
+    lines.push(`conditions|${conditionsBuild}`);
+  }
   index.build = crypto.createHash("sha1").update(lines.join("\n")).digest("hex").slice(0, 16);
   fs.writeFileSync(path.join(SOURCE, "index.json"), `${JSON.stringify(index, null, 2)}\n`, "utf8");
   console.log(`  index.json       ${lines.length} entries in ${Object.keys(index.packs).length} packs, build ${index.build}`);
@@ -1757,6 +1792,22 @@ function writeContentIndex() {
     `${JSON.stringify(terrainKinds(), null, 2)}\n`,
     "utf8"
   );
+
+  // The Conditions (0.33.0): the workbook's rows as the registry takes them, with a hash of the lot
+  // so a client can tell whether what it holds is what is on disk. The author's Notes stay behind.
+  if (registryConditions) {
+    const conditions = registryConditions;
+    const build = conditionsBuild;
+    fs.writeFileSync(
+      path.join(CONTENT, "conditions.json"),
+      `${JSON.stringify({ build, source: conditionsJson.source ?? [], conditions }, null, 2)}\n`,
+      "utf8"
+    );
+    const lines = conditions.reduce((n, c) => n + (c.rules?.length ?? 0), 0);
+    console.log(`  conditions.json  ${conditions.length} Conditions, ${lines} lines, ${conditionsRegistered?.created.length ?? 0} new, build ${build}`);
+  } else {
+    console.log("  conditions.json  not written: there is no assets/conditions.json (node assets/build_all.mjs --conditions builds it)");
+  }
 
   // Carry the handbook version into the system, so the rules it implements can be read in game
   // rather than inferred from the system's own version number. `constellations`, `talents` and

@@ -35,8 +35,8 @@ import { momentaryStep, MOMENTARY_FLAG, PRESSED_FLAG } from "../combat/bind-rule
 // 0.32.0: the Effects an APPLY line put on a creature, and their windows (./applied.mjs is the
 // pure half; ./effect-list.mjs says what a named Effect is).
 import { settleApplied, isAppliedRecord, sameApplication, APPLIED_ICON } from "./applied.mjs";
-import { namedEffectOf } from "./effect-list.mjs";
-import { CONDITIONS } from "../config.mjs";
+import { namedEffectOf, conditionOfRef } from "./effect-list.mjs";
+import { CONDITIONS, conditionIdOf, plainName } from "../config.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
@@ -647,7 +647,9 @@ function conditionOf(effect) {
 export async function applyEffectTo(actor, line, record, { force = false } = {}) {
   if (!actor || !line?.effect || !isAppliedRecord(record)) return { skipped: "already" };
   if (line.until && !record.combat) return { skipped: "window" };
-  const id = line.effect.condition ?? null;
+  // What the line's Effect means NOW (0.33.0, ruling 333): a line parsed while Supine was a named
+  // Effect puts the Condition on, once a row has made Supine one.
+  const id = conditionOfRef(line.effect);
   if (id && CONDITIONS[id]) {
     if (CONDITIONS[id].numeric) {
       const want = Math.max(1, Number(line.effect.value) || 1);
@@ -697,9 +699,15 @@ export async function applyEffectTo(actor, line, record, { force = false } = {})
  */
 export async function removeEffectFrom(actor, line) {
   if (!actor || !line?.effect) return { skipped: "absent" };
-  const id = line.effect.condition ?? null;
+  const id = conditionOfRef(line.effect);
   if (id && CONDITIONS[id]) {
-    if (!actor.statuses?.has(id)) return { skipped: "absent" };
+    // A LEFTOVER of the days before the Condition existed (0.32.1's named Effect "Supine"): an
+    // effect that is merely called by the name of a Condition a row made, and carries no status.
+    // Nothing reads it any more; it goes with the Condition, or alone when that is all there is.
+    const leftovers = CONDITIONS[id].builtIn ? []
+      : [...actor.effects].filter(e => !e.statuses?.size && !e.changes?.length && (conditionIdOf(plainName(String(e.name ?? ""))) === id));
+    if (leftovers.length) await actor.deleteEmbeddedDocuments("ActiveEffect", leftovers.map(e => e.id), { swAnnounced: true });
+    if (!actor.statuses?.has(id)) return leftovers.length ? { ok: true } : { skipped: "absent" };
     const held = [...actor.effects].some(e => e.statuses?.has(id)
       && (e.getFlag?.(SYSTEM_ID, "criticalHit") || e.getFlag?.(SYSTEM_ID, PRESSED_FLAG)));
     if (held) return { skipped: "held" };

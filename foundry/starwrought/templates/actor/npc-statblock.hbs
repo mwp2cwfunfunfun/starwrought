@@ -9,7 +9,10 @@
       {{#each defenses as |def|}}
       <div class="sw-defense sw-npc-defense">
         <span class="sw-defense-name" data-tooltip="{{def.hint}}">{{def.label}}</span>
-        <input type="number" name="system.thresholds.{{def.key}}" value="{{def.threshold}}">
+        {{!-- The field is the Threshold as TYPED; the Conditions the creature has never write to it
+             (0.33.0). The number in effect is shown beside it while they move it. --}}
+        <input type="number" name="system.thresholds.{{def.key}}" value="{{def.base}}">
+        {{#if def.moved}}<span class="sw-in-effect" data-tooltip="{{def.inEffectHint}}">{{def.inEffect}}</span>{{/if}}
       </div>
       {{/each}}
     </div>
@@ -37,7 +40,7 @@
         {{#each attacks as |atk|}}
         <tr data-item-id="{{atk.id}}">
           <td><a data-action="itemChat">{{swPlainName atk.name}}</a></td>
-          <td class="sw-num sw-threshold-cell">{{atk.threshold}}</td>
+          <td class="sw-num sw-threshold-cell">{{atk.threshold}}{{#if atk.moved}} <span class="sw-in-effect" data-tooltip="{{atk.inEffectHint}}">{{atk.inEffect}}</span>{{/if}}</td>
           <td>{{atk.damage}} {{atk.damageType}}</td>
           <td class="sw-num">{{atk.reach}} ft</td>
           <td class="sw-strike-cell">

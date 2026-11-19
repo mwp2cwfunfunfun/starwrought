@@ -32,6 +32,20 @@ export class RuleSyntaxError extends Error {
 }
 
 /* -------------------------------------------- */
+/*  A Condition's row (0.33.0)                  */
+/* -------------------------------------------- */
+
+/**
+ * The `itemType` of a Condition's row of the Conditions workbook (`data/conditions.xlsx`). The
+ * lines there act for whoever HAS the Condition, a character or an adversary, so they are plain
+ * bonuses and penalties and nothing that asks about an owner's Talents, rank or choices.
+ */
+export const CONDITION_ROW = "condition";
+
+/** The effect tags a Condition's row may carry in this version. */
+export const CONDITION_ROW_TAGS = Object.freeze(["check", "atk", "def", "init"]);
+
+/* -------------------------------------------- */
 /*  "No automation"                             */
 /* -------------------------------------------- */
 

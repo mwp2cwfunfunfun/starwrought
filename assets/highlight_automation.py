@@ -142,6 +142,9 @@ def read_workbooks():
         if "_Tree Index" not in wb.sheetnames:
             if "Backgrounds" in wb.sheetnames:
                 read_backgrounds(wb, fname, cells)
+            # The Conditions workbook (0.33.0): each row's Automation cell, read as a Condition's row.
+            if xt.is_conditions_workbook(wb.sheetnames):
+                read_conditions(wb, fname, cells)
             continue
         read_tree_workbook(wb, fname, trees, unindexed, index_without_sheet, cells, index_rows)
     return dict(books=books, locked=locked, trees=trees, unindexed=unindexed, index_without_sheet=index_without_sheet,
@@ -229,6 +232,31 @@ def read_backgrounds(wb, fname, cells):
             cells.append(Cell(fname, ws, e.row, e.column, text_of(e.value), bname, "Backgrounds", "background", source, enabled, "effect"))
 
 
+def read_conditions(wb, fname, cells):
+    """The Conditions sheet's Automation cells (0.33.0), each read as its Condition's row is: the
+    tags a Condition may carry, and `-N` only where the row's Takes is N."""
+    ws = wb[xt.CONDITIONS_SHEET]
+    cm = xt.header_map(ws, xt.CONDITION_COLUMNS)
+    if "name" not in cm or "automation" not in cm:
+        return
+    for r in ws.iter_rows(min_row=2):
+        cv = lambda k: (r[cm[k]] if k in cm and len(r) > cm[k] else None)
+        written = xt.plain(cv("name"))
+        if not written:
+            continue
+        suffix = xt.CONDITION_SUFFIX.search(written)
+        name = xt.CONDITION_SUFFIX.sub("", written).strip() if suffix else written
+        takes = xt.plain(cv("takes")).strip().lower() or ((suffix.group(1) or suffix.group(2)).lower() if suffix else "")
+        c = cv("automation")
+        text = text_of(c.value) if c is not None else ""
+        if not text.strip():
+            continue
+        cell = Cell(fname, ws, c.row, c.column, text, name, "Conditions", "condition",
+                    f"data/{fname} / {xt.CONDITIONS_SHEET} / {name}", True, "automation")
+        cell.takes = takes
+        cells.append(cell)
+
+
 def read_actions_workbook(wb, fname, actions, other_rows, cells, notes):
     """The rows as the converter keeps them: one per bare name per workbook, an enabled row over a
     disabled one, else the earlier sheet; a sheet with no Action column (an Activity column, say) is
@@ -285,7 +313,9 @@ def parse_cells(data):
         "trees": {name: {"parent": t["parent"], "category": t["category"]} for name, t in data["trees"].items()},
         "sheetActions": [{"name": a["name"], "enabled": a["enabled"]} for a in data["actions"].values()],
         "cells": [{"id": c.id, "text": c.text, "itemName": c.item_name, "constellation": c.constellation,
-                   "itemType": c.item_type, "source": c.source} for c in automation]
+                   "itemType": c.item_type, "source": c.source,
+                   # A Condition's row (0.33.0): what it takes, which says whether `-N` may be written.
+                   **({"takes": c.takes} if getattr(c, "takes", None) is not None else {})} for c in automation]
     }
     tmp = tempfile.mkdtemp(prefix="sw-cells-")
     req, rep = os.path.join(tmp, "request.json"), os.path.join(tmp, "reply.json")

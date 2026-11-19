@@ -32,14 +32,57 @@ THESE WORKBOOKS ARE THE ONLY SOURCE FOR TALENTS AND MANEUVERS (Mike, 2026-11-15;
   PHB." So what a Talent, a Maneuver, an Activity or an Endeavor says is whatever its row here
   says: there is no handbook text for it to disagree with, a change to a row is the content loop's
   and never a handbook sync, and no handbook redline is proposed for one. The handbook is still
-  the word for the general rules and for the tables it still prints (the Conditions and Traits
-  tables, Chapter 3's creation tables): where a sheet restates one of those and the two
-  disagree, the handbook wins and the sheet needs a pass. SINCE 2026-11-15 THE SAME HOLDS FOR
+  the word for the general rules and for the tables it still prints (the Traits tables, Chapter
+  3's creation tables): where a sheet restates one of those and the two disagree, the handbook
+  wins and the sheet needs a pass. (The Conditions table is no longer one of them: since
+  2026-11-18 conditions.xlsx is the only source for a Condition, THE CONDITIONS WORKBOOK below.) SINCE 2026-11-15 THE SAME HOLDS FOR
   EQUIPMENT: Mike took the Armor, Shield, Melee Weapon and Ranged Weapon tables out of Chapter 5
   ("This section will be populated from the Spreadsheets in the StarWrought data folder"), so
   equipment.xlsx is the only source for a weapon, a piece of armor, a shield and ammunition. The
   Weapon Traits and Armor Traits tables are still the book's. A new Maneuver that a
   rule in the book names (Roll Over, for Supine) is a row here, not a paragraph there.
+
+THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
+  "can we build a conditions.xlsx that includes every condition, and the automation effects (if
+  any) of it?" conditions.xlsx is the ONLY source for what a Condition says and does. The system,
+  the web app, the compendium and the Rules Reference journal all read it. It was first filled
+  from the handbook's Conditions table (22 rows, Supine among them) plus the four Conditions the
+  system has and the table does not (Concealed, Hidden, Undetected, Dead); from here on the sheet
+  is the word, and the handbook's table is Mike's to keep or to take out of the book.
+  One sheet, Conditions, one row for each Condition (an About sheet is ignored). Columns, first
+  word of the header:
+    Condition    its name ("Frightened"). The table's suffix reads too ("Frightened N", "Exposed
+                 [Zone]", "Bound [X]") and is put back from Takes wherever a table is printed.
+    Takes        blank, N (a value: Frightened 2), Zone (the system's own only), or X (a creature).
+    Description  the text players read: the tooltip on the Condition's row of a sheet and on the
+                 token's hover card, and the reference tables.
+    Includes     other Conditions this one also counts as, comma separated. Prone: Off-Guard. A
+                 creature is Off-Guard once, however many ways it got there. "Off-Guard against X"
+                 means only against the creature that put this Condition on, and needs Takes = X.
+    Automation   lines in the grammar, as on a Talent. A Condition's row reads CHECK, ATK, DEF and
+                 INIT, which act for whoever has the Condition (a character or an adversary), and
+                 after IFT: may ask about the attack answered (RANGED, MELEE, BLOW, BLAST, BLIGHT,
+                 BEGUILEMENT, TRAIT(...)). -N is the Condition's own value: [EFFECT DEF: -N
+                 condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.
+    System       Yes for the Conditions the system itself puts on and takes off (Dying, Wounded,
+                 Spent, Preparing, the Bind's three, Exposed, Dead): the row holds their text.
+    Listed?      Yes prints the row in the reference tables. A sheet without the column lists all.
+    Icon, Notes  optional. Notes is yours (what the code still does for the row); never read.
+  A NEW ROW MAKES A NEW CONDITION: its own status on the token palette, and a name every cell can
+  write ([EFFECT APPLY: Supine], [REQUIRES supine]). The build prints NEW CONDITION: "<Name>" for
+  each, every time, so a slip in a name is seen at once. A row deleted from the sheet is gone at
+  the next build, except the Conditions the system itself has: the build refuses to go without
+  one of those. THE ROW IS THE WORD: a row whose Automation cell is N/A (or blank) means the
+  Condition changes no number, Off-Guard, Frightened and Fatigued included; the numbers the
+  system had for those three come back only when this workbook cannot be read at all.
+  BUILD IT ALONE: double-click sync_conditions.cmd, or run
+    node assets/build_all.mjs --conditions
+  It converts conditions.xlsx ALONE, reads its cells, and writes assets/conditions.json and the
+  roster's conditions block together, only when every row reads; then the web app, the Foundry
+  system's content and the style check on that one workbook. No other workbook is opened. Then
+  Sync content in the open world, which reads the Conditions again on every connected client.
+  The workbook was scaffolded once by assets/make_conditions_xlsx.py, which refuses to run over it.
+  The grammar's own account of a Condition's row is AUTOMATION_GRAMMAR.md, section 11.
 
 ADDING CONTENT: the loop (Mike, 2026-10-03; system 0.8.0)
   EQUIPMENT ALONE (0.30.0; Mike, 2026-11-15, with the talent and action workbooks still being

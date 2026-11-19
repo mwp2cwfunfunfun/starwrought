@@ -8313,20 +8313,40 @@ let R = {
  ],
  "conditions": [
   [
-   "Off-Guard",
-   "-2 Situation to Evade and Guard against all foes."
+   "Blind",
+   "Off-Guard; cannot see. Immune to Visual effects."
   ],
   [
-   "Wrong-Footed [X]",
-   "Off-Guard against that creature only."
+   "Bound [X]",
+   "Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when either of you attacks."
+  ],
+  [
+   "Controlled [X]",
+   "X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶, Move, or Step to end it."
+  ],
+  [
+   "Controlling [X]",
+   "You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you."
+  ],
+  [
+   "Deafened",
+   "Cannot hear. Immune to Auditory effects."
+  ],
+  [
+   "Dying",
+   "You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect."
+  ],
+  [
+   "Exposed [Zone]",
+   "That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated."
+  ],
+  [
+   "Fatigued N",
+   "−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified."
   ],
   [
    "Frightened N",
    "-N to all checks and Thresholds; reduce by 1 at the end of each round."
-  ],
-  [
-   "Prone",
-   "Off-Guard, -2 to Attacks; +2 Situation to Evade vs. ranged Attacks. Stand ❶ to clear."
   ],
   [
    "Grabbed",
@@ -8337,60 +8357,44 @@ let R = {
    "Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action."
   ],
   [
-   "Restrained",
-   "As Grabbed but can’t take any action other than Escape ❶."
-  ],
-  [
-   "Stunned N",
-   "Lose the next N actions; may carry over across rounds."
-  ],
-  [
-   "Slowed N",
-   "Lose N actions at the start of each round. Reduce N by 1 at the end of each round."
-  ],
-  [
-   "Fatigued N",
-   "−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified."
-  ],
-  [
-   "Dying",
-   "You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect."
-  ],
-  [
-   "Wounded [Zone]",
-   "That Zone carries a Wound: its critical effect made lasting (see Chapter 4: Vigor and Wounds). Fill the Torso’s or Head’s Wound capacity (two, for anyone Medium or smaller) and you are Dying."
-  ],
-  [
-   "Spent",
-   "Every Hit that lands on you inflicts a Wound on the Zone it struck, and a Critical Hit inflicts two.\n\nIf you are Hit or Critically Hit and take any Nonlethal damage as a result, you are knocked unconscious. You awake in ten minutes, or sooner if someone rouses you, with 1 Vigor."
-  ],
-  [
-   "Bound [X]",
-   "Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when a Strike between you resolves."
-  ],
-  [
-   "Controlled [X]",
-   "X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶ or Step to end it."
-  ],
-  [
-   "Controlling [X]",
-   "You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you."
+   "Off-Guard",
+   "-2 Situation to Evade and Guard against all foes."
   ],
   [
    "Preparing",
    "You have begun a Maneuver of three or more actions: two actions spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it."
   ],
   [
-   "Exposed [Zone]",
-   "That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated."
+   "Prone",
+   "Off-Guard, -2 Situation to Attacks; +2 Situation to Evade vs. ranged Attacks.\n\nStand ❶ to clear, or Roll Over ❶ to become Prone."
   ],
   [
-   "Blind",
-   "Off-Guard; cannot see. Immune to Visual effects."
+   "Supine",
+   "Off-Guard; -2 Situation to Attacks (except melee Attacks against adjacent creatures, Grapples included); +2 Situation to Evade vs. ranged Attacks. You cannot Move, Step, Rush, Leap, or Crawl; forced movement affects you normally.\n\nStand ❶ to clear (you can stand directly from your back), or Roll Over ❶ to become Prone."
   ],
   [
-   "Deafened",
-   "Cannot hear. Immune to Auditory effects."
+   "Restrained",
+   "As Grabbed but can’t take any action other than Escape ❶."
+  ],
+  [
+   "Slowed N",
+   "Lose N actions at the start of each round. Reduce N by 1 at the end of each round."
+  ],
+  [
+   "Spent",
+   "Every Hit that lands on you inflicts a Wound on the Zone it struck, and a Critical Hit inflicts two.\n\nIf you are Hit or Critically Hit and take any Nonlethal damage as a result, you are knocked unconscious. You awake in ten minutes, or sooner if someone rouses you, with 1 Vigor."
+  ],
+  [
+   "Stunned N",
+   "Lose the next N actions; may carry over across rounds."
+  ],
+  [
+   "Wounded [Zone]",
+   "That Zone carries a Wound: its critical effect made lasting (see Chapter 4: Vigor and Wounds). Fill the Torso’s or Head’s Wound capacity (two, for anyone Medium or smaller) and you are Dying."
+  ],
+  [
+   "Wrong-Footed [X]",
+   "Off-Guard against that creature only."
   ],
   [
    "Unconscious",

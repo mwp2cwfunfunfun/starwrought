@@ -33,6 +33,8 @@ import { resolveActor } from "./shared.mjs";
 import { gainControlOutcome } from "../../combat/bind-rules.mjs";
 import { attackThreshold } from "../../combat/attack-source.mjs";
 import { SwCheck } from "../../dice/check.mjs";
+// What an adversary's Conditions put on a check of its own (0.33.0).
+import { conditionModifiers } from "../../rules/engine.mjs";
 
 /** The `flags.starwrought.kind` of an adversary's request for the partner's Guard roll. */
 export const GAIN_CONTROL_REQUEST = "gainControlRequest";
@@ -298,7 +300,7 @@ export async function rollGuardFromCard(message, flags) {
   const live = user.system?.bind;
   if (!live?.state || ((live.id ?? "") !== (gc.bindId ?? ""))) return void ui.notifications.warn(L("STARWROUGHT.GainControl.bindGone"));
 
-  const threshold = attackThreshold(user, { attackId: gc.attackId ?? null, weaponName: gc.attackName ?? "" }, { controlled: false });
+  const threshold = attackThreshold(user, { attackId: gc.attackId ?? null, weaponName: gc.attackName ?? "" }, { controlled: false, conditions: checkShift(user) });
   // Withheld whoever presses the button (the review of 2026-11-15): the card is public and
   // spoken by the partner, and the attack flow never prints an adversary's Attack Threshold on a
   // Defense card, the GM's own roll included.
@@ -337,7 +339,20 @@ export function gainControlThreshold(gc) {
   if (!gc?.inverted) return null;
   const user = resolveActor(gc.userUuid);
   if (!user) return null;
-  return attackThreshold(user, { attackId: gc.attackId ?? null, weaponName: gc.attackName ?? "" }, { controlled: false });
+  return attackThreshold(user, { attackId: gc.attackId ?? null, weaponName: gc.attackName ?? "" }, { controlled: false, conditions: checkShift(user) });
+}
+
+/**
+ * What an adversary's Conditions put on its Gain Control (0.33.0; the review). Gain Control is a
+ * Melee CHECK, and a character's takes the lines written for a check (Frightened's -N) and none
+ * of the lines written for an attack (Prone's -2); so the adversary's Threshold for it is read
+ * the same way, and never with what its Conditions put on its attacks.
+ * @param {Actor} user  The adversary attempting it.
+ * @returns {number}
+ */
+function checkShift(user) {
+  const lines = conditionModifiers(user, { kind: "check", slug: SW.MELEE_SLUG, item: null });
+  return lines.length ? SW.resolveModifiers(lines).total : 0;
 }
 
 /* -------------------------------------------- */

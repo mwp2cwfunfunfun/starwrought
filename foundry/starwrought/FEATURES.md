@@ -7,10 +7,12 @@ project root has the rulings, 252 to 268; `v4.24-sync-report.md` has 205 to 214;
 entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 entry 223 to 230 and
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
-297 to 304, the 0.31.0 entry 305 to 310 and the 0.32.0 entry 311 to 321). Since
+297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321 and the 0.33.0 entry 322
+to 336). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
-their only source. System version **0.32.1**.
+their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
+too (section 5). System version **0.33.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2326,17 +2328,65 @@ open their rules pages.
 
 ## 5. Conditions
 
-All 28 registered as toggleable token statuses: Off-Guard, Wrong-Footed, Frightened N, Prone,
-Grabbed, Restrained, Heedless, Stunned N, Slowed N, Fatigued N, Blinded, Deafened, Concealed, Hidden,
-Undetected, Unconscious, Dying N, Wounded, Spent, Bound, Controlled, Controlling, Preparing, Dead,
-and Exposed: Head, Torso, Arms and Legs.
+**The Conditions are a workbook since 0.33.0** (rulings 322 to 336; Mike, 2026-11-18: "can we
+build a conditions.xlsx that includes every condition, and the automation effects (if any) of
+it?"). `data/conditions.xlsx` is the only source for what a Condition says and does: one row for
+each, with its Description, the Conditions it also counts as (Includes), and its Automation, the
+lines that say what it does to whoever has it. The system reads the sheet at startup and after
+Sync content; the web app, the compendium and the Rules Reference journal print the same rows.
 
-Off-Guard, Frightened N and Fatigued N feed straight into the derived numbers (Fatigued N into attack
-rolls as well as Evade and Guard; a failed Wind check raises it one step at a time to its maximum
-of 3; the book ends it "after ten minutes of rest", and the table says when those have passed: the
-Fatigued card's Ten minutes' rest button or a night's rest clears it, and the Combat's end does
-not); Grabbed and Restrained make Evade unavailable; Slowed N takes
-its actions at the start of the round. The system keeps
+29 are registered as toggleable token statuses: Off-Guard, Wrong-Footed, Frightened N, Prone,
+**Supine** (the first Condition a row of the sheet made), Grabbed, Restrained, Heedless, Stunned
+N, Slowed N, Fatigued N, Blind, Deafened, Concealed, Hidden, Undetected, Unconscious, Dying N,
+Wounded, Spent, Bound, Controlled, Controlling, Preparing, Dead, and Exposed: Head, Torso, Arms
+and Legs. A new row in the sheet is a new Condition on the palette at the next build.
+
+What the sheet's rows do today, for a character and for an adversary alike:
+
+| Condition | What it does |
+|---|---|
+| Off-Guard | -2 Situation to Evade and Guard. A first Torso Wound and the Torso's Critical Hit effect count as Off-Guard |
+| Frightened N | -N Condition to all four Defenses, to every check (an Initiative among them) and to attacks |
+| Fatigued N | -N Condition to all four Defenses and to attacks |
+| Prone, Supine | Off-Guard; -2 Situation to attacks; +2 Situation to Evade against a ranged Attack |
+| Grabbed, Blind | Off-Guard |
+| Restrained | counts as Grabbed, and so as Off-Guard |
+| Unconscious | counts as Prone, and so as Off-Guard |
+| Wrong-Footed [X] | Off-Guard against the creature that put it on, and nobody else |
+
+- **Counts as.** A Condition that includes another IS that Condition to every rule, once: a
+  Prone creature takes Off-Guard's -2 once however many ways it came to be Off-Guard, `[REQUIRES
+  off-guard]` holds for it, and a Talent's `IFT: EFFECT(off-guard)` holds against it.
+- **Its value.** A line written `-N` counts the Condition's own value: Frightened 2 is -2.
+- **Against one creature.** A Feint's Wrong-Footed makes its target Off-Guard when the creature
+  that Feinted attacks it, and at no other time; the number on the target's sheet does not move.
+  Toggled from the token palette, Wrong-Footed names nobody and does nothing more.
+- **Adversaries.** A Condition moves an adversary's numbers as it moves a character's: its
+  Defense Thresholds, its Attack Thresholds, its own attack die and its Initiative. Its sheet
+  keeps the number the GM typed in the field and shows the number in effect beside it ("11 in
+  effect"), with what moved it on hover. An adversary's own Talents are still unread.
+- **On the sheets.** A Condition's row on the Effects tab carries its Description as a tooltip,
+  and under the row, read-only, what the Condition is doing: its lines at its value, then what
+  it counts as. The token's hover card carries the Description too. A Condition's lines have no
+  On / Skip / Off: the Condition is the switch.
+- **A reroll meets the number the first die met**, though the creature's Conditions have moved
+  since: the card keeps the attack answered and what the adversary's Conditions were worth.
+- **Drop Flat** gives its +4 against the attack that triggered it and nothing of Prone's; Prone
+  goes on once that attack has resolved, and counts from the next (ruling 330).
+- **The row is the word.** A row whose Automation cell is `N/A` means the Condition changes no
+  number, Off-Guard, Frightened and Fatigued included.
+- **If the sheet cannot be read** the GM is told in a notice that stays (and so is a player
+  whose client could not read it), and Off-Guard, Frightened and Fatigued keep the numbers the
+  system always had; a Condition a row made does not exist in that world.
+- **Everyone is on the same Conditions.** Sync content reads them again on every connected
+  client, and when the Conditions are all that moved the GM's next load does the same with no
+  question asked.
+
+Beyond the sheet's lines the system still runs these itself (a failed Wind check raises
+Fatigued one step at a time to its maximum of 3; the book ends it "after ten minutes of rest",
+and the table says when those have passed: the Fatigued card's Ten minutes' rest button or a
+night's rest clears it, and the Combat's end does not); Grabbed and Restrained make Evade
+unavailable; Slowed N takes its actions at the start of the round. The system keeps
 Dying, Wounded, Spent, Bound, Controlled, Controlling, Preparing and the four Exposed in step
 between the sheet and the token, sets Prone from a final Legs Wound, Unconscious from Dying and
 Dead at Dying 5, and clears Spent when Vigor returns. Every condition effect sits under a static
@@ -2497,10 +2547,11 @@ becomes a named Effect. What a player and a GM see:
 - **A reroll** takes back what the first die put on the roller before the new result lands.
 - **A `REMOVE` that finds nothing says nothing** beside a line that did something (0.32.1): Stand
   carries one for Prone and one for Supine, and its card says only what it took off.
-- **Supine** (0.32.1) is in the handbook and not yet a Condition of the system, so it is a named
-  Effect: Drop Supine's `[EFFECT APPLY: Supine]` puts it on, Stand's `[EFFECT REMOVE: Supine]`
-  takes it off, and `[REQUIRES prone or supine]` lists Stand for a creature on its back. It is a
-  label; Supine's own rules are the table's until the Condition is built.
+- **Supine is a Condition since 0.33.0**, made by its row of the Conditions workbook: Drop
+  Supine's `[EFFECT APPLY: Supine]` puts it on, Stand's `[EFFECT REMOVE: Supine]` takes it off,
+  `[REQUIRES prone or supine]` lists Stand for a creature on its back, and the token palette
+  toggles it. The cells written while it was only a named Effect (0.32.1) mean the Condition
+  with no rewrite.
 - **"Applied by me".** `[EFFECT ATK: 1 situation; IFT: EFFECT(wrong-footed, mine)]` on a Talent
   holds only against a creature the roller Wrong-Footed. That is how "Wrong-Footed to you" is
   written.
@@ -3231,9 +3282,22 @@ before; the sources and the index are.
   attack flow takes one answer per attack, which is the one Trigger the system can identify.
   Elsewhere it cannot tell which Trigger a Reaction answers (an Intercept, a Reaction row used from
   the sheet), so a second Reaction to one Trigger is neither refused nor remarked on.
-- **Supine is in the book and not in the system** (0.26.0; ruling 266). Mike's Supine rules are in
-  the handbook's Conditions table as a tracked change; the system has Prone alone, no Roll Over,
-  and reads a rule that names Prone as Prone only, until Supine is built.
+- **What the Conditions workbook leaves to the table** (0.33.0): what a Condition FORBIDS and how
+  it FADES have no word yet, so Supine does not stop movement, its -2 to attacks has no
+  exception for melee Attacks against adjacent creatures, Grabbed's and Restrained's "cannot
+  Move or Step" and "no action other than Escape" are by hand, Frightened and Slowed do not drop
+  by 1 at a round's end, Stunned takes no actions, Heedless adds no action to a Concentrate
+  Maneuver, and Blind and Deafened stop no perception beyond what the system already read. Roll
+  Over has no row yet, and a rule that names Prone still means Prone and not Supine. Wrong-Footed
+  is to one creature at a time, the one that last applied it, by its own identity (a Feint
+  rolled from an adversary's sheet in the sidebar and not from its token names another body). A
+  creature that is both Prone and Supine takes the lines of both. `IFT: RANGED` is a ranged
+  Blow, so Prone's +2 Evade does not reach a Blast thrown from range. "Blind" and "Deaf" are
+  names of Blinded and Deafened now, so a hand-made effect merely called either is read by
+  nothing. A reroll of an adversary's Gain Control reads its Conditions as they then stand. A
+  Condition's row reads CHECK, ATK, DEF and INIT and nothing that asks about an owner. An
+  adversary's own Talents stay unread. Fatigued's maximum of 3 is kept only where the system
+  raises it.
 - **Nothing answers for a defender but a commitment** (0.12.0, rulings 159 and 162). With no GM
   connected an adversary's Blow waits for one; an absent player's character waits for the GM's
   explicit answer; a Strike or Cast with no target rolls against a typed Threshold because there is
@@ -3395,8 +3459,8 @@ before; the sources and the index are.
   the Controller that ends nearer the foe; a Disarm, "after its first benefit is used" and two
   adversaries contesting a Bind are by hand; an undo of a move does not bring a Bind back (Form a
   Bind does); and a Cast was not driven live, since no spell ships enabled.
-- **What applying Effects leaves to the table** (0.32.0): the Wrong-Footed Condition's own effect
-  (Off-Guard against that creature only) is still the table's, and "Wrong-Footed TO a creature"
+- **What applying Effects leaves to the table** (0.32.0): (the Wrong-Footed Condition's own effect,
+  Off-Guard against that creature only, is built since 0.33.0); "Wrong-Footed TO a creature"
   on yourself cannot be said (the Condition goes on you; whom it is to is remembered); an Effect
   on you cannot end with ANOTHER creature's Opportunity; ends that are events ("until you Move,
   Step or Attack", "until they Interact", Sustained, minutes) are by hand; "it takes -2 to its
@@ -3411,9 +3475,9 @@ before; the sources and the index are.
   Condition's value is not compared (`EFFECT(frightened)` is any value); an Effect is not read inside an aura or
   beside a `FOR` that reaches others; no kind but a bonus reads one (an `IMMUNE`, a `REROLL` and
   the rest refuse the condition by name); an adversary's own rolls are still flat, though its
-  Effects are read; a pending result ("Aid from Wren") is not an Effect a line can name; the
-  Off-Guard a first Torso Wound makes lasting is a number on the Defenses and not the Condition,
-  so `EFFECT(off-guard)` does not see it; a player who adds or renames a custom effect row is
+  Effects are read; a pending result ("Aid from Wren") is not an Effect a line can name; (since
+  0.33.0 the Off-Guard a first Torso Wound makes lasting IS the Condition to every rule, so
+  `EFFECT(off-guard)` sees it); a player who adds or renames a custom effect row is
   not said in chat, though its label counts as a named Effect (the row is the player's own, as
   its lines are); the Maneuvers tab does not look again when ANOTHER character's custom effect
   row changes; an effect an Item carries counts however the Item is carried; where a pairing's

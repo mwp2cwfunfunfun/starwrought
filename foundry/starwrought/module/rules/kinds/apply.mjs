@@ -49,7 +49,7 @@
 import { RuleSyntaxError } from "../syntax.mjs";
 import { rankMeets, refuseComponents } from "../operators.mjs";
 import { CONDITIONS, conditionIdOf } from "../../config.mjs";
-import { readEffectName, conditionTitle } from "../effect-list.mjs";
+import { readEffectName, conditionTitle, conditionOfRef } from "../effect-list.mjs";
 import { APPLY_WHO, SYSTEM_CONDITIONS, ruleWords } from "../applied.mjs";
 
 const EXAMPLE = "APPLY: prone, target; IF: RESULT(success)";
@@ -145,6 +145,9 @@ export default {
     }
     // Supine is in the handbook and not yet a Condition of the system (ruling 266): until it is,
     // it is a named Effect, shown with its capital whatever the cell's casing (0.32.1).
+    // (0.33.0: with the Conditions workbook read, `supine` IS a Condition and `read.condition`
+    // says so; a cell parsed without it stores the named Effect, which the system reads as the
+    // Condition wherever one exists: `conditionOfRef` in ../effect-list.mjs.)
     const name = (!read.condition && (read.slug === "supine")) ? "Supine" : read.name;
     return {
       op,
@@ -187,10 +190,20 @@ export default {
           if (!rankMeets(actor.system.proficiency(w.constellation)?.rank ?? "untrained", w.op ?? "=", w.rank)) { holds = false; break; }
         }
         if (!holds) continue;
+        // What the stored Effect means NOW (0.33.0, ruling 333): a line parsed while Supine was a
+        // named Effect names the Condition once a row has made Supine one, so the record, the
+        // words and the write all speak of the Condition. Read here, where the lines are handed
+        // out, so nothing downstream has to ask again.
+        const condition = conditionOfRef(rule.effect);
         out.push({
           line: {
             op: rule.op,
-            effect: { name: rule.effect.name, slug: rule.effect.slug, condition: rule.effect.condition ?? null, ...(rule.effect.value ? { value: rule.effect.value } : {}) },
+            effect: {
+              name: condition ? conditionTitle(condition) : rule.effect.name,
+              slug: condition ? condition.toLowerCase() : rule.effect.slug,
+              condition,
+              ...(rule.effect.value ? { value: rule.effect.value } : {})
+            },
             who: (rule.who === "target") ? "target" : "self",
             until: rule.until ?? null,
             degree,

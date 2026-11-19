@@ -12,6 +12,9 @@
 #                                                   the other workbooks are still being authored and one
 #                                                   of them holds a known violation); everything
 #                                                   generated is scanned as always
+#         python assets/check_style.py --conditions of the spreadsheets, scan the Conditions workbook
+#                                                   alone (0.33.0: the Conditions-only build, on the
+#                                                   same terms)
 #
 # Scope is SHIPPING content: the spreadsheets, the injected JSON, the templates, and the two built
 # HTML files. Deliberately not scanned: backup/, node_modules/, the sync reports and design notes
@@ -23,6 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 QUIET = "--quiet" in sys.argv
 EQUIPMENT_ONLY = "--equipment" in sys.argv
+CONDITIONS_ONLY = "--conditions" in sys.argv
 EM = "—"
 
 errors, notes = [], []
@@ -107,18 +111,21 @@ def walk_json(path):
 # ── the spreadsheets ────────────────────────────────────────────────────────────────────────────
 try:
     import openpyxl
-    if EQUIPMENT_ONLY:
+    if EQUIPMENT_ONLY or CONDITIONS_ONLY:
         # The converter's own recognition (a Weapons, Armor, Shields or Ammunition sheet and no
-        # _Tree Index), read from the package's sheet names, so no other workbook is scanned.
+        # _Tree Index; a Conditions sheet and no _Tree Index), read from the package's sheet names,
+        # so no other workbook is scanned.
         sys.path.insert(0, HERE)
         import xlsx_to_trees as _xt
-        notes.append(("limited", "data/*.xlsx", "--equipment: only the equipment workbook was scanned"))
+        notes.append(("limited", "data/*.xlsx", "--%s: only the %s workbook was scanned" % (
+            ("equipment", "equipment") if EQUIPMENT_ONLY else ("conditions", "Conditions"))))
     for p in sorted(glob.glob(os.path.join(ROOT, "data", "*.xlsx"))):
         if os.path.basename(p).startswith("~$"):
             continue
-        if EQUIPMENT_ONLY:
+        if EQUIPMENT_ONLY or CONDITIONS_ONLY:
             _names = _xt.sheet_names(p)
-            if "_Tree Index" in _names or not _xt.is_equipment_workbook(_names):
+            _mine = _xt.is_equipment_workbook(_names) if EQUIPMENT_ONLY else _xt.is_conditions_workbook(_names)
+            if "_Tree Index" in _names or not _mine:
                 continue
         wb = openpyxl.load_workbook(p, data_only=True)
         for ws in wb.worksheets:
@@ -130,7 +137,7 @@ except ImportError:
     notes.append(("skipped", "data/*.xlsx", "openpyxl not installed"))
 
 # ── the injected JSON ───────────────────────────────────────────────────────────────────────────
-for name in ("roster.json", "trees.json", "backgrounds.json", "languages.json", "sheet_spec.json", "actions.json"):
+for name in ("roster.json", "trees.json", "backgrounds.json", "languages.json", "sheet_spec.json", "actions.json", "conditions.json"):
     p = os.path.join(HERE, name)
     if os.path.exists(p):
         walk_json(p)
@@ -166,6 +173,10 @@ if os.path.isdir(FOUNDRY):
             check("%s line %d" % (rel(p), i), line)
     for p in sorted(glob.glob(os.path.join(FOUNDRY, "packs", "_source", "**", "*.json"), recursive=True)):
         walk_json(p)
+    # The Conditions as the client loads them (0.33.0): the text players read on a sheet and a token.
+    conditions = os.path.join(FOUNDRY, "content", "conditions.json")
+    if os.path.exists(conditions):
+        walk_json(conditions)
 
 # ── the handbook, advisory only ─────────────────────────────────────────────────────────────────
 # The newest EDITION, by its number (build_all.mjs's pattern and order): a plain sort of the folder

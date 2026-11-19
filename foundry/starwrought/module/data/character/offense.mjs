@@ -89,7 +89,10 @@ export function prepareOffense(data) {
       value: SW.ARMS_CRITICAL_PENALTY, type: "situation"
     });
   }
-  const fatigued = data.parent.conditionValue("fatigued") ?? 0;
+  // Since 0.33.0 Fatigued's numbers are its row's in the Conditions workbook, which the rules
+  // carry onto the die and `weaponNumbers` onto the weapon rows; this is the fallback, standing
+  // only while no row of the workbook describes it (ruling 329; ./defenses.mjs).
+  const fatigued = SW.conditionHasRow("fatigued") ? 0 : (data.parent.conditionValue("fatigued") ?? 0);
   if (fatigued) {
     data.attackModifiers.push({
       label: game.i18n.localize("STARWROUGHT.Condition.fatigued"),

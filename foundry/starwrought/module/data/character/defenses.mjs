@@ -11,7 +11,7 @@
 
 import * as SW from "../../config.mjs";
 import { ruleModifiers } from "../../rules/engine.mjs";
-import { ARMS_WOUND_PENALTY, unavailableEvade } from "./shared.mjs";
+import { ARMS_WOUND_PENALTY, unavailableEvade, heldConditions } from "./shared.mjs";
 
 /**
  * The four Defenses. Each is a Constellation, so each is Attribute Bonus + Proficiency Bonus +
@@ -36,14 +36,26 @@ import { ARMS_WOUND_PENALTY, unavailableEvade } from "./shared.mjs";
  */
 export function prepareDefenses(data) {
   const statuses = data.parent.statuses ?? new Set();
+  // THE CONDITIONS' NUMBERS ARE THE WORKBOOK'S (0.33.0; rulings 322 and 329). Off-Guard, Frightened
+  // and Fatigued were written here by hand through 0.32.1; their rows of `data/conditions.xlsx`
+  // carry the same numbers as lines now, which reach every Defense below through the rules (one
+  // carrier for each Condition the creature has; module/rules/engine.mjs). The three blocks stay
+  // as a FALLBACK, each standing only while NO ROW of the workbook describes its Condition: a
+  // world whose Conditions file could not be read keeps the numbers it had, and nothing counts
+  // twice. Once a row is read the row is the word, and a row whose cell is blank or `N/A` means
+  // the Condition changes no number (the review of 0.33.0: with the fallback keyed on the row's
+  // LINES, `N/A` on Off-Guard put the old -2 back for the status itself and not for a Prone
+  // creature, which is Off-Guard through the row, nor for an adversary).
+  const byHand = id => !SW.conditionHasRow(id);
   // Off-Guard, the condition; or the Torso's Critical Hit effect, which is Off-Guard until a
   // Recenter (0.26.0: read off the Zone too, so the effect stands exactly as long as the Zone's
   // mark does, whatever the token palette did to the status).
-  const offGuard = (statuses.has("offGuard") || data.zones.torso.critical) ? SW.OFF_GUARD_PENALTY : 0;
-  const frightened = -(data.parent.conditionValue("frightened") ?? 0);
+  const offGuardByHand = byHand("offGuard");
+  const offGuard = (offGuardByHand && (statuses.has("offGuard") || data.zones.torso.critical)) ? SW.OFF_GUARD_PENALTY : 0;
+  const frightened = byHand("frightened") ? -(data.parent.conditionValue("frightened") ?? 0) : 0;
   // Fatigued N (PHB v4.21, Conditions): -N Condition to all four Defenses and to attack rolls
   // (the offense pass). Through v4.15 it touched Evade and Guard only.
-  const fatigued = -(data.parent.conditionValue("fatigued") ?? 0);
+  const fatigued = byHand("fatigued") ? -(data.parent.conditionValue("fatigued") ?? 0) : 0;
   const sizeMods = SW.SIZES[data.size] ?? SW.SIZES.medium;
 
   // A Parry weapon in hand (PHB v4.10 weapon traits): +1 Gear to Guard against melee Attacks.
@@ -76,7 +88,8 @@ export function prepareDefenses(data) {
       });
     }
     // The first Torso Wound is Off-Guard made lasting: the same circumstance, counted once.
-    if (physical && data.zones.torso.wounded) {
+    // (With the workbook's row the Wound IS Off-Guard: module/rules/condition-set.mjs.)
+    if (physical && offGuardByHand && data.zones.torso.wounded) {
       modifiers.push({ label: woundLabel("torso"), value: SW.OFF_GUARD_PENALTY, type: "situation", source: "off-guard" });
     }
     if (fatigued) {
@@ -153,5 +166,6 @@ export function prepareDefenses(data) {
   // "Evade is unavailable while you are Grabbed or Restrained. You cannot slip what is already
   // holding you." Guard's own exceptions (unaware of the attack, or nothing in hand and no hand
   // free) are not things the sheet can see, so they stay with the table. Recorded, not enforced.
-  data.defenses.evade.unavailable = unavailableEvade(statuses);
+  // Asked of what the creature HAS since 0.33.0: a Condition that includes Grabbed counts.
+  data.defenses.evade.unavailable = unavailableEvade(heldConditions(data.parent));
 }

@@ -30,8 +30,9 @@ import { knownKinds } from "../../foundry/starwrought/module/rules/kinds/index.m
 import { EFFECT_TAGS, CONDITIONS, COMPONENTS } from "../../foundry/starwrought/module/rules/effects.mjs";
 import { FEATURE_KEYWORD_LIST } from "../../foundry/starwrought/module/rules/features.mjs";
 import { GRANT_SCOPES } from "../../foundry/starwrought/module/rules/kinds/grant.mjs";
-import { registerTerrainKinds, TERRAIN_KINDS, RANKS, SIZES, DEFENSES, THREATS } from "../../foundry/starwrought/module/config.mjs";
+import { registerTerrainKinds, registerConditions, TERRAIN_KINDS, RANKS, SIZES, DEFENSES, THREATS } from "../../foundry/starwrought/module/config.mjs";
 import { buildResolver } from "./rule_targets.mjs";
+import { registryRows } from "./conditions_build.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ASSETS = path.resolve(HERE, "..");
@@ -48,15 +49,30 @@ const roster = JSON.parse(fs.readFileSync(path.join(ASSETS, "roster.json"), "utf
 // The terrain kinds are the roster's (0.18.0), registered before any `[EFFECT IGNORE: terrain, ...]` is read.
 registerTerrainKinds(roster.terrainKinds);
 
+// The Conditions (0.33.0) are the workbook's, registered before any cell is read as parse_rules.mjs
+// registers them, so a cell that names a Condition a row made (Supine) reads here as it will there.
+// From the last conditions.json built; with none, the Conditions the system ships with.
+try {
+  const built = path.join(ASSETS, "conditions.json");
+  if (fs.existsSync(built)) registerConditions(registryRows(JSON.parse(fs.readFileSync(built, "utf8"))));
+} catch (error) {
+  console.warn(`parse_cells: assets/conditions.json could not be registered (${error.message}); reading against the system's own Conditions`);
+}
+
 const trees = {};
 for (const [name, facts] of Object.entries(request.trees ?? {})) {
   trees[name] = { parent: facts?.parent ?? "", group: !!facts?.parent, category: facts?.category ?? "" };
 }
-const resolve = buildResolver({ trees, sheetActions: request.sheetActions ?? [], roster });
+const built = buildResolver({ trees, sheetActions: request.sheetActions ?? [], roster });
+// A Condition's row may name a Defense (`DEF: -2 situation, evade`), which reads whether or not the
+// Defenses' workbook was readable this run.
+const DEFENSE_TARGETS = Object.fromEntries(["Evade", "Guard", "Endure", "Awareness"].map(n => [n.toLowerCase(), { type: "constellation", slug: n.toLowerCase(), name: n, category: "Defense" }]));
+const resolve = name => built(name) ?? DEFENSE_TARGETS[String(name ?? "").trim().toLowerCase()] ?? null;
 
 const results = (request.cells ?? []).map(cell => {
   const parsed = parseAutomation(String(cell.text ?? ""), {
-    itemName: cell.itemName, constellation: cell.constellation, itemType: cell.itemType, source: cell.source, resolve
+    itemName: cell.itemName, constellation: cell.constellation, itemType: cell.itemType, source: cell.source, resolve,
+    ...((cell.takes !== undefined) ? { takes: cell.takes } : {})
   });
   // `notApplicable` (0.26.1): the cell says only "no automation" (N/A), the author's mark that
   // the row was looked at and needs none. It reads, with no rules, and is counted apart.

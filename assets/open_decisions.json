@@ -1,5 +1,55 @@
 [
   {
+    "id": "0.33.0-conditions-claudes-readings",
+    "since": "2026-11-18",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.33.0, rulings 325, 327, 328, 329, 331, 332, 334, 335",
+    "question": "Readings 0.33.0 makes that Mike did not rule on. 325: a Condition that includes another counts as it to every rule, once (a Prone creature is Off-Guard to IFT: EFFECT(off-guard), and REMOVE: off-guard does not stand it up). 327: a first Torso Wound and the Torso's Critical Hit effect count as Off-Guard through the Off-Guard row. 328: Off-Guard against X holds only against the creature that applied the Condition with a Maneuver; one toggled from the token names nobody. 329: the row is the word, so N/A on a row means the Condition changes no number (Off-Guard, Frightened and Fatigued included), and the system's old numbers for those three stand only when the workbook cannot be read. 331: an Off-Guard that comes from a Prone you applied counts as yours for `mine`. 332: Unconscious can still be applied by a Maneuver. 334: a Condition's lines have no On / Skip / Off. 335: an adversary's sheet shows the typed number in the field and the number in effect beside it, and a reroll meets the number the first die met.",
+    "recommendation": "Leave them. The one to know is 329: emptying the Off-Guard, Frightened or Fatigued row's Automation cell switches that Condition's numbers off for everyone. Keep the lines unless that is what is wanted.",
+    "decidedBy": ""
+  },
+  {
+    "id": "prone-and-supine-both-stack",
+    "since": "2026-11-18",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "data/conditions.xlsx, the Prone and Supine rows; the Unconscious row's Includes",
+    "question": "A creature that has two Conditions takes the lines of both. One that is both Prone and Supine takes -2 to attacks twice and +2 Evade against a ranged Blow twice. Drop Prone and Drop Supine each take the other off, so a Maneuver never leaves both, but an Unconscious creature (which counts as Prone) laid on its back, or both toggled from the token, has both. Also: Prone's line reads IFT: RANGED, which is a ranged Blow, so the +2 Evade does not reach a Blast thrown from range.",
+    "recommendation": "Leave it and hold the edge at the table. If an Unconscious creature should be Supine and not Prone, change Unconscious's Includes cell. If the +2 Evade should also answer a ranged Blast, say so and the line gets a word for it.",
+    "decidedBy": ""
+  },
+  {
+    "id": "supine-attack-line-has-no-exception",
+    "since": "2026-11-18",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "data/conditions.xlsx, the Supine row's Automation cell",
+    "question": "Supine's Description says -2 Situation to Attacks 'except melee Attacks against adjacent creatures, Grapples included'. The grammar has no word for the exception, so the row's [EFFECT ATK: -2 situation] reaches those attacks too. Supine also does not stop movement yet (no word for what a Condition forbids).",
+    "recommendation": "Keep the line for now and hold the exception at the table, or delete the ATK line from the Supine row until the exception has a word (then nothing is taken off a Supine creature's attacks). The words for what a Condition forbids are the next release, one at a time.",
+    "decidedBy": ""
+  },
+  {
+    "id": "prone-row-roll-over-slip",
+    "since": "2026-11-18",
+    "status": "open",
+    "category": "Data",
+    "where": "data/conditions.xlsx, the Prone row's Description (copied from the handbook's Conditions table as written)",
+    "question": "The Prone row ends 'Stand to clear, or Roll Over to become Prone.' Rolling over from Prone would make a creature Supine, so the last word reads like a slip. The same sentence is in the handbook's table.",
+    "recommendation": "Change the last word to Supine in the Description cell of data/conditions.xlsx and double-click sync_conditions.cmd. The handbook's table is yours to mend or to take out of the book.",
+    "decidedBy": ""
+  },
+  {
+    "id": "handbook-conditions-table-still-printed",
+    "since": "2026-11-18",
+    "status": "open",
+    "category": "Handbook",
+    "where": "Starwrought_Players_Handbook_v4.25.docx, the Conditions table; data/conditions.xlsx",
+    "question": "data/conditions.xlsx is now the only source for a Condition, by Mike's answer. The handbook still prints its Conditions table, and nothing checks the two against each other, so they will drift as the sheet is edited.",
+    "recommendation": "Replace the table in the handbook with the placeholder the equipment tables got ('This section will be populated from the Spreadsheets in the StarWrought data folder') when convenient. No redline is proposed for a Condition from now on.",
+    "decidedBy": ""
+  },
+  {
     "id": "equipment-sheet-enables-no-ranged-weapon",
     "since": "2026-11-15",
     "status": "decided",

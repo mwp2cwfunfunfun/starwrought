@@ -12,6 +12,8 @@
  *                                             and the Foundry pack sources, no compile (0.8.0)
  *   node assets/build_all.mjs --equipment     the equipment workbook alone, to the web app and the
  *                                             Foundry pack sources, no compile (0.30.0)
+ *   node assets/build_all.mjs --conditions    the Conditions workbook alone, to the web app and the
+ *                                             Foundry system's content, no compile (0.33.0)
  *   node assets/build_all.mjs --check         only check for drift, build nothing
  *   node assets/build_all.mjs --accept-phb    record the current handbook as synced (after the work)
  *   node assets/build_all.mjs --skip-slow     skip the plate renderer, the sheets, and the compendium
@@ -39,6 +41,13 @@
  * the equipment workbook alone), and skips parse_rules, the plates, the sheets and the two docx
  * steps. Drift is a warning, as in --content, and it takes no other flag. sync_equipment.cmd in the
  * project root runs it from a double-click.
+ *
+ * --conditions (0.33.0; Mike, 2026-11-18: "can we build a conditions.xlsx") is the same loop for the
+ * Conditions workbook: xlsx_to_trees --conditions (data/conditions.xlsx alone, staged),
+ * parse_rules --conditions (its cells read, assets/conditions.json and the roster's `conditions`
+ * block written together, no tree or action cell parsed), inject, test_rules, build_foundry
+ * --no-compile (content/conditions.json and the journal's Conditions page) and check_style
+ * --conditions. It takes no other flag. sync_conditions.cmd runs it from a double-click.
  */
 
 import fs from "node:fs";
@@ -58,8 +67,11 @@ const accept = args.includes("--accept-phb");
 const skipSlow = args.includes("--skip-slow");
 const content = args.includes("--content");
 const equipmentOnly = args.includes("--equipment");
-/** Either of the two loops that follow the spreadsheets without a handbook sync (ruling 115). */
-const loop = content || equipmentOnly;
+const conditionsOnly = args.includes("--conditions");
+/** The loop for ONE workbook, by the key its steps name their shape under; null in every other mode. */
+const single = equipmentOnly ? "equipment" : conditionsOnly ? "conditions" : null;
+/** Any of the loops that follow the spreadsheets without a handbook sync (ruling 115). */
+const loop = content || !!single;
 
 // Content mode is a different question from the other three flags: --check and --skip-slow shape the
 // full pipeline, and --accept-phb stamps a handbook sync, which content work by definition is not
@@ -68,8 +80,12 @@ if (content && (checkOnly || skipSlow || accept)) {
   console.error("--content is its own mode: run it alone, not with --check, --skip-slow or --accept-phb.");
   process.exit(1);
 }
-if (equipmentOnly && (content || checkOnly || skipSlow || accept)) {
-  console.error("--equipment is its own mode: run it alone, not with --content, --check, --skip-slow or --accept-phb.");
+if (equipmentOnly && (content || checkOnly || skipSlow || accept || conditionsOnly)) {
+  console.error("--equipment is its own mode: run it alone, not with --content, --conditions, --check, --skip-slow or --accept-phb.");
+  process.exit(1);
+}
+if (conditionsOnly && (content || checkOnly || skipSlow || accept)) {
+  console.error("--conditions is its own mode: run it alone, not with --content, --equipment, --check, --skip-slow or --accept-phb.");
   process.exit(1);
 }
 
@@ -217,10 +233,12 @@ const PY = checkOnly ? null : resolvePython();
  * Constellation moved; the pack sources without a compile), and absent runs the step as it is.
  * `equipment` is the same for --equipment mode (0.30.0), with one difference: a step that does not
  * say is SKIPPED there, since that mode runs only what the equipment workbook can change.
+ * `conditions` is the same for --conditions mode (0.33.0).
  */
 const STEPS = [
   { name: "xlsx_to_trees", py: true, args: ["assets/xlsx_to_trees.py"],
-    equipment: ["assets/xlsx_to_trees.py", "--equipment"] },
+    equipment: ["assets/xlsx_to_trees.py", "--equipment"],
+    conditions: ["assets/xlsx_to_trees.py", "--conditions"] },
   // The one parse of every Automation cell (0.16.0): the system's grammar over the converter's
   // JSON, `rules` written beside each cell, the chassis facts the Roots' feature lines state
   // written onto the roster's records, and the @Maneuver[Name] markers expanded, before anything
@@ -228,9 +246,12 @@ const STEPS = [
   // the cell, as build_foundry did through 0.15.0. In content mode (2026-11-07, Mike: "let's make
   // a new build anyway") the step is lenient: such a line is stored on its Item as an error, red on
   // the sheet and skipped in play, and printed under an AUTOMATION ERRORS banner; a release fails.
+  // In conditions mode (0.33.0) it reads the Conditions workbook's cells alone and writes
+  // conditions.json and the roster's `conditions` block; no tree or action cell is parsed.
   { name: "parse_rules", cmd: "node", args: ["assets/parse_rules.mjs"],
-    content: ["assets/parse_rules.mjs", "--lenient"] },
-  { name: "inject", py: true, args: ["assets/inject.py"], equipment: ["assets/inject.py"] },
+    content: ["assets/parse_rules.mjs", "--lenient"],
+    conditions: ["assets/parse_rules.mjs", "--conditions"] },
+  { name: "inject", py: true, args: ["assets/inject.py"], equipment: ["assets/inject.py"], conditions: ["assets/inject.py"] },
   { name: "render_constellations", py: true, args: ["assets/render_constellations.py"], slow: true,
     content: ["assets/render_constellations.py", "--changed"] },
   { name: "sheet_gen", py: true, args: ["assets/sheet_gen.py"], slow: true, content: false },
@@ -239,14 +260,16 @@ const STEPS = [
   // build_foundry, next, parses every Automation cell with. It runs in every step-running mode (--check runs none), content mode
   // included, and is never slow, because a grammar that broke would fail every cell in the book at
   // once with a message about the cells rather than about the grammar; this names the grammar.
-  { name: "test_rules", cmd: "node", args: ["assets/test_rules.mjs"], equipment: ["assets/test_rules.mjs"] },
+  { name: "test_rules", cmd: "node", args: ["assets/test_rules.mjs"], equipment: ["assets/test_rules.mjs"], conditions: ["assets/test_rules.mjs"] },
   { name: "build_foundry", cmd: "node", args: ["assets/build_foundry.mjs"],
     content: ["assets/build_foundry.mjs", "--no-compile"],
-    equipment: ["assets/build_foundry.mjs", "--no-compile"] },
+    equipment: ["assets/build_foundry.mjs", "--no-compile"],
+    conditions: ["assets/build_foundry.mjs", "--no-compile"] },
   // FEATURES.md as a Word document, so the printable copy never lags the file the handbook rule moves.
   { name: "build_features_docx", py: true, args: ["assets/build_features_docx.py"], content: false },
   { name: "check_style", py: true, args: ["assets/check_style.py", "--quiet"],
-    equipment: ["assets/check_style.py", "--quiet", "--equipment"] }
+    equipment: ["assets/check_style.py", "--quiet", "--equipment"],
+    conditions: ["assets/check_style.py", "--quiet", "--conditions"] }
 ];
 
 /* -------------------------------------------- */
@@ -298,7 +321,7 @@ function handbookHash(book) {
  * own exit code never changes the build's: a report that cannot be written is a printed warning.
  */
 const LOG = {
-  mode: content ? "content" : equipmentOnly ? "equipment" : checkOnly ? "check" : accept ? "accept-phb" : skipSlow ? "skip-slow" : "full",
+  mode: content ? "content" : single ? single : checkOnly ? "check" : accept ? "accept-phb" : skipSlow ? "skip-slow" : "full",
   startedAt: new Date().toISOString().replace("T", " ").slice(0, 16),
   python: "",
   outcome: "running",
@@ -391,7 +414,7 @@ function driftCheck() {
  * handbook sync, and the content loop is not one (ruling 115). The full pipeline still stops here.
  */
 function reportDrift(drift, { warning = false } = {}) {
-  const head = warning ? `HANDBOOK DRIFT (a warning in ${equipmentOnly ? "equipment" : "content"} mode)` : "HANDBOOK DRIFT";
+  const head = warning ? `HANDBOOK DRIFT (a warning in ${single ?? "content"} mode)` : "HANDBOOK DRIFT";
   console.log("\n" + "=".repeat(72));
   if (drift.changed) {
     console.log(`${head}: ${drift.book.file} has changed since it was synced`
@@ -412,7 +435,7 @@ function reportDrift(drift, { warning = false } = {}) {
     for (const m of drift.missing) console.log(`  - ${m}`);
   }
   if (warning) {
-    console.log(`\n${equipmentOnly ? "Equipment" : "Content"} mode does not stop for this: a content change is not a handbook sync (ruling 115).`);
+    console.log(`\n${single ? single[0].toUpperCase() + single.slice(1) : "Content"} mode does not stop for this: a content change is not a handbook sync (ruling 115).`);
     console.log("The full pipeline will, until the work above is done and recorded:  node assets/build_all.mjs --accept-phb\n");
   } else {
     console.log(`\nWhen the work is done:  node assets/build_all.mjs --accept-phb\n`);
@@ -546,7 +569,7 @@ function topLevelSelectors(css) {
 
 /* -------------------------------------------- */
 
-console.log(content ? "STARWROUGHT content loop" : (equipmentOnly ? "STARWROUGHT equipment build" : "STARWROUGHT full pipeline"));
+console.log(content ? "STARWROUGHT content loop" : (single ? `STARWROUGHT ${single} build` : "STARWROUGHT full pipeline"));
 const book = currentHandbook();
 const recorded = readSync().phb;
 console.log(`  handbook on the shelf: ${book ? book.file : "none"}`);
@@ -563,15 +586,15 @@ if (!checkOnly) {
       console.log(`\n=== ${step.name} (skipped) ===`);
       continue;
     }
-    // Equipment mode runs only the steps that name their shape for it.
-    if (equipmentOnly && !Array.isArray(step.equipment)) {
-      console.log(`\n=== ${step.name} (skipped in equipment mode) ===`);
+    // A one-workbook mode (equipment, conditions) runs only the steps that name their shape for it.
+    if (single && !Array.isArray(step[single])) {
+      console.log(`\n=== ${step.name} (skipped in ${single} mode) ===`);
       continue;
     }
     // In content mode a step with its own argument list runs with it, and the heading shows the
     // flags that differ from the full pipeline's, so the log says which shape ran. Equipment mode
     // the same, from its own list.
-    const contentArgs = equipmentOnly ? step.equipment : (content && Array.isArray(step.content) ? step.content : null);
+    const contentArgs = single ? step[single] : (content && Array.isArray(step.content) ? step.content : null);
     const ok = contentArgs
       ? run(step, { args: contentArgs, label: `${step.name} ${contentArgs.filter(a => !step.args.includes(a)).join(" ")}`.trim() })
       : run(step);
@@ -683,7 +706,12 @@ if (content) {
   console.log("\nEquipment rebuilt from data/equipment.xlsx alone: the web app is current (reload the browser tab);");
   console.log("in Foundry, sync the open world from Settings > STARWROUGHT > Sync content.");
   console.log(RESTART_FIRST);
+} else if (conditionsOnly) {
+  console.log("\nConditions rebuilt from data/conditions.xlsx alone: the web app is current (reload the browser tab);");
+  console.log("in Foundry, sync the open world from Settings > STARWROUGHT > Sync content, which reloads the");
+  console.log("Conditions on every connected client.");
+  console.log(RESTART_FIRST);
 } else {
   console.log(`\nAll steps clean, and the repository is synced to PHB v${drift.recorded}.`);
 }
-finish(0, drift.ok ? "clean" : `clean (handbook drift, a warning in ${equipmentOnly ? "equipment" : "content"} mode)`);
+finish(0, drift.ok ? "clean" : `clean (handbook drift, a warning in ${single ?? "content"} mode)`);

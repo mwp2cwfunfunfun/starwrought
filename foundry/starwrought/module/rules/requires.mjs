@@ -342,13 +342,24 @@ function bare(term, s) {
     // Drop Supine's `[EFFECT APPLY: Supine]` puts that Effect on), so `[REQUIRES prone or
     // supine]` lists Stand for a creature a row laid on its back. True only when that Effect is
     // known to be there; with no list of Effects it is the known "no" it always was.
-    case "supine": return has(s?.effects, "supine") === true;
+    // Since 0.33.0 Supine is a Condition its row of the Conditions workbook makes, and the word
+    // reads it; the named Effect is still read beside it, for a world where the workbook was not
+    // read and for an effect left from 0.32.1.
+    case "supine": return (has(s?.conditions, "supine") === true) || (has(s?.effects, "supine") === true);
     case "bind": {
       if (s?.bind === undefined) return null;
       return term.state ? (s.bind === term.state) : !!s.bind;
     }
     // A named Effect (0.31.0): the slugs of what is on the character that is no Condition.
-    case "effect": return has(s?.effects, term.slug);
+    // A name stored before a row made it a Condition (0.33.0, ruling 333) reads as the Condition.
+    case "effect": {
+      const id = conditionIdOf(term.name ?? "") ?? conditionIdOf(term.slug ?? "");
+      if (id) {
+        const asCondition = has(s?.conditions, id);
+        if (asCondition !== false) return asCondition;
+      }
+      return has(s?.effects, term.slug);
+    }
     case "spell": return ((s?.spells === undefined) || (s.spells === null)) ? null : (Number(s.spells) > 0);
     case "shield": {
       if (!s?.shield) return null;
@@ -386,7 +397,11 @@ function bare(term, s) {
         const placed = (term.range === "reach") ? !!t?.inReach : (term.range === "sight") ? true : (Number(t?.gap) <= term.range);
         if (!placed) continue;
         if (!term.with) return true;
-        const held = term.with.condition ? has(t?.conditions, term.with.condition) : has(t?.effects, term.with.slug);
+        // (A name stored before a row made it a Condition reads as the Condition, 0.33.0.)
+        const named = term.with.condition ?? conditionIdOf(term.with.name ?? "") ?? conditionIdOf(term.with.slug ?? "");
+        const asCondition = named ? has(t?.conditions, named) : null;
+        const held = term.with.condition ? asCondition
+          : ((asCondition === true) ? true : has(t?.effects, term.with.slug));
         if (held === true) return true;
         if (held === null) unsure = true;
       }

@@ -34,7 +34,7 @@
  * the registry.
  */
 
-import { RuleSyntaxError } from "./syntax.mjs";
+import { RuleSyntaxError, CONDITION_ROW } from "./syntax.mjs";
 import {
   emptyOps, splitOperands, readRank, readRange, readWho, readDegree, readAgainst, splitComparison, traitKey,
   WHO_FOR, WHO_WHILE, titled, readUntil, readTargetName, WORD_CHAR
@@ -115,28 +115,44 @@ export function readEffectLine(text, { context = {} } = {}) {
   const rest = headMatch[2].trim();
   let value = null;
   let type = null;
+  let scale = null;
   let descriptors;
   if (MODIFIER_TAGS.includes(tag)) {
     const parts = splitOperands(rest);
     const first = parts.shift() ?? "";
     const words = first.split(/\s+/).filter(Boolean);
-    if (!words.length || !/^[+-]?\d+$/.test(words[0])) {
+    // `N` (0.33.0; ruling 326): the Condition's own value, on a Condition's row of the Conditions
+    // workbook. `DEF: -N condition` on Frightened is -2 at Frightened 2. Stored as the sign with
+    // `scale: "N"`, never as a string: a kind that found a value that is no number would drop the
+    // rule in silence. Anywhere else there is no Condition whose value it could be.
+    const scaled = words.length ? words[0].match(/^([+-]?)N$/i) : null;
+    if (scaled && (tag !== "give")) {
+      if (context?.itemType !== CONDITION_ROW) {
+        throw new RuleSyntaxError(`"${words[0]}" is a Condition's own value and is written on that Condition's row of the Conditions workbook, as in \`DEF: -N condition\` on Frightened; here write a whole number`);
+      }
+      value = (scaled[1] === "-") ? -1 : 1;
+      scale = "N";
+      if (words.length > 2) throw new RuleSyntaxError(`"${first}": the value and its type, then a comma before any descriptor`);
+      type = words[1] ?? null;
+      descriptors = parts.map(p => p.trim()).filter(Boolean);
+    } else if (!words.length || !/^[+-]?\d+$/.test(words[0])) {
       // An example is a line that reads: a GIVE needs its degree (the review of 2026-11-14).
       const example = tag === "give" ? "1 situation, chosen; IF: RESULT(success)" : `1 condition${tag === "check" ? ", aid" : tag === "def" ? ", guard" : ""}`;
       throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: <value> <type>, <descriptor>\`, as in \`${tag.toUpperCase()}: ${example}\`: a signed whole number first, not "${first}"`);
+    } else {
+      value = Number(words[0]);
+      if (value === 0) throw new RuleSyntaxError("a bonus of 0 does nothing");
+      if (words.length > 2) throw new RuleSyntaxError(`"${first}": the value and its type, then a comma before any descriptor`);
+      type = words[1] ?? null;
+      descriptors = parts.map(p => p.trim()).filter(Boolean);
     }
-    value = Number(words[0]);
-    if (value === 0) throw new RuleSyntaxError("a bonus of 0 does nothing");
-    if (words.length > 2) throw new RuleSyntaxError(`"${first}": the value and its type, then a comma before any descriptor`);
-    type = words[1] ?? null;
-    descriptors = parts.map(p => p.trim()).filter(Boolean);
   } else {
     descriptors = splitOperands(rest).map(p => p.trim()).filter(Boolean);
   }
 
   const ops = emptyOps();
   for (const component of components.slice(1)) readComponent(component, ops, context, tag);
-  return { tag, kind: EFFECT_TAGS[tag], value, type, descriptors, ops, components };
+  return { tag, kind: EFFECT_TAGS[tag], value, type, ...(scale ? { scale } : {}), descriptors, ops, components };
 }
 
 /** Split a line on the semicolons outside parentheses and quotes, trimmed, empties dropped. */

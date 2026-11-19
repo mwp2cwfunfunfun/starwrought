@@ -52,6 +52,11 @@
   {{#if plan.empty}}
   <p class="sw-content-empty"><i class="fa-solid fa-circle-check"></i> {{plan.emptyText}}</p>
   {{else}}
+  {{!-- The Conditions (0.33.0) are no pack document: a change to them is said in a line, and the
+        sync reloads them on every connected client. --}}
+  {{#if plan.conditions}}
+  <p class="sw-content-empty"><i class="fa-solid fa-rotate"></i> {{plan.conditions}}</p>
+  {{/if}}
   {{!-- One section per pack: its label, the three counts, and a collapsible name list for each kind
         of change, folders marked. A pack with nothing to do says so in a line. --}}
   {{#each plan.packs as |pack|}}

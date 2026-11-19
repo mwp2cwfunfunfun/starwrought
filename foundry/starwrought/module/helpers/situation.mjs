@@ -30,7 +30,7 @@ import { reachesOf } from "../canvas/reach.mjs";
 import { hasPermit } from "../documents/cards/opportunity.mjs";
 import { ENGINE_REQUIRES } from "../documents/maneuvers.mjs";
 import { freeHands, requiresFor, maneuverStatus } from "../rules/requires.mjs";
-import { effectsOn } from "../rules/effect-list.mjs";
+import { effectsOn, conditionIdsFor } from "../rules/effect-list.mjs";
 import { setting } from "./settings.mjs";
 
 /** The Bind states a character may be in; anything else is no Bind. */
@@ -80,10 +80,13 @@ function nearOf(actor) {
     try { gap = gapBetween(own, doc); } catch { continue; }
     // What that creature has (0.31.0), for `creature adjacent with dying`: its Conditions and its
     // named Effects, which are as public as its Conditions (ruling 309).
+    // Since 0.33.0 the Conditions are what that creature HAS as this character sees it: closed
+    // over what each includes, with the ones it holds against this character alone (a creature
+    // Wrong-Footed to you is Off-Guard to you).
     const list = effectsOn(other);
     near.push({
       relation: relation(own, doc), gap, inReach: gap <= reach,
-      conditions: [...(list?.conditions.keys() ?? [])],
+      conditions: conditionIdsFor(list, actor.uuid),
       effects: [...(list?.names.keys() ?? [])]
     });
   }
@@ -108,6 +111,9 @@ export function situationOf(actor) {
   // name no one. A character none of whose Maneuvers carries such a block never pays for it.
   let near;
   let looked = false;
+  // What the character has (0.33.0): its statuses closed over what each includes, so `[REQUIRES
+  // off-guard]` holds for a Prone character and `not grabbed` fails for a Restrained one.
+  const list = effectsOn(actor);
   return {
     get near() {
       if (!looked) {
@@ -116,9 +122,9 @@ export function situationOf(actor) {
       }
       return near;
     },
-    conditions: [...(actor.statuses ?? [])],
+    conditions: list ? [...list.conditions.keys()] : [...(actor.statuses ?? [])],
     // The character's named Effects (0.31.0): what is on it that is no Condition, by slug.
-    effects: [...(effectsOn(actor)?.names.keys() ?? [])],
+    effects: [...(list?.names.keys() ?? [])],
     bind: BIND_STATES.includes(state) ? state : null,
     spells: items.filter(i => (i.type === "talent") && i.system.isSpell).length,
     shield: { held: shields.length > 0, raised: shields.some(s => !!s.system.raised) },

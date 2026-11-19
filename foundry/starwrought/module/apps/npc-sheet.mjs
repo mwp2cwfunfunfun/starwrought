@@ -8,7 +8,7 @@
 
 import * as SW from "../config.mjs";
 import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "../helpers/actor-context.mjs";
-import { effectReadAs, effectAppliedTag } from "../helpers/effects.mjs";
+import { effectReadAs, effectAppliedTag, conditionInfo } from "../helpers/effects.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
 import { auraRowsByItem, rangeFor } from "../canvas/auras.mjs";
@@ -112,10 +112,17 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       SW
     });
 
+    // The Threshold the GM typed (`base`, which the field edits) and, when the Conditions the
+    // creature has move it, the one IN EFFECT beside it, with what moved it (0.33.0, ruling 335).
+    const signed = n => (n > 0 ? `+${n}` : String(n));
+    const movedBy = mods => (mods ?? []).map(m => `${foundry.utils.escapeHTML(String(m.label ?? ""))} ${signed(m.value)}`).join(", ");
     context.defenses = Object.values(sys.defenses).map(def => ({
       ...def,
       label: game.i18n.localize(def.label),
-      hint: game.i18n.localize(def.hint)
+      hint: game.i18n.localize(def.hint),
+      moved: !!def.shift,
+      inEffect: game.i18n.format("STARWROUGHT.Conditions.inEffect", { n: def.threshold }),
+      inEffectHint: game.i18n.format("STARWROUGHT.Conditions.inEffectHint", { typed: def.base, n: def.threshold, by: movedBy(def.conditions) })
     }));
     context.bind = bindContext(actor);
     // Form a Bind by hand (0.27.0, ruling 279): offered in an encounter while in none.
@@ -140,10 +147,18 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
     // One Threshold per Attack. The derived row is expected to carry `threshold`; an older shape
     // that still carried the MAP ladder is read at its first step so nothing goes blank mid-sync.
-    context.attacks = (sys.attacks ?? []).map(atk => ({
-      ...atk,
-      threshold: atk.threshold ?? atk.thresholds?.[0] ?? ""
-    }));
+    context.attacks = (sys.attacks ?? []).map(atk => {
+      const typed = atk.threshold ?? atk.thresholds?.[0] ?? "";
+      // What its Conditions put on its attacks (0.33.0): the number in effect beside the typed one.
+      const moved = !!sys.attackShift && (typed !== "");
+      return {
+        ...atk,
+        threshold: typed,
+        moved,
+        inEffect: moved ? game.i18n.format("STARWROUGHT.Conditions.inEffect", { n: atk.inEffect }) : "",
+        inEffectHint: moved ? game.i18n.format("STARWROUGHT.Conditions.inEffectHint", { typed, n: atk.inEffect, by: movedBy(sys.attackModifiers) }) : ""
+      };
+    });
 
     // The Reactions it has: its own abilities that carry the Reaction trait. The table's Reactions
     // (SW.REACTIONS) are the GM's to declare for any adversary, so they live in the Combat Prompt
@@ -167,7 +182,10 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       // How a line of Automation reads it (0.31.0): `prone`, or `EFFECT(Blessed)`.
       readAs: effectReadAs(e),
       // Put there by a Maneuver's APPLY line (0.32.0): who, with what, until when.
-      applied: effectAppliedTag(e)
+      applied: effectAppliedTag(e),
+      // A Condition's own effect (0.33.0): its Description for the row's tooltip, and what it is
+      // doing, read-only, listed under the row.
+      condition: conditionInfo(actor, e)
     }));
 
     context.sizeChoices = Object.fromEntries(

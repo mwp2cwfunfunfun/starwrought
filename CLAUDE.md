@@ -23,6 +23,7 @@ are sources and which are output, and leave the repo building.**
 | `foundry/starwrought/FEATURES.md` | `Starwrought_Foundry_Features.docx` (`assets/build_features_docx.py` lays the Markdown out as a Word document for printing or a PDF) |
 | `foundry/starwrought/` **except** `packs/`, `content/`, `assets/constellations/` | those three, which `assets/build_foundry.mjs` regenerates |
 | `data/SYNC.json` (via `build_all.mjs --accept-phb`) | `foundry/starwrought/content/sync.json` |
+| `data/conditions.xlsx` (0.33.0) | `assets/conditions.json`, the `conditions` block of `roster.json`, `foundry/starwrought/content/conditions.json` |
 
 **The web app and the Foundry system are siblings, not a chain.** Both read `assets/trees.json`,
 `assets/actions.json` and `assets/roster.json` (the Foundry build also reads `assets/equipment.json`,
@@ -53,6 +54,7 @@ node assets/build_all.mjs --skip-slow  # skip the plates, the sheets, and the co
 node assets/build_all.mjs --accept-phb # record the current handbook as synced, once the work is done
 node assets/build_all.mjs --content    # the content loop (0.8.0): spreadsheets to the web app and the pack sources, no compile, drift a warning
 node assets/build_all.mjs --equipment  # the equipment workbook ALONE (0.30.0): equipment.json, the roster's four blocks, the web app, the pack sources
+node assets/build_all.mjs --conditions # the Conditions workbook ALONE (0.33.0): conditions.json, the roster's conditions block, the web app, the system's content
 ```
 
 **THE HANDBOOK RULE (Mike, 2026-08-27, standing).** When the PHB moves, everything downstream moves
@@ -80,6 +82,17 @@ the ONLY source for a weapon, a piece of armor, a shield and a kind of ammunitio
 Traits and Armor Traits tables and Chapter 5's prose are still the handbook's. Where this file
 says above that the handbook is authoritative for "Chapter 5's equipment", read: for its trait
 tables and its prose.
+
+**And a fourth part since 2026-11-18 (Mike; ruling 322): the Conditions.** "can we build a
+conditions.xlsx that includes every condition, and the automation effects (if any) of it?",
+then, by question: the workbook is the source the system reads and **the only authority for
+what a Condition says and does**. `data/conditions.xlsx` was filled once from the handbook's
+v4.25 Conditions table; from then on the sheet is the word, a change to a row is the Conditions
+build's (`build_all.mjs --conditions`) and never a handbook sync, and no handbook redline is
+proposed for one. The table is still printed in the book (Mike takes it out when he chooses), so
+the two may differ: the sheet wins, and nothing checks the book against it. Where this file
+says above that the handbook is authoritative for "the Conditions and Traits tables", read: for
+the Traits tables.
 
 The individual steps, from the project root, in this order. They need `openpyxl`, `matplotlib`,
 `reportlab`, `python-docx`, and the `docx` npm package; all are installed.
@@ -929,6 +942,120 @@ is named when it is Trained** (ruling 198): `SwActor#nameLore(field)` (`document
 spending into the template and holding Next until named, `onCreateItem` prompting for a Lore
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
+
+**0.33.0 (Mike, 2026-11-18; rulings 322 to 336): the Conditions workbook.** Mike: "can we build
+a conditions.xlsx that includes every condition, and the automation effects (if any) of it?",
+then "Yes, the source". Planned first (`dazzling-floating-simon.md`; his decisions by question:
+the workbook is the only authority, adversaries too, Conditions only for now, a new row makes a
+new Condition, Drop Flat's +4 alone, commit 0.32.1 first). **No kind and no hook point is new.**
+**The registry** (`module/config/conditions.mjs`): `CONDITIONS` is LIVE, emptied and refilled in
+place as `TERRAIN_KINDS` is; the built-ins stay in code (private `BUILT_INS`, each with `system:
+true` when the system runs it, `aliases` for `blinded`/`deafened`) and `registerConditions(rows)`
+REBUILDS from them plus the workbook's rows (`{ created, matched, missing }`; throws, changing
+nothing, on a row it cannot take). A row that names no built-in MAKES A CONDITION (Supine the
+first): id from its name (`newConditionId`), a static status id hashed from the id alone
+(`newStatusId`). A built-in keeps its id, i18n `name`, status id and `numeric`; a row gives it
+`label`, `description`, `includes`, `rules`, `listed`, and an icon when the cell is filled. The
+one "Exposed" row describes the four Zone statuses. `conditionIdOf` reads a live word index (id,
+key word, label, aliases; spaces and hyphens out); `conditionLabel`, `conditionNameKey` (what a
+screen localizes: the row's label, else the built-in's i18n key), `conditionDescription`,
+`conditionHasRules`, `conditionHasRow`, `conditionsRegistered`, `conditionNameFree` (a new name
+may not be a word, or begin with one, that a `[REQUIRES ...]` block reads as something else),
+and a new name that differs from another Condition's only by a mark its id drops ("Off'Guard")
+is refused, since it would take that Condition's word. **Two exports are
+named `CONDITIONS`**: the registry (config) and the list of condition WORDS in
+`module/rules/effects.mjs`; a tool that needs both aliases one. **The grammar**: a Condition's
+row is `itemType: "condition"` (`CONDITION_ROW`, `CONDITION_ROW_TAGS` in `module/rules/syntax.mjs`)
+and reads CHECK, ATK, DEF, INIT alone, with only the Threat conditions after `IFT:`; `N` as a
+value (`-N`; `module/rules/effects.mjs`) is stored `value: ±1, scale: "N"`, read on a Condition's
+row whose Takes is N and refused everywhere else (`context.takes`). **What a creature HAS** is
+`module/rules/condition-set.mjs` (pure): `closeConditions({ direct, torso })` closes the
+statuses over each Condition's `includes` and adds Off-Guard for a Torso Wound or the Torso's
+Critical Hit effect (the STORED `zones.torso.wounds` / `.critical`: `_prepareRules` runs before
+`_prepareWounds`); an inclusion written `against X` is kept apart by the uuid of whoever applied
+the including Condition (`flags.starwrought.applied.by`), and a hand-toggled one names nobody
+(`unknown`); the answer does not depend on the order of the statuses, and an included Condition
+is every applier's (`bys`). `effectList` reads the same closure (`conditions`, `against`, `by`,
+`bys`, `via`, `direct`), `listHas(list, ref, { by, viewer })` and `effectHolds` pass the VIEWER (the roller
+for `IFT:`, the other party for `IF:`), `situationOf` and `unavailableEvade(heldConditions(actor))`
+read it too; `APPLY` and `REMOVE` stay on the raw statuses. **The carrier**: `collectRules` adds
+`conditionCarriers(actor)`, one `{ id: "condition:<id>", type: "condition", condition: { id,
+value, against, via, direct } }` for each Condition held that carries lines, named for what it
+comes through ("Off-Guard (Prone)", "Off-Guard (Torso)"), so the `bonus` kind's `modifiers` hook
+applies a Condition's lines, multiplies an `N` rule by the carrier's value, and reads an
+"against X" carrier only where `context.other` is one of its creatures (it passes `pairingOnly`).
+A Condition's line has no On / Skip / Off (`rulesOfKind` reads no state for it; `effectGroups`
+leaves it out; `conditionInfo` lists it read-only). **`conditionModifiers(actor, context)`** is
+`ruleModifiers` held to the Condition carriers with no scene. **THE OLD NUMBERS ARE GUARDS, NOT
+GONE**: the Off-Guard, Frightened and Fatigued blocks of `data/character/defenses.mjs`,
+`dice/check/modifiers.mjs` and `data/character/offense.mjs` stand only while
+`SW.conditionHasRow(id)` is false, that is while NO ROW of the workbook describes the Condition
+(the file could not be read): such a world keeps the numbers the system always had and nothing
+counts twice. **THE ROW IS THE WORD (ruling 329): a row whose cell is blank or `N/A` means the
+Condition changes no number, Off-Guard, Frightened and Fatigued included.** (The guard was keyed
+on the row's LINES until the review: `N/A` on Off-Guard then put the old -2 back for the status
+and not for a Prone creature or an adversary.) `weaponNumbers` (`helpers/actor-context.mjs`)
+adds the carriers' standing attack lines. **Adversaries** (ruling
+324): the npc model's `defenses[key]` carries `base` (typed; the sheet's input is bound to it and
+never to `threshold`), `threshold` (in effect), `shift`, `conditions`; `attackModifiers`,
+`attackShift`, `attacks[].inEffect`; `defenseThresholdFor`'s npc branch asks `conditionModifiers`
+whole (static and moment) and adds the answer's bonus; `attackThreshold(attacker, maneuver,
+{ controlled, conditions })`; the npc branch of `baseModifiers` adds them for every kind but
+`defense`; `npcInitiative` in `documents/combat.mjs` reads an adversary's Initiative as a
+character's default one is (the lines that reach Awareness, and the INIT lines; never a CHECK
+line); an adversary's Gain Control takes the lines a CHECK takes (`checkShift` in
+`documents/cards/gain-control.mjs`), never its attack lines; the Intercept button prints
+`attacks[].inEffect`. An adversary's own Talents stay unread.
+**A reroll meets the first die's number** (ruling 335): `resolveAgainst` takes `threat` and
+`conditionShift`, the card keeps both (`dice/check/card.mjs`), `thresholdForCard` and
+`rerollCard` hand them back; `defenseThresholdFor({ conditionShift })` sets the Conditions'
+lines as they stand aside and adds the stored total, FOR A CHARACTER DEFENDER TOO (its
+Condition lines are the modifiers whose `source` begins `rule:condition:`; `isConditionLine`);
+a card from before 0.33.0 carries neither and is read live. **And
+`rerollCard` hands the die's modifiers and the pairing's back APART** (a defect since 0.31.0,
+found by the live drive: a rerolled Strike listed its `IFT: EFFECT` or `MARKED` bonus twice and
+lost it from the total). **Drop Flat** (ruling 330): Prone goes on once the pairing has
+RESOLVED (`#applyReveal` reads `target.outcome`, keys `…:zone` and `…:prone`; `rollDefense` puts
+it on after the die outside the flow), never at the reveal. **Supine** (ruling 333) is a
+Condition: a reference stored while it was a named Effect means the Condition (`conditionOfRef`
+in `module/rules/effect-list.mjs`: `listHas`, `applyEffectTo`, `removeEffectFrom`, the `apply`
+kind's lines, `bare()`'s `supine` and `effect` cases), and `migrateWorld`'s 0.33.0 step turns a
+status-less effect named for a row-made Condition into the Condition's own (the elected GM
+client, only once the rows are registered; else the stamp stops at 0.32.1; never one that is
+switched off or carries changes of its own). **The client**
+(`helpers/content.mjs`): `loadConditions()` fetches `content/conditions.json` ALWAYS past the
+cache, at init (Foundry does not await the hook), `ready` awaits `conditionsReady()` and calls
+`applyConditions()` (`CONFIG.statusEffects = statusEffectList()`, then every Actor that has a
+status or a Wounded or struck Torso is `reset()`: the world's, every scene's unlinked tokens,
+every Combat's fighters); one read at a time (`conditionsLoading`); a failed read leaves the
+registry as it was and is said once, in a notice that stays, to the GM and to a player whose
+client could not read it. **Sync content** reads them again and calls `announceConditions(build)`
+(`helpers/content-sync.mjs`), which emits `content:conditions` (every other client answers by
+reading the file itself) and records the world setting `conditionsBuild`, the build the world
+last ANNOUNCED. The index carries `conditions` (the hash, also in `index.build`);
+`plan.conditions.changed` is asked of that setting and of this client's own copy, never of this
+client alone (the review: a GM who had just reloaded held the new file, read "unchanged", and
+left connected players on the old lines); and `offerContentSync` announces by itself, with no
+question, when no pack has work and the Conditions moved. **The
+pipeline**: `assets/make_conditions_xlsx.py` scaffolded the workbook ONCE from the handbook's
+table (it refuses to run over it; `cell_text` reads nested tables); `xlsx_to_trees.py` knows the
+workbook by its `Conditions` sheet (`parse_conditions_workbook`, `--conditions`) and only STAGES
+the rows (`build/conditions.staged.json`); `assets/lib/conditions_build.mjs` (`buildConditions`,
+`registryRows`) parses the cells, registers, refuses a sheet that leaves a built-in without a
+row or carries a name a cell cannot write, and builds `assets/conditions.json` and the roster's
+`conditions` block (`[name with its Takes suffix, description]`, Listed rows only), which
+`parse_rules.mjs` writes TOGETHER and only when the sheet reads (the roster first, then
+conditions.json, the staged rows used up last, so a write that fails part way is done again) (first thing, before any tree
+cell, so the trees are parsed against the Conditions; `--conditions` does nothing else;
+`--lenient` leaves conditions.json as it was and says so); `build_foundry.mjs` registers them
+before parsing and writes `content/conditions.json`; `build_all.mjs --conditions`
+(`sync_conditions.cmd`) is the one-workbook loop, generalised with `--equipment` as `single`;
+`check_style.py --conditions`, `highlight_automation.py`, `lib/parse_cells.mjs` and
+`build_report.py` (`RULES` rows for every new message) know the workbook. **`data/conditions.xlsx`
+is a built, committed workbook, as `data/equipment.xlsx` is: before committing it, run
+`python assets/xlsx_to_trees.py --conditions` and `node assets/parse_rules.mjs --conditions`
+and see whether `assets/conditions.json` moves; if it does, run `build_all.mjs --conditions`.**
+Mike's four workbooks in progress were not converted, built, staged or written.
 
 **0.32.1 (Mike, 2026-11-18; no ruling): Stand's two lines, and Supine as a named Effect.** Mike,
 of Stand's cell: "should it say instead `[EFFECT REMOVE: prone]` `[EFFECT REMOVE: supine]`?",
@@ -2017,6 +2144,22 @@ content build writes them again.
   since 0.30.0. **`node assets/build_all.mjs --equipment` (`sync_equipment.cmd`) builds this
   workbook alone**, for a build made while the talent and action workbooks cannot pass the
   content loop.
+- **`data/conditions.xlsx` is the Conditions workbook** (Mike, 2026-11-18; system 0.33.0; rulings
+  322 and 323), the ONLY source for what a Condition says and does. Index-less, recognised by its
+  `Conditions` sheet (an About sheet is ignored): Condition | Takes (blank, N, Zone, X) |
+  Description | Includes | Automation | System | Listed? | Icon | Notes, one row for each
+  Condition; the suffix the handbook's table prints ("Frightened N", "Bound [X]") reads off the
+  name and is put back from Takes wherever a table is printed. The converter STAGES the rows
+  (`build/conditions.staged.json`) and `assets/parse_rules.mjs` writes `assets/conditions.json`
+  (every row, with its parsed `rules`, and a new Condition's static status id) and the roster's
+  `conditions` block (the Listed rows, `[name, description]`) together, only when the whole sheet
+  reads; `build_foundry.mjs` writes `content/conditions.json` for the client. A row that names no
+  Condition the system has MAKES one (the build prints `NEW CONDITION`); a row the system needs
+  may not be deleted (the build refuses). A Condition's row reads `CHECK`, `ATK`, `DEF` and
+  `INIT`, with `-N` for its own value; Includes is how one Condition counts as another, with
+  `against X` (`AUTOMATION_GRAMMAR.md`, section 11). **`node assets/build_all.mjs --conditions`
+  (`sync_conditions.cmd`) builds this workbook alone.** The handbook still prints its Conditions
+  table; the sheet wins, and nothing checks the book against it.
 - The pipeline warns on any root that breaks the Root Rule, so violations surface on the next sync.
 - **The three actions workbooks since 0.20.0 (PHB v4.24, Chapter 8; Mike's restructure of
   2026-11-07, read as written, rulings 206 to 210):** `data/actions_maneuvers.xlsx` (a Basic Actions sheet
@@ -2345,6 +2488,38 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.33.0 leaves to the table or to Mike** (the Conditions workbook). **What a Condition
+  FORBIDS and how it FADES have no word yet** (0.34.0, one word at a time with him, with the
+  named Effects sheet he set aside): Supine does not stop movement and its -2 has no exception
+  for melee Attacks against adjacent creatures; "cannot Move or Step" and "no action other than
+  Escape" are by hand; Frightened and Slowed do not drop by 1 at a round's end; Stunned,
+  Heedless and Deafened do nothing; Evade unavailable while Grabbed is still code
+  (`unavailableEvade`), as are Slowed's lost actions, Blind's sight, Hidden and Undetected, and
+  Fatigued's maximum, Wind check and rests. **Five things wait in `assets/open_decisions.json`**:
+  Claude's readings (rulings 325, 327 to 329, 331, 332, 334, 335), of which 329 is the one to
+  know (the row is the word: emptying the Off-Guard, Frightened or Fatigued row's Automation
+  cell switches that Condition's numbers off for everyone); Supine's attack line; a creature
+  both Prone and Supine taking the lines of both, and `IFT: RANGED` being a ranged Blow (no +2
+  Evade against a Blast from range); the Prone row's "Roll Over to become Prone", copied from the
+  handbook as written; and the handbook's Conditions table, still printed. Stated by the review
+  and not changed: "against X" matches the applier by its own uuid (a Feint rolled from an
+  adversary's sidebar sheet and not its token names another body); "Blind" and "Deaf" are names
+  of Blinded and Deafened now, so a hand-made effect merely called either is read by nothing; a
+  reroll of an adversary's Gain Control reads its Conditions live; a slip in `conditions.xlsx`
+  stops the full converter, as a slip in any workbook does; with no `assets/conditions.json` the
+  build leaves an old `content/conditions.json` where it is. Roll Over has no row. A rule that names Prone still means
+  Prone and not Supine. Wrong-Footed is to one creature at a time, and one toggled from the
+  token names nobody. An adversary's own Talents stay unread. **Not built**: a Condition's row
+  reading anything but CHECK, ATK, DEF, INIT; a value compared (`EFFECT(frightened 2)`); `N` in
+  a Talent's line; a Condition's lines on an unlinked token of a scene nobody is viewing until
+  it is next prepared. **The test world** was driven on 0.33.0 and left as found (434 messages:
+  the 433 and one "Content synced" card; Mike's Combat with testpc8 active at round 4; the
+  Bandit Prone, as found; its content level with these sources); its world Maneuvers Stand, Drop
+  Prone and Drop Supine still carry the 0.32.1 cells, which now mean the Condition. To try
+  0.33.0 there: toggle Supine or Prone on Wren from the token and watch Evade and Guard on her
+  sheet; open the Bandit's sheet (it is Prone) and read "11 in effect" beside Evade and the
+  lines under Prone on its Effects tab; change a cell in `data/conditions.xlsx`, double-click
+  `sync_conditions.cmd`, then Sync content.
 - **0.32.0 leaves to the table or to Mike** (a Maneuver puts Effects on): **the cells wait for
   him to paste** into `data/actions_maneuvers.xlsx` (the 0.32.0 changelog entry and
   `AUTOMATION_GRAMMAR.md` section 5: Stand, Drop Prone, Take Cover, Trip, Shove, Disarm, Grapple,
@@ -2651,6 +2826,36 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-18 (the Conditions workbook, system 0.33.0; rulings 322 to 336 in the 0.33.0
+changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: the
+workbook is the only authority, adversaries too, Conditions only for now, a new row makes a new
+Condition, Drop Flat's +4 alone, commit 0.32.1 first): the Conditions as a fixed table in code
+with their effects written by hand in four files, now `data/conditions.xlsx`, a live registry
+over the built-ins, and a carrier for each Condition a creature has, read by the `bonus` kind's
+existing hook; a Condition's text kept twice and disagreeing, now the row's Description
+everywhere; Prone changing no number, Grabbed, Restrained, Blind and Unconscious not making a
+creature Off-Guard, now each counting as what its row includes; Supine as a label, now a
+Condition a row made; Wrong-Footed doing nothing, now Off-Guard against the creature that
+applied it; an adversary's numbers untouched by any Condition, now moved, with the typed number
+kept in the field and the one in effect beside it; a new Condition as a code change, now a row;
+Drop Flat's Prone at the reveal, now after the pairing resolves; a reroll reading a hidden
+Threshold as the creature stood at the reroll and with no Threat, now meeting the number the
+first die met. Mended on the way, older than the release and found by the live drive: a
+rerolled Strike listed its bonus against that defender twice and left it out of the total
+(since 0.31.0). Checked by 235 self-test checks, `node --check` on 178 modules, `build_all.mjs
+--check`, the style check (one failure, the em-dash in Dwarf Lore B13), the smoke test on the
+rebuilt app, the Conditions build run for real with no other workbook opened, the full
+pipeline's path through the Conditions step run in a scratch copy of the generated files, an
+independent review of the finished change (no crash and no double count; twelve findings of
+medium to low severity, all mended but the few stated under Known outstanding work), and live in
+the test world with a GM tab and a player tab after a restart of Foundry, before the review and
+again for its mends (the 0.33.0 changelog entry lists what, number for number, and what was not
+driven). Not built, and said so: the words for
+what a Condition forbids and how it fades, and the named Effects sheet (0.34.0). His four
+workbooks were not converted, built, staged or written. No handbook moved and `data/SYNC.json`
+is untouched. Committed on 2026-11-18 at his word and tagged `v0.33.0`, his edits to the four
+workbooks and the v4.24 draft left out; not pushed until he says.
 
 Cleared 2026-11-18 (Stand's two lines and Supine as a named Effect, system 0.32.1; no ruling):
 "had no supine to take off" said on every Stand beside "is no longer Prone", now left out

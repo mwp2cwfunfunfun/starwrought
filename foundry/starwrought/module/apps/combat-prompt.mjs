@@ -517,7 +517,7 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     const defenses = permitted.map(d => {
       const def = SW.DEFENSES[d];
       const row = actor.system?.defenses?.[d] ?? {};
-      const blocked = row.unavailable ? game.i18n.localize(SW.CONDITIONS[row.unavailable]?.name ?? row.unavailable) : null;
+      const blocked = row.unavailable ? game.i18n.localize(SW.conditionNameKey(row.unavailable)) : null;
       return {
         key: d,
         label: game.i18n.localize(def.label),

@@ -627,7 +627,12 @@ export function effectHolds(rule, lists) {
   if (has === null) return false;
   for (const h of has) {
     // `mine` (0.32.0) is asked of the creature whose roll this is: `lists.by` is its uuid.
-    if (listHas((h.on === "other") ? lists?.other : lists?.self, h, { by: lists?.by ?? null }) !== true) return false;
+    // The VIEWER (0.33.0) is the creature on the other side of the question, which a Condition
+    // held "against X" needs: the roller when the other party's list is read, the other party
+    // (`lists.otherBy`) when the roller's own is.
+    const other = h.on === "other";
+    const viewer = other ? (lists?.by ?? null) : (lists?.otherBy ?? null);
+    if (listHas(other ? lists?.other : lists?.self, h, { by: lists?.by ?? null, viewer }) !== true) return false;
   }
   return true;
 }

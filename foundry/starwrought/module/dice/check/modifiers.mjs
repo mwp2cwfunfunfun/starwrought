@@ -8,7 +8,7 @@
  */
 
 import * as SW from "../../config.mjs";
-import { ruleModifiers, ruleSubstitutions } from "../../rules/engine.mjs";
+import { ruleModifiers, ruleSubstitutions, conditionModifiers } from "../../rules/engine.mjs";
 import { sceneContextFor, encounterContext } from "../../rules/scene.mjs";
 import { swapTerms, substitutionRecord, chooseVariant, mergeMarks } from "./substitute.mjs";
 
@@ -195,6 +195,18 @@ export function baseModifiers(actor, cfg, candidate = null) {
   // bonuses), so the early return stands as it was.
   if (actor.type === "npc") {
     if (cfg.flatBonus) parts.push({ label: cfg.label, value: cfg.flatBonus });
+    // THE CONDITIONS IT HAS (0.33.0; rulings 324 and 335): the one thing that reaches an
+    // adversary's die. A Frightened 2 Bandit's attack roll is at -2, as its Attack Threshold is
+    // when a player's Defense answers it (combat/attack-source.mjs), so the two faces of one
+    // attack agree. Its own Talents stay unread: `conditionModifiers` answers for the Conditions
+    // alone, with no scene, so no player's aura reaches it either. A Defense is not rolled by an
+    // adversary; were one, its Threshold already carries the standing lines, so only an attack, a
+    // check and an Initiative take them here.
+    if (cfg.kind !== "defense") {
+      parts.push(...conditionModifiers(actor, {
+        kind: cfg.kind, slug: cfg.slug ?? "", item: cfg.item ?? null, threat: cfg.threat ?? null, other: otherOf(cfg)
+      }));
+    }
     return parts;
   }
 
@@ -319,8 +331,10 @@ export function baseModifiers(actor, cfg, candidate = null) {
     }
   }
 
-  // Conditions the system can see for itself.
-  const frightened = actor.conditionValue("frightened");
+  // Conditions the system can see for itself. Since 0.33.0 Frightened's numbers are its row's in
+  // the Conditions workbook, which the rules asked below carry; this is the fallback, standing
+  // only while no row of the workbook describes it (ruling 329; data/character/defenses.mjs).
+  const frightened = SW.conditionHasRow("frightened") ? 0 : actor.conditionValue("frightened");
   if (frightened) {
     parts.push({
       label: game.i18n.localize("STARWROUGHT.Condition.frightened"),

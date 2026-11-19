@@ -11,8 +11,13 @@ import { SwCheck } from "../../dice/check.mjs";
 import {
   postureName as postureNameOf, postureBonus, postureZone, postureNeedsZone, postureRule
 } from "../../helpers/answers.mjs";
-import { ruleModifiers } from "../../rules/engine.mjs";
+import { ruleModifiers, conditionModifiers } from "../../rules/engine.mjs";
 import { sceneContextFor, encounterContext } from "../../rules/scene.mjs";
+
+/** Is this modifier a Condition's own line (0.33.0)? Its source is the Condition's carrier (rules/engine.mjs). */
+function isConditionLine(modifier) {
+  return String(modifier?.source ?? "").startsWith("rule:condition:");
+}
 
 /** The two basic Defenses that answer a Blow (PHB v4.21, The Four Threats): the default `permitted` list. */
 const BLOW_DEFENSES = Object.freeze(["evade", "guard"]);
@@ -110,10 +115,9 @@ export const DefenseMixin = Base => class extends Base {
       modifiers,
       // A Posture Exposes its Zone whether or not it works (brief), so the Zone opens before the
       // die, marked as a Posture's so Recenter leaves it and the end of the round clears it; Drop
-      // Flat drops you Prone instead (PHB v4.21).
+      // Flat drops you Prone instead (PHB v4.21), AFTER the die since 0.33.0 (below).
       beforeRoll: async cfg => {
         if (zone) await this.setExposed(zone, true, { posture: true });
-        if (drawback === "prone") await this.setCondition?.("prone", true);
         return callerBeforeRoll ? callerBeforeRoll(cfg) : true;
       }
     };
@@ -129,7 +133,16 @@ export const DefenseMixin = Base => class extends Base {
         postCard: false
       });
     }
-    return SwCheck.roll(foundry.utils.mergeObject(config, passthrough, { inplace: false }));
+    const result = await SwCheck.roll(foundry.utils.mergeObject(config, passthrough, { inplace: false }));
+    // DROP FLAT'S PRONE (0.33.0; ruling 330; Mike: "The +4 alone"): after the die, never before
+    // it, so the attack that triggered Drop Flat meets the +4 and nothing of what Prone does (its
+    // row makes a creature Off-Guard). Inside the attack flow the coordinator's state puts it on
+    // once the pairing has resolved (combat/attack-coordinator.mjs, `#applyReveal`); a Defense
+    // rolled outside it puts it on here, once the die has landed. A closed dialog rolled nothing.
+    if ((drawback === "prone") && result && !workflow) {
+      await this.setCondition?.("prone", true);
+    }
+    return result;
   }
 
   /**
@@ -161,12 +174,16 @@ export const DefenseMixin = Base => class extends Base {
    *                                              defender's token on the scene, the rules that need
    *                                              the map or the round are folded in here, which the
    *                                              sheet's own Threshold leaves out.
+   * @param {number|null} [answer.conditionShift]  The total the defender's Conditions put on the
+   *                                              first reading (0.33.0): a reroll's, used in
+   *                                              place of the Conditions it has now.
    * @returns {{key: string, threshold: number, bonus: number, label: string, reaction: string|null,
    *            posture: object|null, note: string|null, unavailable: string|null,
-   *            marks: Array<{key: string, per: string}>}}
+   *            marks: Array<{key: string, per: string}>, conditionShift: number|null}}
+   *          `conditionShift`: what the defender's Conditions put on this reading, for the card to keep.
    * @throws {Error} when both a Reaction and a Posture are given.
    */
-  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null, attacker = null } = {}) {
+  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null, attacker = null, conditionShift = null } = {}) {
     const sys = this.system;
     // The other party (0.15.0, `MARKED`): the attacker whose Blow this Threshold answers, or the
     // roller whose check reads it; an Actor, a Token or a TokenDocument, as the caller has it.
@@ -234,6 +251,14 @@ export const DefenseMixin = Base => class extends Base {
     // no modifier stack and its rules do not reach its Defenses (adversaries roll flat).
     let marks = [];
     let momentMods = [];
+    // What the defender's Conditions put on this reading (0.33.0; ruling 335), for the card to
+    // keep: a reroll hands it back as `conditionShift`, and it then stands in place of the lines
+    // the creature's Conditions give NOW, which may have moved since the first die (Drop Flat's
+    // Prone goes on once the attack has resolved; a Hit may have left a Torso Wound). For a
+    // character as for an adversary (the review of 0.33.0: with the adversary alone covered, a
+    // reroll against a character who had Dropped Flat met a Threshold 2 lower than the first die).
+    let conditionTotal = null;
+    const given = Number.isFinite(conditionShift);
     if (Array.isArray(def?.modifiers) && (this.type === "character")) {
       // `read` (0.15.0): a Threshold read has no dialog, so a claim applies only when armed.
       const moment = ruleModifiers(this, {
@@ -242,15 +267,35 @@ export const DefenseMixin = Base => class extends Base {
       });
       momentMods = moment.applied;
       marks = moment.marks;
+      // A Condition's lines carry the Condition's own source (`rule:condition:<id>:<target>`), so
+      // they resolve apart from every other modifier and their total is theirs alone.
+      const own = [...def.modifiers, ...momentMods].filter(isConditionLine);
+      conditionTotal = given ? conditionShift : (own.length ? SW.resolveModifiers(own).total : 0);
     }
-    if (bonus || momentMods.length) {
+    if (this.type === "npc") {
+      // AN ADVERSARY (0.33.0; rulings 324 and 335): the Threshold the GM typed, with every line of
+      // the Conditions it has that reaches this Defense NOW: the standing ones the sheet shows in
+      // effect (Off-Guard, Frightened N) and the ones that need the attack or the attacker
+      // (Prone's +2 Evade against a ranged Attack; Off-Guard against the creature that Feinted
+      // it). Asked whole and resolved once with the answer's bonus, so one circumstance counts
+      // once. Its own Talents stay unread.
+      // `conditionShift`: a reroll hands over the total the first die met, and it stands in place
+      // of the lines read now (the creature's Conditions may have moved since; ruling 335).
+      const lines = Number.isFinite(conditionShift)
+        ? []
+        : conditionModifiers(this, { kind: "defense", slug: SW.DEFENSES[key].slug, item: null, threat, other });
+      conditionTotal = Number.isFinite(conditionShift) ? conditionShift : (lines.length ? SW.resolveModifiers(lines).total : 0);
+      threshold = (def?.base ?? def?.threshold ?? 10) + conditionTotal + bonus;
+    } else if (bonus || momentMods.length || given) {
       if (Array.isArray(def?.modifiers)) {
+        // On a reroll the Conditions' lines as they stand now are set aside, and the total the
+        // first die met is added in their place.
+        const stack = [...def.modifiers, ...momentMods].filter(m => !(given && isConditionLine(m)));
         const { total } = SW.resolveModifiers([
-          ...def.modifiers,
-          ...momentMods,
+          ...stack,
           ...(bonus ? [{ label: answerLabel, value: bonus, type: "situation" }] : [])
         ]);
-        threshold = 10 + total + (def.sizeMod ?? 0);
+        threshold = 10 + total + (def.sizeMod ?? 0) + (given ? conditionShift : 0);
       } else {
         threshold += bonus;
       }
@@ -266,10 +311,11 @@ export const DefenseMixin = Base => class extends Base {
       posture: posture ? { talentId: posture.talentId, name: postureName, zone: postureZone(this, posture) } : null,
       note,
       marks,
+      conditionShift: conditionTotal,
       unavailable: blocked
         ? game.i18n.format("STARWROUGHT.Defense.answeringInstead", {
             named: game.i18n.localize(SW.DEFENSES[named].label),
-            reason: game.i18n.localize(SW.CONDITIONS[blocked]?.name ?? blocked),
+            reason: game.i18n.localize(SW.conditionNameKey(blocked)),
             defense: defenseLabel
           })
         : null

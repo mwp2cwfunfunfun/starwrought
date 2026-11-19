@@ -83,7 +83,7 @@ export async function conditionPrevented(actor, conditionId) {
     await spendSkips(actor, marks);
     return null;
   }
-  await sayPrevented(actor, preventer, game.i18n.localize(config.name));
+  await sayPrevented(actor, preventer, game.i18n.localize(SW.conditionNameKey(config.id)));
   await spendSkips(actor, [...marks, ...(preventer.mark ? [preventer.mark] : [])]);
   return preventer;
 }

@@ -70,6 +70,7 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]` | ... or on yourself, at once, for a time | 3 |
 | `[EFFECT APPLY: Taking Cover]` | ... or whenever the Maneuver is used, when no result is named | 3 |
 | `[EFFECT REMOVE: prone]` | on a Maneuver's own row: using it takes the Condition or the named Effect off (0.32.0) | 3 |
+| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `ATK`, `DEF` and `INIT` (0.33.0) | 11 |
 | `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
@@ -847,10 +848,11 @@ In play:
   carries one for Prone and one for Supine, and Escape one for Grabbed and one for Restrained:
   the creature has one of the two, so the card says "Tess is no longer Prone." and not also
   "Tess had no Supine to take off." When nothing at all was taken off, the card says so.
-- **Supine** is not a Condition of the system yet. After `APPLY` and `REMOVE` it is a named
-  Effect, shown as "Supine" whatever the cell's casing, and `[REQUIRES supine]` reads it. It is a
-  label: its own rules (Off-Guard, the penalties, no movement) are the table's until the
-  Condition is built, when these same cells read the Condition with no rewrite.
+- **Supine is a Condition since 0.33.0**, made by its row of the Conditions workbook (section
+  11). `[EFFECT APPLY: Supine]`, `[EFFECT REMOVE: Supine]` and `[REQUIRES prone or supine]` mean
+  the Condition, with no rewrite: a cell parsed while Supine was only a named Effect (0.32.1) is
+  read as the Condition wherever the system finds it, and an effect left on a creature from
+  those days is turned into the Condition's own the first time the world loads.
 - **A reroll** is a new card. What the first die put on YOU is taken back before the new result
   lands; what it put on another creature stays, for the GM to take off.
 - **A check with no Threshold has no result**, so its lines that wait on one apply nothing, and
@@ -918,7 +920,7 @@ The words:
 | word | true when |
 |---|---|
 | a Condition's name: `prone`, `grabbed`, `restrained`, `hidden`, `undetected`, `off-guard`, `controlling`, `controlled`, `bound`, ... | the character has that Condition. Spaces, hyphens and case do not matter |
-| `supine` | the character is Supine. Supine is in the handbook and not yet a Condition of the system, so until it is built the word reads the **named Effect called Supine** (0.32.1), which a row puts on with `[EFFECT APPLY: Supine]` (Drop Supine). `[REQUIRES prone or supine]` is written once and stays right when the Condition is built |
+| `supine` | the character is Supine: the Condition its row of the Conditions workbook makes (0.33.0; section 11), which a row puts on with `[EFFECT APPLY: Supine]` (Drop Supine) and the token palette toggles. Through 0.32.1 the word read a named Effect called Supine, and it still reads one beside the Condition, for a world where the workbook could not be read |
 | `bind` | the character is in a Bind, of any kind (`bound` is the neutral Bind alone) |
 | `bind, neutral`, `bind, controlling`, `bind, controlled` | the character is in a Bind in that state (0.31.0). The comma may be left out, and it is the one comma a block reads. The same as the Conditions `bound`, `controlling` and `controlled`, read off the Bind's own record |
 | `effect <Name>` | the character has a named Effect (0.31.0): anything on it that is no Condition, by its name (`effect Taking Cover`; section 3, the Effects list). The word in front keeps a bare word a Condition or one of these words, so a mistyped word is still an error. `effect prone` is the Condition |
@@ -1242,6 +1244,36 @@ Opportunity on an Effect that is on you (Tumble Through's Critical Failure), dam
 movement, a result applied to each of several creatures (Hide, Sneak, Captivate), "its next Attack
 against you" (Talk Them Down, Anticipate, Bolster: a Basic row cannot carry the line that reads
 it), and a degree raised by an Exposed Zone (Trip's Special).
+
+### The Conditions (0.33.0)
+
+The rows of `data/conditions.xlsx` that carry lines or count as another Condition, as the
+workbook was first filled (section 11 says how a row is read). Every other row is `N/A`.
+
+```
+  Condition      Takes  Includes               Automation
+  Off-Guard                                    [EFFECT DEF: -2 situation, evade]
+                                               [EFFECT DEF: -2 situation, guard]
+  Frightened     N                             [EFFECT DEF: -N condition]
+                                               [EFFECT CHECK: -N condition]
+                                               [EFFECT ATK: -N condition]
+  Fatigued       N                             [EFFECT DEF: -N condition]
+                                               [EFFECT ATK: -N condition]
+  Prone                 Off-Guard              [EFFECT ATK: -2 situation]
+                                               [EFFECT DEF: 2 situation, evade; IFT: RANGED]
+  Supine                Off-Guard              (the same two lines)
+  Grabbed               Off-Guard              N/A
+  Restrained            Grabbed                N/A
+  Blind                 Off-Guard              N/A
+  Unconscious           Prone                  N/A
+  Wrong-Footed   X      Off-Guard against X    N/A
+```
+
+What these rows say that a line cannot yet: Supine's "except melee Attacks against adjacent
+creatures" (its -2 reaches those too), "cannot Move or Step", Evade being unavailable while
+Grabbed (the system marks that itself), a value that drops by 1 each round (Frightened, Slowed),
+Stunned's and Slowed's lost actions, Heedless's extra action, what Blind and Deafened cannot
+perceive, and Fatigued's maximum, Wind check and rests, which stay the system's.
 
 ## 6. Character Effects
 
@@ -1624,6 +1656,17 @@ written on the Maneuver's row.
 | `"<word>" is not a Size: write Tiny, Small, Medium, Large, Huge or Gargantuan` | the Size block |
 | `AURA is written \`[AURA <N> <who>]\`` | the ring block |
 | `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
+| `"N" is a Condition's own value and is written on that Condition's row of the Conditions workbook, as in \`DEF: -N condition\` on Frightened; here write a whole number` | `-N` on a Talent, a Maneuver or a custom effect (0.33.0) |
+| `\`-N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number` | `-N` on a row of the Conditions workbook whose Takes is not N |
+| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, ATK, DEF, INIT); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `<TAG> on a Condition's row does not take <component> yet: the line acts for whoever has the Condition, and may ask only about the attack it answers (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...))` | `IF: RANK(...)`, `FOR:`, `IF: ALLIES(...)`, `IF: SEEN`, `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED` or `EFFECT(...)` on a Condition's row |
+| `NEW CONDITION: "<Name>" is made by its row (the system has no Condition of that name). If it is a slip for another row's name, mend the row.` | not a failure: a row of the Conditions workbook that names no Condition the system has makes one. Printed every build, so a typo in a name is seen at once |
+| `... / Conditions: no row for <names>. Every Condition the system has needs its row: the workbook is the only source for what a Condition says` | a row the system needs was deleted or renamed; put it back |
+| `... / Conditions / <Name>: Includes says "against X", and this Condition's Takes is not X: there is no creature for X to be` | set Takes to X, or drop `against X` |
+| `"<Name>" would be read as the Condition "<Other>" wherever a cell names it: the two names differ only by a mark; rename the row` | a row whose name is another Condition's but for an apostrophe or the like |
+| `"<Name>" includes "<Other>", which is no Condition` / `"<Name>" includes itself` / `two rows describe the Condition "<Name>"` / `"<Name>" cannot name a Condition: the word already means something else where a Condition is read` / `"<Name>" is marked System, and the system knows no Condition of that name` | a row the registry cannot take; nothing is written |
+| `WARNING: ... / Conditions / <Name>: a CHECK line and an INIT line: an Initiative is a check, so it takes both` / `... a DEF line for every Defense and a DEF line for one of them: that Defense takes both` | not a failure: two lines of one row both reach one roll, and both count |
+| `CONDITION ERRORS (nothing written)` / `CONDITION ERRORS (a warning in content mode)` | the Conditions workbook did not read: `assets/conditions.json` and the roster's `conditions` block are left as they were |
 | `WARNING: ... TRAIT(<Trait>): no shipping weapon, attack or Talent carries the trait "<Trait>"` | not a failure: the rule reads and fires when something is authored with that trait |
 | `WARNING: <workbook>: the _Tree Index columns <list> are retired; the Root's feature lines are the authoring now` | move the facts into the Root's cell as section 2 says, then drop the columns |
 | `ERROR: <tree>: the _Tree Index <column> reads <a> but the Root's [<KEYWORD>] says <b>; drop the column` | a retired column and the Root's block disagree |
@@ -1813,3 +1856,106 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   named Effect until it is: `[EFFECT APPLY: Supine]` puts it on, `[EFFECT REMOVE: Supine]` takes
   it off, and the bare word in `[REQUIRES prone or supine]` reads it (through 0.32.0 that word
   was always "no"). No kind, tag or word is new.
+- **0.33.0** (2026-11-18): the Conditions workbook, from Mike's question ("can we build a
+  conditions.xlsx that includes every condition, and the automation effects (if any) of it?")
+  and his answers: the workbook is the source the system reads and the only authority for a
+  Condition's text, a new row makes a new Condition, and a Condition's lines move adversaries'
+  numbers too. No kind is new: a Condition's row reads the `bonus` tags (`CHECK`, `ATK`, `DEF`,
+  `INIT`) with the attack's own conditions after `IFT:`, and two things were added for it. `N`
+  as a value is the Condition's own value, written `-N` (ruling 326), read on a Condition's row
+  alone. And a row's **Includes** cell says which Conditions it also counts as (ruling 325), with
+  `against X` for one that holds only against the creature that put it on (328). Supine is the
+  first Condition a row makes (333). Section 11 is the workbook.
+
+## 11. The Conditions workbook
+
+`data/conditions.xlsx` is the only source for what a Condition says and does (0.33.0; Mike,
+2026-11-18). The system, the web app, the compendium and the Rules Reference journal read it; the
+handbook's Conditions table is where it was first filled from, and is no longer what the system
+follows. One sheet, `Conditions`, one row for each Condition:
+
+| column | what it is |
+|---|---|
+| Condition | its name: `Frightened`. The suffix the handbook's table prints (`Frightened N`, `Exposed [Zone]`, `Bound [X]`) reads too, and is put back from Takes wherever a table is printed |
+| Takes | blank, `N` (a value: Frightened 2), `Zone` (the system's own only), or `X` (a creature: Wrong-Footed to X) |
+| Description | the text players read: the tooltip on the Condition's row of a sheet and on the token's hover card, and the reference tables |
+| Includes | other Conditions this one also counts as, comma separated |
+| Automation | lines in this grammar, one to a line; `N/A` for a row that needs none |
+| System | `Yes` for the Conditions the system itself puts on and takes off (Dying, Wounded, Spent, Preparing, the Bind's three, Exposed, Dead). Their rows hold the text; the system runs them |
+| Listed? | `Yes` prints the row in the reference tables; anything else keeps it in the system and out of the tables |
+| Icon | optional, a path to an image; blank keeps the system's icon |
+| Notes | yours: what the code still does for the row, or does not do yet. The system never reads it |
+
+**A row's lines act for whoever has the Condition**, a character or an adversary. So a row reads
+the four modifier tags and nothing that asks about an owner:
+
+```
+[EFFECT DEF: -2 situation, evade]              Off-Guard
+[EFFECT DEF: -N condition]                     Frightened: all four Defenses, at its value
+[EFFECT CHECK: -N condition]                   ... every check, and an Initiative rolled as one
+[EFFECT ATK: -N condition]                     ... every Strike and Cast
+[EFFECT DEF: 2 situation, evade; IFT: RANGED]  Prone: +2 Evade against a ranged Attack
+```
+
+- **`N` is the Condition's own value.** `-N` on Frightened is -2 at Frightened 2 and -3 at
+  Frightened 3. It is read only on a row whose Takes is `N`; on a Talent or a Maneuver, or on a
+  row that takes no value, it is refused and a whole number is asked for. `N` with no sign is a
+  bonus of the value.
+- **After `IFT:` a row may ask about the attack it answers**: `BLOW`, `BLAST`, `BLIGHT`,
+  `BEGUILEMENT`, `MELEE`, `RANGED`, `TRAIT(<Trait>)`. Such a line is read where the attack is
+  known (the Defense roll, the Threshold an attack is read against) and is not in the number on
+  the sheet.
+- **Nothing else is read on a row yet**: `IF: RANK(...)`, `FOR:`, `IF: ALLIES(...)`, `IF: SEEN`,
+  `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED`, `EFFECT(...)`, any other tag (`IMMUNE`, `SPEED`,
+  `APPLY`) and every feature block are refused by name. What a Condition forbids (movement,
+  Reactions, a Defense) and how it fades have no word yet.
+- **One Condition is one circumstance.** A creature that is Off-Guard three ways (the status,
+  Prone, a Torso Wound) takes Off-Guard's -2 once.
+- **A Condition's lines have no On / Skip / Off.** The Condition is the switch: take it off and
+  its lines go. The Effects tab lists them under the Condition's row, read-only.
+
+**Includes** is how "Prone: Off-Guard, ..." is written. Prone's Includes cell says `Off-Guard`, so
+a Prone creature IS Off-Guard to every rule: Off-Guard's own lines reach it, `[REQUIRES
+off-guard]` holds for it, and `IFT: EFFECT(off-guard)` holds against it. It goes down the chain
+(Restrained includes Grabbed, which includes Off-Guard; Unconscious includes Prone). `REMOVE:
+off-guard` does not stand a Prone creature up: Prone is what holds the Off-Guard, and the
+Off-Guard goes when Prone does.
+
+- **`<Condition> against X`** in Includes (Wrong-Footed: `Off-Guard against X`) means the
+  creature counts as that Condition only against the creature that put the including Condition
+  on, and to nobody else. X is whoever applied it with a Maneuver's `APPLY` (a Feint); a
+  Wrong-Footed toggled from the token palette names nobody, and counts as nothing more. The row
+  needs Takes = `X`. An "against X" Condition is read only where the roll's other party is
+  known: the Threshold an attack of X's is read against, and never the number on the sheet.
+- **A first Torso Wound, and the Torso's Critical Hit effect, are Off-Guard** through the same
+  row (ruling 327), as they were in code: the creature has Off-Guard while either stands.
+- **Whose it is.** An included Condition is whose its includer is: an Off-Guard that comes from a
+  Prone you applied is yours for `EFFECT(off-guard, mine)` (ruling 331).
+
+**A new row makes a new Condition** (ruling 323): a status on the token palette, a name every
+cell can write (`[EFFECT APPLY: Supine]`, `[REQUIRES supine]`, `IFT: EFFECT(supine)`), the lines
+and the Includes of its row. Supine is the first. The build prints `NEW CONDITION: "<Name>"` for
+each, every time, so a slip in a name is seen at once. A name may not be a word that already
+means something where a Condition is read (`shield`, `weapon ...`, `foe ...`, `effect ...`,
+`bind`, `not ...`, `exposed ...`). A row deleted from the sheet is gone from the system at the
+next build, except the Conditions the system itself has, which the build refuses to go without.
+
+**The row is the word** (ruling 329). A row whose Automation cell is blank or `N/A` means the
+Condition changes no number, even Off-Guard, Frightened and Fatigued, whose numbers were in the
+system's code before the workbook. Those old numbers stand only in a world where the Conditions
+could not be read at all: the GM is told, and nothing changes from 0.32.1.
+
+**Two Conditions are two circumstances.** A creature that is both Prone and Supine takes the
+lines of both (-2 to attacks twice); Drop Prone and Drop Supine each take the other off, so a
+Maneuver never leaves both.
+
+**Adversaries.** A Condition's lines move an adversary's numbers as they move a character's
+(ruling 324): its Defense Thresholds, its Attack Thresholds, its own attack die, its Initiative.
+Its sheet shows the number the GM typed, which is what the field edits, and the number in effect
+beside it while a Condition moves it. An adversary's own Talents are still unread.
+
+**Building it.** `sync_conditions.cmd` (`node assets/build_all.mjs --conditions`) builds this
+workbook alone, as `sync_equipment.cmd` builds the equipment one: no other workbook is opened,
+so it runs while the talent and action sheets are still being authored. A row that does not
+read stops it with nothing written. Then **Sync content** in the open world reads the
+Conditions again on the GM's client and on every connected player's.

@@ -11,6 +11,8 @@ import * as SW from "../config.mjs";
 import { chassisByName } from "./content.mjs";
 // Whether a Control is a momentary one (0.27.0, ruling 278), pure.
 import { momentaryFor } from "../combat/bind-rules.mjs";
+// What the character's Conditions put on an attack (0.33.0), for the weapon rows.
+import { conditionModifiers } from "../rules/engine.mjs";
 
 
 /**
@@ -35,7 +37,11 @@ export function weaponNumbers(actor, item) {
   const strike = sys.strikeAttributeFor?.(item) ?? { attribute: item.system.attackAttribute, source: "weapon" };
   const attribute = strike.attribute in SW.ATTRIBUTES ? strike.attribute : "might";
   const attributeLabel = game.i18n.localize(SW.ATTRIBUTES[attribute].label);
-  const standing = SW.resolveModifiers(sys.attackModifiers ?? []).total;
+  // The standing attack lines of the Conditions the character has (0.33.0: Fatigued's -N, which
+  // was among `attackModifiers` through 0.32.1, Frightened's, Prone's -2), resolved with the rest
+  // so one circumstance counts once. Only what needs no other party: the row answers no attack.
+  const conditions = conditionModifiers(actor, { kind: "attack", slug: sys[slugKey]?.slug ?? "", item, rank, staticOnly: true });
+  const standing = SW.resolveModifiers([...(sys.attackModifiers ?? []), ...conditions]).total;
   const attackMod = (sys.attributes?.[attribute]?.mod ?? 0) + SW.rankBonus(rank) + (sys.bonuses?.attack ?? 0) + standing;
 
   // The dice are the rank's (PHB v4.21), the rank Handling leaves this weapon with.

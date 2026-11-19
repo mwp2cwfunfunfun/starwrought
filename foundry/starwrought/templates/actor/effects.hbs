@@ -122,7 +122,8 @@
       {{#each effects as |effect|}}
       <li class="sw-item-row {{#if effect.disabled}}sw-disabled{{/if}}" data-effect-id="{{effect.id}}">
         <img src="{{effect.img}}" alt="{{effect.name}}">
-        <a class="sw-item-name" data-action="effectEdit">{{effect.name}}</a>
+        {{!-- A Condition's Description, from its row of the Conditions workbook (0.33.0), is the name's tooltip. --}}
+        <a class="sw-item-name" data-action="effectEdit" {{#if effect.condition.description}}data-tooltip="{{effect.condition.description}}"{{/if}}>{{effect.name}}</a>
         {{!-- How a line of Automation reads this effect (0.31.0): a Condition by its name, any other
               by EFFECT(<its name>); a name no line can read is marked. --}}
         {{#if effect.readAs}}
@@ -149,6 +150,13 @@
           <a data-action="effectDelete"><i class="fa-solid fa-trash"></i></a>
         </div>
       </li>
+      {{!-- What the Condition is doing (0.33.0): its own lines at its value, and what it also counts
+            as, read-only. A Condition's lines have no On / Skip / Off: the Condition is the switch. --}}
+      {{#if effect.condition.lines.length}}
+      <li class="sw-condition-note" data-tooltip="STARWROUGHT.Conditions.linesHint">
+        {{#each effect.condition.lines as |line|}}<span class="sw-condition-line">{{line}}</span>{{/each}}
+      </li>
+      {{/if}}
       {{else}}
       <li class="sw-empty">{{localize "STARWROUGHT.Sheet.noEffects"}}</li>
       {{/each}}

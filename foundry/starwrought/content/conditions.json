@@ -1,0 +1,544 @@
+{
+  "build": "ad86faced48c2c5b",
+  "source": [
+    "conditions.xlsx"
+  ],
+  "conditions": [
+    {
+      "name": "Blind",
+      "takes": "",
+      "description": "Off-Guard; cannot see. Immune to Visual effects.",
+      "includes": [
+        {
+          "name": "Off-Guard",
+          "against": false
+        }
+      ],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Bound",
+      "takes": "x",
+      "description": "Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when either of you attacks.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Controlled",
+      "takes": "x",
+      "description": "X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶, Move, or Step to end it.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Controlling",
+      "takes": "x",
+      "description": "You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Deafened",
+      "takes": "",
+      "description": "Cannot hear. Immune to Auditory effects.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Dying",
+      "takes": "",
+      "description": "You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Exposed",
+      "takes": "zone",
+      "description": "That Zone is Exposed: Hits can land there instead of your Torso. Protection counts as 0. Recenter ❶ to clear unless otherwise stated.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Fatigued",
+      "takes": "n",
+      "description": "−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified.",
+      "includes": [],
+      "rules": [
+        {
+          "value": -1,
+          "type": "condition",
+          "to": {
+            "name": "Defenses",
+            "slug": "defenses",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "scale": "N",
+          "kind": "bonus",
+          "line": 1,
+          "text": "[EFFECT DEF: -N condition]"
+        },
+        {
+          "value": -1,
+          "type": "condition",
+          "to": {
+            "name": "Attacks",
+            "slug": "attacks",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "scale": "N",
+          "kind": "bonus",
+          "line": 2,
+          "text": "[EFFECT ATK: -N condition]"
+        }
+      ],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Frightened",
+      "takes": "n",
+      "description": "-N to all checks and Thresholds; reduce by 1 at the end of each round.",
+      "includes": [],
+      "rules": [
+        {
+          "value": -1,
+          "type": "condition",
+          "to": {
+            "name": "Defenses",
+            "slug": "defenses",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "scale": "N",
+          "kind": "bonus",
+          "line": 1,
+          "text": "[EFFECT DEF: -N condition]"
+        },
+        {
+          "value": -1,
+          "type": "condition",
+          "to": {
+            "name": "Checks",
+            "slug": "checks",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "scale": "N",
+          "kind": "bonus",
+          "line": 2,
+          "text": "[EFFECT CHECK: -N condition]"
+        },
+        {
+          "value": -1,
+          "type": "condition",
+          "to": {
+            "name": "Attacks",
+            "slug": "attacks",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "scale": "N",
+          "kind": "bonus",
+          "line": 3,
+          "text": "[EFFECT ATK: -N condition]"
+        }
+      ],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Grabbed",
+      "takes": "",
+      "description": "Off-Guard and can't Move or Step; Escape ❶ to break free.",
+      "includes": [
+        {
+          "name": "Off-Guard",
+          "against": false
+        }
+      ],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Heedless",
+      "takes": "",
+      "description": "Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Off-Guard",
+      "takes": "",
+      "description": "-2 Situation to Evade and Guard against all foes.",
+      "includes": [],
+      "rules": [
+        {
+          "value": -2,
+          "type": "situation",
+          "to": {
+            "name": "Evade",
+            "slug": "evade",
+            "type": "constellation"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "kind": "bonus",
+          "line": 1,
+          "text": "[EFFECT DEF: -2 situation, evade]"
+        },
+        {
+          "value": -2,
+          "type": "situation",
+          "to": {
+            "name": "Guard",
+            "slug": "guard",
+            "type": "constellation"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "kind": "bonus",
+          "line": 2,
+          "text": "[EFFECT DEF: -2 situation, guard]"
+        }
+      ],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Preparing",
+      "takes": "",
+      "description": "You have begun a Maneuver of three or more actions: two actions spent, the rest reserved. You cannot Pass; you finish or abandon at your next Opportunity. Taking a Wound abandons it.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Prone",
+      "takes": "",
+      "description": "Off-Guard, -2 Situation to Attacks; +2 Situation to Evade vs. ranged Attacks.\nStand ❶ to clear, or Roll Over ❶ to become Prone.",
+      "includes": [
+        {
+          "name": "Off-Guard",
+          "against": false
+        }
+      ],
+      "rules": [
+        {
+          "value": -2,
+          "type": "situation",
+          "to": {
+            "name": "Attacks",
+            "slug": "attacks",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "kind": "bonus",
+          "line": 1,
+          "text": "[EFFECT ATK: -2 situation]"
+        },
+        {
+          "value": 2,
+          "type": "situation",
+          "to": {
+            "name": "Evade",
+            "slug": "evade",
+            "type": "constellation"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": {
+            "threat": "blow",
+            "reach": "ranged",
+            "check": null,
+            "name": null
+          },
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "kind": "bonus",
+          "line": 2,
+          "text": "[EFFECT DEF: 2 situation, evade; IFT: RANGED]"
+        }
+      ],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Supine",
+      "takes": "",
+      "description": "Off-Guard; -2 Situation to Attacks (except melee Attacks against adjacent creatures, Grapples included); +2 Situation to Evade vs. ranged Attacks. You cannot Move, Step, Rush, Leap, or Crawl; forced movement affects you normally.\nStand ❶ to clear (you can stand directly from your back), or Roll Over ❶ to become Prone.",
+      "includes": [
+        {
+          "name": "Off-Guard",
+          "against": false
+        }
+      ],
+      "rules": [
+        {
+          "value": -2,
+          "type": "situation",
+          "to": {
+            "name": "Attacks",
+            "slug": "attacks",
+            "type": "scope"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": null,
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "kind": "bonus",
+          "line": 1,
+          "text": "[EFFECT ATK: -2 situation]"
+        },
+        {
+          "value": 2,
+          "type": "situation",
+          "to": {
+            "name": "Evade",
+            "slug": "evade",
+            "type": "constellation"
+          },
+          "when": null,
+          "for": null,
+          "while": null,
+          "against": {
+            "threat": "blow",
+            "reach": "ranged",
+            "check": null,
+            "name": null
+          },
+          "seen": false,
+          "limit": null,
+          "claim": null,
+          "marked": false,
+          "kind": "bonus",
+          "line": 2,
+          "text": "[EFFECT DEF: 2 situation, evade; IFT: RANGED]"
+        }
+      ],
+      "system": false,
+      "icon": "icons/svg/sleep.svg",
+      "listed": true,
+      "statusId": "sw0x5fjir0zv8g5h"
+    },
+    {
+      "name": "Restrained",
+      "takes": "",
+      "description": "As Grabbed but can’t take any action other than Escape ❶.",
+      "includes": [
+        {
+          "name": "Grabbed",
+          "against": false
+        }
+      ],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Slowed",
+      "takes": "n",
+      "description": "Lose N actions at the start of each round. Reduce N by 1 at the end of each round.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Spent",
+      "takes": "",
+      "description": "Every Hit that lands on you inflicts a Wound on the Zone it struck, and a Critical Hit inflicts two.\nIf you are Hit or Critically Hit and take any Nonlethal damage as a result, you are knocked unconscious. You awake in ten minutes, or sooner if someone rouses you, with 1 Vigor.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Stunned",
+      "takes": "n",
+      "description": "Lose the next N actions; may carry over across rounds.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Wounded",
+      "takes": "zone",
+      "description": "That Zone carries a Wound: its critical effect made lasting (see Chapter 4: Vigor and Wounds). Fill the Torso’s or Head’s Wound capacity (two, for anyone Medium or smaller) and you are Dying.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Wrong-Footed",
+      "takes": "x",
+      "description": "Off-Guard against that creature only.",
+      "includes": [
+        {
+          "name": "Off-Guard",
+          "against": true
+        }
+      ],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Unconscious",
+      "takes": "",
+      "description": "You are out, Dying or knocked cold: you drop everything you are holding in your squares, and you’re also Prone.",
+      "includes": [
+        {
+          "name": "Prone",
+          "against": false
+        }
+      ],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": true
+    },
+    {
+      "name": "Concealed",
+      "takes": "",
+      "description": "Your foe knows exactly what squares you are in, but something is preventing them from seeing or otherwise detecting all of you. You gain a +2 Situation bonus to Evade and Guard for physical Attacks.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": false
+    },
+    {
+      "name": "Hidden",
+      "takes": "",
+      "description": "Your foe knows that you are present, but not what squares you occupy. Your foe must successfully guess one of the squares you occupy in order to attack you. Even so, you gain a +4 Situation bonus to Evade and Guard for physical Attacks. Your foe is Wrong-Footed to you.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": false
+    },
+    {
+      "name": "Undetected",
+      "takes": "",
+      "description": "Your foe has no idea if you are even present. You cannot be targeted at all. Your foe is Wrong-Footed to you.",
+      "includes": [],
+      "rules": [],
+      "system": false,
+      "icon": "",
+      "listed": false
+    },
+    {
+      "name": "Dead",
+      "takes": "",
+      "description": "You are dead.",
+      "includes": [],
+      "rules": [],
+      "system": true,
+      "icon": "",
+      "listed": false
+    }
+  ]
+}

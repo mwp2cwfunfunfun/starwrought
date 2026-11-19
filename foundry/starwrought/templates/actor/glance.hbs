@@ -38,7 +38,7 @@
   {{#if conditions.length}}
   <div class="sw-glance-section">
     {{#each conditions as |c|}}
-    <span class="sw-item-tag sw-glance-condition">{{#if c.img}}<img src="{{c.img}}" alt="">{{/if}}{{c.label}}{{#if c.value}} {{c.value}}{{/if}}</span>
+    <span class="sw-item-tag sw-glance-condition" {{#if c.description}}data-tooltip="{{c.description}}"{{/if}}>{{#if c.img}}<img src="{{c.img}}" alt="">{{/if}}{{c.label}}{{#if c.value}} {{c.value}}{{/if}}</span>
     {{/each}}
   </div>
   {{/if}}

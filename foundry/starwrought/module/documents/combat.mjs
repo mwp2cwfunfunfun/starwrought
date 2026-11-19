@@ -33,6 +33,8 @@ import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { isElected, responsibleFor } from "../helpers/authority.mjs";
 import { settleGivenResults, settleLoneStep, endManeuverMoves } from "../rules/effects-state.mjs";
+// What an adversary's Conditions put on its Initiative (0.33.0).
+import { conditionModifiers } from "../rules/engine.mjs";
 import { setting } from "../helpers/settings.mjs";
 import { registerCardButtons } from "../helpers/cards.mjs";
 import {
@@ -57,6 +59,26 @@ const localStreaks = new Map();
 /*  Combatant: initiative                       */
 /* -------------------------------------------- */
 
+/**
+ * An adversary's Initiative (0.33.0; rulings 324 and 335): the number the GM typed, with what the
+ * Conditions the creature has put on an Awareness Initiative (Frightened's and Fatigued's -N). Its
+ * own Talents stay unread; `conditionModifiers` answers for the Conditions alone.
+ * @param {Actor} actor  An adversary.
+ * @returns {number}
+ */
+function npcInitiative(actor) {
+  const typed = Number(actor.system.thresholds?.initiative ?? 10) || 0;
+  // Read as a character's default Initiative is (the review of 0.33.0): an Awareness roll, so the
+  // lines that reach Awareness (Frightened's and Fatigued's -N to all four Defenses) and the lines
+  // written for Initiative itself. A character's Awareness Initiative takes no CHECK line either.
+  const slug = SW.DEFENSES.awareness.slug;
+  const lines = [
+    ...conditionModifiers(actor, { kind: "defense", slug, item: null, staticOnly: true }),
+    ...conditionModifiers(actor, { kind: "initiative", slug, item: null, momentOnly: true })
+  ];
+  return typed + (lines.length ? SW.resolveModifiers(lines).total : 0);
+}
+
 export class SwCombatant extends Combatant {
   /**
    * @inheritdoc
@@ -75,7 +97,9 @@ export class SwCombatant extends Combatant {
   _getInitiativeFormula() {
     const actor = this.actor;
     if (!actor) return "1d20";
-    if (actor.type === "npc") return String(actor.system.thresholds?.initiative ?? 10);
+    // An adversary's Initiative is the number the GM typed, with what the Conditions it has put on
+    // an Initiative (0.33.0, ruling 335: a Frightened 2 Bandit's is 2 lower).
+    if (actor.type === "npc") return String(npcInitiative(actor));
 
     const mod = SwCheck.previewTotal(actor, {
       kind: "initiative",
@@ -172,7 +196,7 @@ export class SwCombat extends Combat {
     if (!actor) return null;
 
     if (actor.type === "npc") {
-      const value = actor.system.thresholds?.initiative ?? 10;
+      const value = npcInitiative(actor);
       await this.setInitiative(combatantId, value);
       return value;
     }

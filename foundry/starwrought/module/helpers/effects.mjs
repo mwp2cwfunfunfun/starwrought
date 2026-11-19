@@ -16,12 +16,14 @@
 
 import * as SW from "../config.mjs";
 import { summarize } from "../rules/grammar.mjs";
-import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults } from "../rules/engine.mjs";
+import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults, isConditionCarrier } from "../rules/engine.mjs";
 import { pendingRule, pendingWindowWords, appliesNow, usedEffects, usedLive } from "../rules/given.mjs";
 import { stateOf, RULE_STATES, appliedOf } from "../rules/effects-state.mjs";
 import { untilWords } from "../rules/operators.mjs";
 import { claimsOf, isArmed } from "../rules/claims.mjs";
 import { conditionTitle, readEffectName } from "../rules/effect-list.mjs";
+// What a Condition also counts as (0.33.0), for the lines listed under its row.
+import { closeConditions } from "../rules/condition-set.mjs";
 
 // The sheet's action (`armClaimLine`) is the one writer in module/rules/claims.mjs.
 export { armClaim as armClaimLine } from "../rules/claims.mjs";
@@ -186,6 +188,9 @@ export function effectGroups(actor) {
     // A result a Maneuver gave this character (0.22.0) is no line of the character's own: it has
     // no switch and is listed apart (`givenContext`).
     if (item?.given) continue;
+    // A Condition's own line (0.33.0, ruling 334) has no switch either: the Condition is the
+    // switch. Its lines are listed read-only under the Condition's own row (`conditionInfo`).
+    if (isConditionCarrier(item)) continue;
     groupFor(item).rows.push(lineRow(actor, item, rule, { claims }));
   }
   for (const { rule, item, reason } of index.unknown ?? []) {
@@ -194,6 +199,54 @@ export function effectGroups(actor) {
   }
   for (const group of groups.values()) group.rows.sort((a, b) => a.line - b.line);
   return [...groups.values()];
+}
+
+/** A Condition's lines as read, at the value they are counted at: "-2 Condition penalty to Defenses". */
+function linesOf(id, value = 1) {
+  return (SW.CONDITIONS[id]?.rules ?? []).map(rule => {
+    const words = summarize(rule);
+    if ((rule.scale !== "N") || !Number.isFinite(rule.value)) return words;
+    const n = rule.value * Math.max(1, Number(value) || 1);
+    return words.replace(/[+-]N\b/, n > 0 ? `+${n}` : String(n));
+  });
+}
+
+/**
+ * What a sheet says of a Condition's own effect (0.33.0): the Description its row of the
+ * Conditions workbook gives it, as the row's tooltip, and under the row, read-only, what the
+ * Condition is doing: its own lines at its value, then each Condition it also counts as with that
+ * Condition's lines ("Counts as Off-Guard: -2 Situation penalty to Evade; ..."), a Condition held
+ * against one creature alone said so. Null for an effect that is no Condition's own. A Condition
+ * that is switched off does nothing, and lists nothing.
+ * @param {Actor} actor
+ * @param {ActiveEffect|object} effect
+ * @returns {{description: string, lines: string[]}|null}
+ */
+export function conditionInfo(actor, effect) {
+  const statuses = [...(effect?.statuses ?? [])];
+  if (statuses.length !== 1) return null;
+  const record = SW.CONDITIONS[statuses[0]];
+  if (!record) return null;
+  const hintKey = record.builtIn ? `${record.name}Hint` : "";
+  const fallback = (hintKey && game.i18n.has?.(hintKey)) ? L(hintKey) : "";
+  const description = foundry.utils.escapeHTML(SW.conditionDescription(record.id) || fallback).replace(/\n+/g, "<br>");
+  const lines = [];
+  if (!effect.disabled && !effect.isSuppressed && !record.zone) {
+    const value = record.numeric ? (Number(actor?.conditionValue?.(record.id)) || 1) : 1;
+    const applied = appliedOf(effect);
+    lines.push(...linesOf(record.id, value));
+    const set = closeConditions({ direct: [[record.id, { value, by: applied?.by ?? null }]] });
+    const said = (id, key, data = {}) => {
+      const own = linesOf(id, 1);
+      lines.push(F(key, { name: SW.conditionLabel(id), lines: own.length ? `: ${own.join("; ")}` : "", ...data }));
+    };
+    for (const id of set.held.keys()) if (id !== record.id) said(id, "STARWROUGHT.Conditions.countsAs");
+    for (const id of set.against.keys()) {
+      said(id, "STARWROUGHT.Conditions.countsAsAgainst", { who: applied?.byName || L("STARWROUGHT.Conditions.thatCreature") });
+    }
+    if (set.unknown.has(record.id)) lines.push(L("STARWROUGHT.Conditions.againstNobody"));
+  }
+  return { description, lines };
 }
 
 /**

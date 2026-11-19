@@ -658,7 +658,9 @@ function interceptAttack(actor) {
   const attack = [...(actor.system.attacks ?? [])]
     .sort((a, b) => (b.reach ?? 0) - (a.reach ?? 0))[0] ?? null;
   if (!attack) return null;
-  const threshold = Number(attack.threshold ?? attack.thresholds?.[0]);
+  // The number in effect (0.33.0): the typed Threshold with what the adversary's Conditions put on
+  // its attacks, which is what the attack flow resolves against (the model's `inEffect`).
+  const threshold = Number(attack.inEffect ?? attack.threshold ?? attack.thresholds?.[0]);
   return { id: attack.id, name: attack.name, threshold: Number.isFinite(threshold) ? threshold : null };
 }
 

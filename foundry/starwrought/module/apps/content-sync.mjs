@@ -203,6 +203,8 @@ export class ContentSync extends HandlebarsApplicationMixin(ApplicationV2) {
       sameBuild: !!plan.build && (plan.build === lastBuild),
       empty: plan.empty,
       emptyText: format("STARWROUGHT.Content.nothing", { when }),
+      // The Conditions workbook moved since this client read it (0.33.0): the sync reloads it.
+      conditions: plan.conditions?.changed ? localize("STARWROUGHT.Content.conditionsChanged") : "",
       counts: plan.counts,
       packs: plan.packs.map(p => ({
         label: p.label,

@@ -44,7 +44,10 @@
  */
 
 import { KINDS, kindOf } from "./kinds/index.mjs";
-import { flagKey, ruleCarrierKey, ATTRIBUTES, slugify, plainName } from "../config.mjs";
+import { flagKey, ruleCarrierKey, ATTRIBUTES, slugify, plainName, CONDITIONS, conditionLabel } from "../config.mjs";
+// 0.33.0: the Conditions a creature has, closed over what each includes, and the row's item type.
+import { conditionSetOf, VIA_TORSO } from "./condition-set.mjs";
+import { CONDITION_ROW } from "./syntax.mjs";
 // 0.22.0: what a Maneuver gives. The table and the pending result's carrier are pure data (./given.mjs).
 import { buildTable, sameGiven, givenCarrier, GIVE_DEGREES } from "./given.mjs";
 // 0.24.0: the owner's rank against an alteration's condition, when a Maneuver is used (pure).
@@ -88,6 +91,79 @@ export function effectCarrier(effect) {
     effect: { id, label: effect?.label ?? "", text: effect?.text ?? "", duration: effect?.duration ?? "always" },
     system: { rules: Array.isArray(effect?.rules) ? effect.rules : [], automation: effect?.text ?? "", reaction: false, glyph: "", cost: "passive" }
   };
+}
+
+/* -------------------------------------------- */
+/*  A Condition's carrier (0.33.0)              */
+/* -------------------------------------------- */
+
+/**
+ * THE CONDITIONS' OWN LINES (0.33.0; rulings 322 to 328). A Condition's row of the Conditions
+ * workbook carries lines in the grammar (`[EFFECT DEF: -N condition]` on Frightened), and they act
+ * for whoever HAS the Condition: `collectRules` adds one carrier for each Condition in the
+ * creature's set (./condition-set.mjs), read as a Talent with that cell would be, so every hook
+ * point reads a Condition's lines as it reads a Talent's and no kind learns a second path.
+ *
+ * The carrier's `type` is the row's item type (`CONDITION_ROW`), its id `condition:<id>`, which no
+ * Item id can be, so one Condition is ONE circumstance under the stacking rule however the
+ * creature came to have it (the status, an including Condition, a Torso Wound). `condition` says
+ * what is held: `{ id, value, against, via, direct }`, `against` the uuids of the creatures it is
+ * held against and nobody else (null when held against everyone).
+ *
+ * A Condition's lines have NO On / Skip / Off (ruling 334): the Condition is the switch.
+ */
+export const CONDITION_CARRIER_TYPE = CONDITION_ROW;
+
+/** The plain words for what a Condition comes through, for a label: "Prone", "Torso". */
+function viaWords(via) {
+  return (via ?? []).map(v => (v === VIA_TORSO) ? "Torso" : conditionLabel(v)).filter(Boolean);
+}
+
+/**
+ * The carrier of one Condition a creature has.
+ * @param {object} record  The Condition's registry record (config/conditions.mjs).
+ * @param {{value?: number, against?: string[]|null, via?: string[], direct?: boolean}} held
+ * @returns {object}
+ */
+export function conditionCarrier(record, { value = 1, against = null, via = [], direct = true } = {}) {
+  const through = direct ? [] : viaWords(via);
+  const label = record.label ?? record.id;
+  return {
+    id: `condition:${record.id}`,
+    name: through.length ? `${label} (${through.join(", ")})` : label,
+    type: CONDITION_CARRIER_TYPE,
+    condition: { id: record.id, value: Math.max(1, Number(value) || 1), against: against ? [...against] : null, via: [...(via ?? [])], direct: direct === true },
+    system: { rules: Array.isArray(record.rules) ? record.rules : [], automation: "", reaction: false, glyph: "", cost: "passive" }
+  };
+}
+
+/**
+ * The carriers of every Condition a creature has that carries lines: those held against everyone,
+ * then those held against one creature alone. A Condition with no lines gives none.
+ * @param {object} actor
+ * @param {Object<string, object>} [registry]
+ * @returns {object[]}
+ */
+export function conditionCarriers(actor, registry = CONDITIONS) {
+  const set = conditionSetOf(actor, registry);
+  const out = [];
+  for (const [id, held] of set.held) {
+    const record = registry[id];
+    if (!record?.rules?.length) continue;
+    out.push(conditionCarrier(record, { value: held.value, via: held.via, direct: held.direct }));
+  }
+  for (const [id, who] of set.against) {
+    const record = registry[id];
+    if (!record?.rules?.length) continue;
+    const via = [...new Set([...who.values()].flatMap(w => w.via ?? []))];
+    out.push(conditionCarrier(record, { value: 1, against: [...who.keys()], via, direct: false }));
+  }
+  return out;
+}
+
+/** Is this carrier a Condition's? */
+export function isConditionCarrier(item) {
+  return item?.type === CONDITION_CARRIER_TYPE;
 }
 
 /**
@@ -169,6 +245,8 @@ export function collectRules(actor) {
   // one-roll effect whose single rule is a resolved `give` (./given.mjs, `givenCarrier`). In the
   // flags and not in `system.effects`, because the sheet's form rewrites those rows on every change.
   for (const entry of givenResults(actor)) carriers.push(givenCarrier(entry));
+  // 0.33.0: the lines of every Condition the creature has (a character and an adversary alike).
+  for (const carrier of conditionCarriers(actor)) carriers.push(carrier);
 
   for (const item of carriers) {
     const rules = item.system?.rules;
@@ -221,7 +299,9 @@ export function rulesOfKind(actor, kind) {
   if (!Object.keys(states).length) return entries;
   const out = [];
   for (const entry of entries) {
-    const state = states[ruleStateKey(entry.item, entry.rule)];
+    // A Condition's line has no switch (0.33.0, ruling 334): a state left under its key by hand
+    // is never read.
+    const state = isConditionCarrier(entry.item) ? null : states[ruleStateKey(entry.item, entry.rule)];
     if (state === "off") continue;
     out.push(state === "skip" ? { ...entry, skip: true } : entry);
   }
@@ -453,6 +533,46 @@ export function ruleModifiers(actor, context = {}) {
   }
 
   return { applied, offered, marks };
+}
+
+/**
+ * The modifiers a creature's CONDITIONS ALONE put on one roll or Threshold (0.33.0; ruling 324):
+ * `ruleModifiers` with the entries held to the Condition carriers, no scene and no offers. It is
+ * what an adversary's numbers read: an adversary's own Talents stay unread, as they have always
+ * been (it rolls flat and carries typed Thresholds), and no player's aura reaches it, but a
+ * Frightened 2 Bandit is at -2 and an Off-Guard one is easier to hit. A character's weapon rows
+ * read it too, for the standing attack lines of the Conditions it has.
+ *
+ * The context is `ruleModifiers`': `kind`, `slug`, `threat`, `other`, and `staticOnly` or
+ * `momentOnly` to ask for one half. Nothing is marked: a Condition's line has no LIMIT.
+ * @param {object} actor
+ * @param {RollContext} context
+ * @returns {RuleModifier[]}  The applied modifiers.
+ */
+export function conditionModifiers(actor, context = {}) {
+  const applied = [];
+  for (const kind of KINDS.values()) {
+    const hook = kind.hooks?.modifiers;
+    if (typeof hook !== "function") continue;
+    const entries = rulesOfKind(actor, kind.id).filter(e => isConditionCarrier(e.item)).map(e => ({ ...e, owner: actor, ownerToken: null }));
+    if (!entries.length) continue;
+    let result;
+    try {
+      result = hook(entries, { ...context, scene: null }, actor);
+    } catch (error) {
+      console.error(`STARWROUGHT | the "${kind.id}" kind's modifiers hook failed on a Condition's lines:`, error);
+      continue;
+    }
+    for (const mod of Array.isArray(result) ? result : []) {
+      if (!mod || (typeof mod !== "object") || (mod.offer === true)) continue;
+      const value = Number(mod.value);
+      if (!Number.isFinite(value) || (value === 0)) continue;
+      const clean = { ...mod, value, label: String(mod.label ?? kind.id) };
+      delete clean.mark;
+      applied.push(clean);
+    }
+  }
+  return applied;
 }
 
 /* -------------------------------------------- */

@@ -246,10 +246,10 @@ export function meleeAnswers(maneuver) {
  * Bind is read as it stands (a preview, a card from before 0.27.0).
  * @param {Actor} attacker
  * @param {object} maneuver
- * @param {{controlled?: boolean}} [options]
+ * @param {{controlled?: boolean, conditions?: number}} [options]
  * @returns {number}
  */
-export function attackThreshold(attacker, maneuver, { controlled } = {}) {
+export function attackThreshold(attacker, maneuver, { controlled, conditions } = {}) {
   const item = maneuver?.attackId ? attacker.items.get(maneuver.attackId) : null;
   const rows = attacker.system.attacks ?? [];
   const row = maneuver?.attackId ? rows.find(a => a.id === maneuver.attackId) : null;
@@ -259,9 +259,15 @@ export function attackThreshold(attacker, maneuver, { controlled } = {}) {
   const penalised = (typeof controlled === "boolean")
     ? controlled
     : controlledPenaltyFor(attacker, item?.name ?? row?.name ?? maneuver?.weaponName, rows.length);
+  // THE CONDITIONS THE ADVERSARY HAS (0.33.0; rulings 324 and 335): what their standing lines put
+  // on its attacks (Frightened's and Fatigued's -N, Prone's -2), which its model works out as
+  // `attackShift`. `conditions` is the attack's own answer where the caller has one: a reroll hands
+  // over the total the first die met, since the creature's Conditions may have moved since.
+  const shift = Number.isFinite(conditions) ? conditions : (Number(attacker.system.attackShift) || 0);
   return base
     + (penalised ? SW.CONTROLLED_PENALTY : 0)
-    + (attacker.system.zones?.arms?.critical ? SW.ARMS_CRITICAL_PENALTY : 0);
+    + (attacker.system.zones?.arms?.critical ? SW.ARMS_CRITICAL_PENALTY : 0)
+    + shift;
 }
 
 /**
