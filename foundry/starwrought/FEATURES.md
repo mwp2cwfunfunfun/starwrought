@@ -10,7 +10,7 @@ entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 
 297 to 304, the 0.31.0 entry 305 to 310 and the 0.32.0 entry 311 to 321). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
-their only source. System version **0.32.0**.
+their only source. System version **0.32.1**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2495,6 +2495,12 @@ becomes a named Effect. What a player and a GM see:
   Frightened 3 changes nothing, and a value is only ever raised. An `IMMUNE`
   line stops a Condition by degree as it stops one from the token palette, with its own card.
 - **A reroll** takes back what the first die put on the roller before the new result lands.
+- **A `REMOVE` that finds nothing says nothing** beside a line that did something (0.32.1): Stand
+  carries one for Prone and one for Supine, and its card says only what it took off.
+- **Supine** (0.32.1) is in the handbook and not yet a Condition of the system, so it is a named
+  Effect: Drop Supine's `[EFFECT APPLY: Supine]` puts it on, Stand's `[EFFECT REMOVE: Supine]`
+  takes it off, and `[REQUIRES prone or supine]` lists Stand for a creature on its back. It is a
+  label; Supine's own rules are the table's until the Condition is built.
 - **"Applied by me".** `[EFFECT ATK: 1 situation; IFT: EFFECT(wrong-footed, mine)]` on a Talent
   holds only against a creature the roller Wrong-Footed. That is how "Wrong-Footed to you" is
   written.

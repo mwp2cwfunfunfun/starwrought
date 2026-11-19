@@ -143,9 +143,12 @@ export default {
     if ((who === "target") && !outcomes.length) {
       throw new RuleSyntaxError(`${TAG} on a target lands from the card of the Maneuver's check, so it names the result: add \`IF: RESULT(<degree>)\`, as in \`${EXAMPLE}\``);
     }
+    // Supine is in the handbook and not yet a Condition of the system (ruling 266): until it is,
+    // it is a named Effect, shown with its capital whatever the cell's casing (0.32.1).
+    const name = (!read.condition && (read.slug === "supine")) ? "Supine" : read.name;
     return {
       op,
-      effect: { name: read.name, slug: read.slug, condition: read.condition, ...(value !== null ? { value } : {}) },
+      effect: { name, slug: read.slug, condition: read.condition, ...(value !== null ? { value } : {}) },
       who,
       when: ops.when,
       until: (op === "apply") ? (ops.until ?? null) : null,

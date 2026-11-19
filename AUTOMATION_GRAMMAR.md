@@ -843,6 +843,14 @@ In play:
   Off-Guard that a Critical Hit or a Gain Control holds, which has an end of its own, and a
   Condition that comes from an effect of the GM's carrying several (a net that is Prone and
   Restrained). A named Effect of that name goes, applied or made by hand.
+- **A `REMOVE` that finds nothing says nothing** beside a line that did something (0.32.1). Stand
+  carries one for Prone and one for Supine, and Escape one for Grabbed and one for Restrained:
+  the creature has one of the two, so the card says "Tess is no longer Prone." and not also
+  "Tess had no Supine to take off." When nothing at all was taken off, the card says so.
+- **Supine** is not a Condition of the system yet. After `APPLY` and `REMOVE` it is a named
+  Effect, shown as "Supine" whatever the cell's casing, and `[REQUIRES supine]` reads it. It is a
+  label: its own rules (Off-Guard, the penalties, no movement) are the table's until the
+  Condition is built, when these same cells read the Condition with no rewrite.
 - **A reroll** is a new card. What the first die put on YOU is taken back before the new result
   lands; what it put on another creature stays, for the GM to take off.
 - **A check with no Threshold has no result**, so its lines that wait on one apply nothing, and
@@ -896,15 +904,6 @@ Prone or Supine, you cannot Stand. If you have no Spells, you cannot Cast. If no
 reach, you cannot Grapple." A Maneuver's Requirements column is prose, which nothing can check; a
 `[REQUIRES ...]` block says the part of it a machine can.
 
-```
-[REQUIRES <condition> or <condition> ...]
-
-[REQUIRES prone or supine]                                     Stand, Kip Up
-[REQUIRES free hand or weapon grapple][REQUIRES creature in reach]  Grapple
-[REQUIRES grabbed or restrained]                               Escape
-[REQUIRES not prone]                                           Drop Prone
-```
-
 - **Where.** On a Maneuver's own row (an action sheet's Automation cell), and nowhere else: on a
   Talent or a custom effect it is refused. A Maneuver a Talent grants is a copy of its row, so it
   carries the block too. It sits beside the row's other blocks, on the same line or its own.
@@ -919,7 +918,7 @@ The words:
 | word | true when |
 |---|---|
 | a Condition's name: `prone`, `grabbed`, `restrained`, `hidden`, `undetected`, `off-guard`, `controlling`, `controlled`, `bound`, ... | the character has that Condition. Spaces, hyphens and case do not matter |
-| `supine` | accepted now, and never true until Supine is built, so `[REQUIRES prone or supine]` can be written once |
+| `supine` | the character is Supine. Supine is in the handbook and not yet a Condition of the system, so until it is built the word reads the **named Effect called Supine** (0.32.1), which a row puts on with `[EFFECT APPLY: Supine]` (Drop Supine). `[REQUIRES prone or supine]` is written once and stays right when the Condition is built |
 | `bind` | the character is in a Bind, of any kind (`bound` is the neutral Bind alone) |
 | `bind, neutral`, `bind, controlling`, `bind, controlled` | the character is in a Bind in that state (0.31.0). The comma may be left out, and it is the one comma a block reads. The same as the Conditions `bound`, `controlling` and `controlled`, read off the Bind's own record |
 | `effect <Name>` | the character has a named Effect (0.31.0): anything on it that is no Condition, by its name (`effect Taking Cover`; section 3, the Effects list). The word in front keeps a bare word a Condition or one of these words, so a mistyped word is still an error. `effect prone` is the Condition |
@@ -1156,94 +1155,9 @@ the kind, and the workbook was in his hands when it was cut. Each goes in the ro
 cell, in place of an `N/A` or an empty cell, or on a line of its own beside the row's other blocks.
 Until a row has its block the Maneuvers tab always lists it.
 
-```
-Basic Actions
-  Crawl                     [REQUIRES prone]
-  Drop Prone                [REQUIRES not prone]
-  Stand                     [REQUIRES prone or supine]
-
-Ancestry and Culture Actions
-  Steady the Line           [REQUIRES ally adjacent]
-  Move Together             [REQUIRES ally adjacent]
-  Rescue Haul               [REQUIRES free hand][REQUIRES creature adjacent]
-
-Acrobatics, Animal Handling, Athletics
-  Escape                    [REQUIRES grabbed or restrained]
-  Tumble Through            [REQUIRES foe adjacent]
-  Kip Up                    [REQUIRES prone or supine]
-  Calm Animal               [REQUIRES creature within 15]
-  Direct Animal             [REQUIRES creature within 30]
-  Disarm                    [REQUIRES free hand or weapon disarm][REQUIRES creature in reach]
-  Grapple                   [REQUIRES free hand or weapon grapple][REQUIRES creature in reach]
-  Reposition                [REQUIRES creature in reach]
-  Shove                     [REQUIRES free hand or weapon shove][REQUIRES creature in reach]
-  Trip                      [REQUIRES free hand or weapon trip][REQUIRES creature in reach]
-  Reliable Anchor           [REQUIRES free hand]
-
-Diplomacy, Guile, Insight
-  Rally                     [REQUIRES ally within 30]
-  Talk Them Down            [REQUIRES creature within 30]
-  Command the Field         [REQUIRES ally within 30]
-  Feint                     [REQUIRES foe in reach]
-  Feinting Step             [REQUIRES foe in reach]
-  Anticipate                [REQUIRES creature within 30]
-
-Medicine, Performance
-  Stabilize                 [REQUIRES creature adjacent]
-  Treat Persistent Damage   [REQUIRES creature adjacent]
-  Bolster                   [REQUIRES ally within 15]
-  Captivate                 [REQUIRES creature within 30]
-```
-
-Steady the Line and Move Together already carry an effect block; the `[REQUIRES ...]` block goes
-beside it. Grapple, Disarm, Shove, Trip and Reposition say `creature`, since the book lets them be
-tried on anyone in reach; Feint says `foe`, as its Requirements do ("An enemy is within your
-reach"). Reposition has no hand block, because its other way in ("already Grabbing or Restraining
-the target") is something the system cannot see.
-
-Three more that read, and are a judgement about how the table plays:
-
-```
-  Release                   [REQUIRES holding]              hides Release with empty hands; but a Grab held
-                                                            with an empty hand is not something the system sees
-  Sneak                     [REQUIRES hidden or undetected] only if the table sets those Conditions on the token
-  Battle Cry                [REQUIRES foe within 30]        its Range; its Trigger is still the table's
-```
-
-**Strike** (0.29.0), four blocks in the one cell, every one of which must hold: something to
-Strike with that can reach (a foe in reach, or a ranged weapon that is loaded, or a weapon to
-throw), a foe the character can see, and a body that can act.
-
-```
-  Strike                    [REQUIRES foe in reach or ranged weapon loaded or weapon thrown]
-                            [REQUIRES foe in sight]
-                            [REQUIRES not restrained]
-                            [REQUIRES not unconscious]
-```
-
-Cast, Close, Gain Control, Raise a Shield, Pass and Reload need nothing written: the system runs
-them and knows what they need. (The `[REQUIRES weapon reload]` printed for Reload with 0.28.0 is
-withdrawn: Reload is listed only while a weapon in hand can be loaded, which the trait alone does
-not say.) Rows whose requirement is judgement stay listed always: Take Cover, Hide (cover
-and concealment), Squeeze, Balance, Climb, Swim (the place), Brace an Object, Field Patch, Disable
-Device, Pick Lock, Stabilize's supplies (tools), Aid ("willing"), Quench the Ember (the system has no
-word for a kind of Persistent Damage), Sure Seat (a mount), Grab an Edge (Releasing an item is part
-of it), Quick Tongue (a settlement), Look Harmless (the party sheet already warns), and every Size
-limit.
-
 ### Reading Effects (0.31.0)
 
-What the three new forms of `[REQUIRES ...]` and the `EFFECT(<name>)` condition let a row say. The
-blocks above still read as printed; these are sharper where a row asks for a state.
-
-```
-  Close                     [REQUIRES bind, controlling]            (in code already; a cell replaces it)
-  Stabilize                 [REQUIRES creature adjacent with dying]  in place of [REQUIRES creature adjacent]
-  Take Cover (a judgement)  [REQUIRES not effect Taking Cover]       once the Effect is put on by hand
-```
-
 And on a Talent or a Maneuver a character owns, a bonus that waits on an Effect:
-
 ```
   [EFFECT ATK: 1 situation; IFT: EFFECT(prone)]              +1 to attacks against a Prone creature
   [EFFECT DEF: 1 situation; IF: EFFECT(Taking Cover)]        +1 to Defenses while you have Taking Cover
@@ -1260,9 +1174,20 @@ are for Mike to paste: no workbook was written. Each block goes on a line of its
 Automation cell, beside any `[REQUIRES ...]` block the row has.
 
 ```
-  Stand ❶          [EFFECT REMOVE: prone]
+  Stand ❶          [REQUIRES prone or supine]
+                   [EFFECT REMOVE: prone]
+                   [EFFECT REMOVE: Supine]
 
-  Drop Prone ⓿     [EFFECT APPLY: prone]
+  Drop Prone ⓿     [REQUIRES not prone]
+                   [EFFECT APPLY: prone]
+                   [EFFECT REMOVE: Supine]
+
+  Drop Supine ⓿    [REQUIRES not supine]
+                   [EFFECT APPLY: Supine]
+                   [EFFECT REMOVE: prone]
+                   (0.32.1; Mike split Drop Prone in two rather than have a box ask which. Each row
+                   takes the other state off, so a creature is never both, and Dropping Prone while
+                   Supine turns it over)
 
   Take Cover ❶     [EFFECT APPLY: Taking Cover]
                    (its end, "until you Move, Step or Attack", is an event: take it off by hand)
@@ -1881,3 +1806,10 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   The seventh hook point, `applies`, calculated, defined with the kind. The build warns when a
   line reads a named Effect no Maneuver applies, and when an `APPLY` sits on a row the system
   runs another way.
+- **0.32.1** (2026-11-18): two mends from Mike's question about Stand's cell ("should it say
+  `REMOVE: prone` and `REMOVE: supine`?"), with his word that Drop Prone is now two rows, Drop
+  Prone and Drop Supine. A `REMOVE` that finds nothing says nothing beside a line that did
+  something. And `supine`, which is in the handbook and not yet a Condition of the system, is a
+  named Effect until it is: `[EFFECT APPLY: Supine]` puts it on, `[EFFECT REMOVE: Supine]` takes
+  it off, and the bare word in `[REQUIRES prone or supine]` reads it (through 0.32.0 that word
+  was always "no"). No kind, tag or word is new.

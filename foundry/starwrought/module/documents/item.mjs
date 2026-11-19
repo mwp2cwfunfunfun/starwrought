@@ -425,7 +425,7 @@ export class SwItem extends Item {
     if (!actor || !(actor.isOwner || game.user.isGM)) return [];
     try {
       const { ruleApplies } = await import("../rules/engine.mjs");
-      const { linesFor } = await import("../rules/applied.mjs");
+      const { linesFor, wordsToSay } = await import("../rules/applied.mjs");
       const asked = ruleApplies(actor, { item: this, rank: null });
       const own = line => line.who !== "target";
       // A line on Skip is passed over once, by the use it would have stood for.
@@ -442,7 +442,9 @@ export class SwItem extends Item {
         maneuver: { slug: SW.slugify(SW.plainName(this.name)), name: SW.plainName(this.name) },
         from: null, force: true
       });
-      return done.map(d => d.words);
+      // A REMOVE that found nothing is not said beside a line that did something (0.32.1): Stand
+      // carries one for Prone and one for Supine, and the creature has one of the two.
+      return wordsToSay(done);
     } catch (error) {
       console.error(`STARWROUGHT | ${this.name}: what the Maneuver applies could not be written:`, error);
       return [];

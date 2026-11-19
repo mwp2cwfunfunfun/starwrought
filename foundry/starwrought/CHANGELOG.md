@@ -7,6 +7,67 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.32.1 (2026-11-18): Stand's two lines, and Supine as a named Effect
+
+Built from **Player's Handbook v4.25**, which did not move. No ruling, and no kind, tag or word
+is new: two mends to 0.32.0, from Mike's question about Stand's cell ("should it say instead
+`[EFFECT REMOVE: prone]` and `[EFFECT REMOVE: supine]`?"), his "yes, mend both", and his word
+that Drop Prone is now two rows, Drop Prone and Drop Supine ("The alternative was some sort of
+option box to choose Prone or Supine when dropping"). None of his four workbooks was converted,
+built, staged or written. Of the pack content the Grammar journal alone moved.
+
+| | 0.32.0 | 0.32.1 |
+|---|---|---|
+| Stand with a line for Prone and a line for Supine | "Tess is no longer Prone." and "Tess had no supine to take off." on every use | "Tess is no longer Prone." |
+| Escape with a line for Grabbed and a line for Restrained | The same noise | The one that was taken off |
+| Nothing at all to take off | Said | Still said, so a use is never silent |
+| `supine` after `APPLY` and `REMOVE` | A named Effect in whatever casing was typed | The named Effect "Supine" |
+| `[REQUIRES prone or supine]` for a creature a row laid on its back | Never listed Stand: the bare word was always "no" | Lists Stand: the word reads the named Effect Supine |
+
+- **A `REMOVE` that finds nothing says nothing beside a line that did something** (`wordsToSay` in
+  `module/rules/applied.mjs`, used by the Maneuver's own card and by the record card).
+- **Supine is a named Effect until it is a Condition.** It is in the handbook's Conditions table
+  and not in the system (ruling 266). `[EFFECT APPLY: Supine]` puts the Effect on and `[EFFECT
+  REMOVE: Supine]` takes it off, shown with its capital whatever the cell's casing
+  (`module/rules/kinds/apply.mjs`); the bare word `supine` in a `[REQUIRES ...]` block reads it
+  (`module/rules/requires.mjs`). **It is a label**: Supine's own rules (Off-Guard, -2 to Attacks,
+  +2 Evade against ranged, no movement but forced) are the table's until the Condition is built.
+  When it is, the same cells read the Condition with no rewrite.
+
+The cells for the three rows, for Mike to paste (`AUTOMATION_GRAMMAR.md` section 5 has them too).
+Each Drop takes the other state off, so a creature is never both:
+
+```
+  Stand ❶          [REQUIRES prone or supine]
+                   [EFFECT REMOVE: prone]
+                   [EFFECT REMOVE: Supine]
+
+  Drop Prone ⓿     [REQUIRES not prone]
+                   [EFFECT APPLY: prone]
+                   [EFFECT REMOVE: Supine]
+
+  Drop Supine ⓿    [REQUIRES not supine]
+                   [EFFECT APPLY: Supine]
+                   [EFFECT REMOVE: prone]
+```
+
+Verified: `node assets/test_rules.mjs`, 227 checks (the new cases are in three of them);
+`node --check` on all 177 modules; `node assets/build_all.mjs --check`; `build_foundry.mjs
+--no-compile` (the Grammar journal alone moves). And live in the test world on 0.32.1, as the
+GM, with Tess and test rows carrying the three cells above:
+
+- Drop Supine: "Tess gains Supine." and nothing about Prone; the Effects tab tags it Applied.
+- Drop Prone while Supine: "Tess is Prone." and "Tess loses Supine.", so she is never both.
+- Stand from Prone: "Tess is no longer Prone." alone. Stand from Supine: "Tess loses Supine."
+  alone. Stand from neither: both "had no ... to take off" lines.
+- The Maneuvers tab: standing, it lists both Drops and not Stand; Supine, it lists Stand and
+  Drop Prone and not Drop Supine; Prone, Stand and Drop Supine and not Drop Prone.
+
+The test world was left as found (Mike's Combat with testpc8 active at round 4, the 11 cards the
+check posted removed, 433 messages, its content level with these sources). Left on purpose
+beside 0.32.0's fixtures: a world Maneuver Drop Supine (flagged `testFixture: "0.32.1"`), and the
+world Stand and Drop Prone now carry the cells above.
+
 ## 0.32.0 (2026-11-17): a Maneuver puts Effects on, and takes them off
 
 Built from **Player's Handbook v4.25**, which did not move. Rulings 311 to 321. One kind is new,

@@ -1,5 +1,9 @@
 {
  "Automation cell|actions_maneuvers.xlsx / Ancestry Actions / O3|Quench the Ember|\"EFFECT:\" is not a feature keyword: write TRAIT, SIZE, SPEED, REACH, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, EFFECT, or `[<Constellation> trained]`; an effect goes in": "2026-11-15",
+ "Automation cell|actions_maneuvers.xlsx / Basic Actions / N5|Gain Control|\"bind not controlling\" is not something REQUIRES can check: write a Condition (offguard, wrongfooted, frightened, prone, grabbed, restrained, ...), supine, bind, spell, shield, shield raised, rigid, f": "2026-11-18",
+ "Automation cell|actions_maneuvers.xlsx / Basic Actions / N6|Reload|\"ranged weapon not loaded\" is not something REQUIRES can check: write a Condition (offguard, wrongfooted, frightened, prone, grabbed, restrained, ...), supine, bind, spell, shield, shield raised, rigi": "2026-11-18",
+ "Automation cell|actions_maneuvers.xlsx / Basic Actions / N8|Raise a Shield|\"shield not raised\" is not something REQUIRES can check: write a Condition (offguard, wrongfooted, frightened, prone, grabbed, restrained, ...), supine, bind, spell, shield, shield raised, rigid, free": "2026-11-18",
+ "Automation cell|actions_maneuvers.xlsx / Basic Actions / N9|Recenter|\"exposed\" is not something REQUIRES can check: write a Condition (offguard, wrongfooted, frightened, prone, grabbed, restrained, ...), supine, bind, spell, shield, shield raised, rigid, free hand, hol": "2026-11-18",
  "Automation cell|talents_ancestries.xlsx / Dwarf / I5|Hold Your Ground|EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE [[EFFECT Reduce forced movement by ": "2026-11-17",
  "Automation cell|talents_ancestries.xlsx / Elf / I10|Greenblood Elf|\"roots\" is not a terrain kind: write Mud, Shallow Water, Decking, Loose Stone, Rubble, Undergrowth, Snow, Ice, Sand or Other [[EFFECT IGNORE: terrain, undergrowth, roots, low branches]]": "2026-11-15",
  "Automation cell|talents_ancestries.xlsx / Elf / I9|Unclouded Mind|unknown rule kind \"need\" (an effect begins with a tag: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, in brackets as [EFFECT ...]; a ": "2026-11-17",
@@ -47,6 +51,6 @@
  "Index|actions_maneuvers.xlsx||'Intercept' (row 27) is in _Tree Index but no sheet has a row for it": "2026-11-15",
  "Index|actions_maneuvers.xlsx||'Parry' (row 24) is in _Tree Index but no sheet has a row for it": "2026-11-15",
  "Index|actions_maneuvers.xlsx||'Void' (row 25) is in _Tree Index but no sheet has a row for it": "2026-11-15",
- "Index|actions_maneuvers.xlsx||the _Tree Index is behind the sheets by 3 cell(s)": "2026-11-15",
+ "Index|actions_maneuvers.xlsx||the _Tree Index is behind the sheets by 6 cell(s)": "2026-11-18",
  "Index|talents_cultures.xlsx||'Murovian' (row 6) is in _Tree Index but has no sheet; the row stays until its sheet exists": "2026-11-15"
 }

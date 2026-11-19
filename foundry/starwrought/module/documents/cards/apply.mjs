@@ -46,7 +46,7 @@ import * as SW from "../../config.mjs";
 import { SOCKET, replyTo, resolveActor } from "./shared.mjs";
 import { postCard } from "../../helpers/cards.mjs";
 import { sameBody, wasRerolled, writerFor } from "./give.mjs";
-import { linesFor, appliedRecord, appliedWindow, effectWords, lineWords } from "../../rules/applied.mjs";
+import { linesFor, appliedRecord, appliedWindow, effectWords, lineWords, wordsToSay } from "../../rules/applied.mjs";
 import { untilWords } from "../../rules/operators.mjs";
 import { applyEffectTo, removeEffectFrom, removeAppliedFrom } from "../../rules/effects-state.mjs";
 
@@ -225,7 +225,8 @@ const applying = new Set();
 async function applySide({ chat, flags, roller, recipient, who, lines, notes = [] }) {
   const maneuver = { slug: String(flags.applies?.maneuver?.slug ?? ""), name: String(flags.applies?.maneuver?.name ?? "") };
   const done = await applyLinesTo(recipient, lines, { giver: roller, maneuver, from: chat.id, combat: flags.applies?.combat ?? null });
-  const words = done.map(d => d.words);
+  // A REMOVE that found nothing is not said beside a line that did something (0.32.1).
+  const words = wordsToSay(done);
   if (!words.length && !notes.length) return { name: recipient.name, words };
   const content = `<div class="starwrought action-card sw-applied-card"><h3>${esc(maneuver.name)}</h3>${
     words.map(w => `<p>${esc(w)}</p>`).join("")}${notes.map(n => `<p class="sw-card-note">${esc(n)}</p>`).join("")}</div>`;

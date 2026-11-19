@@ -18,7 +18,8 @@
  * round. The words (REQUIRE_WORDS, for the message that lists them):
  *
  *   <Condition>               the character has the Condition (prone, grabbed, hidden, controlling)
- *   supine                    accepted, and never true until Supine is built
+ *   supine                    the character has the named Effect Supine (0.32.1), until Supine is built
+ *                             as a Condition, when the same word reads the Condition
  *   bind                      in a Bind, of any kind
  *   bind, <state>             in a Bind in that state: neutral, controlling, controlled (0.31.0)
  *   effect <Name>             the character has a named Effect (0.31.0)
@@ -336,8 +337,12 @@ function bare(term, s) {
   switch (term?.test) {
     case "condition": return has(s?.conditions, term.id);
     // Supine is in the book's Conditions table and not in the system (ruling 266): the word is
-    // accepted so a cell can be written once, and it is known false until the Condition exists.
-    case "supine": return false;
+    // accepted so a cell can be written once. Until the Condition exists it reads the NAMED
+    // EFFECT called Supine (0.32.1; Mike split Drop Prone into Drop Prone and Drop Supine, and
+    // Drop Supine's `[EFFECT APPLY: Supine]` puts that Effect on), so `[REQUIRES prone or
+    // supine]` lists Stand for a creature a row laid on its back. True only when that Effect is
+    // known to be there; with no list of Effects it is the known "no" it always was.
+    case "supine": return has(s?.effects, "supine") === true;
     case "bind": {
       if (s?.bind === undefined) return null;
       return term.state ? (s.bind === term.state) : !!s.bind;

@@ -264,6 +264,23 @@ export function lineWords(line, names = {}) {
 }
 
 /**
+ * What a card says of the lines it applied (0.32.1): every line's sentence, less a REMOVE that
+ * found nothing to take off when another line of the same card did or said something. Stand's row
+ * carries `REMOVE: prone` and `REMOVE: Supine`, and Escape's one for Grabbed and one for
+ * Restrained: the creature has one of the two, and "had no Supine to take off" beside "is no
+ * longer Prone" is noise on every use (Mike, 2026-11-18, of Stand's cell). When NOTHING was taken
+ * off the sentences stay, so a use or a press is never silent.
+ * @param {Array<{line: object, result: object, words: string}>} done  `applyLinesTo`'s answer.
+ * @returns {string[]}
+ */
+export function wordsToSay(done) {
+  const entries = (done ?? []).filter(d => d && d.words);
+  const idle = d => (d.line?.op === "remove") && (d.result?.skipped === "absent");
+  const said = entries.some(d => !idle(d)) ? entries.filter(d => !idle(d)) : entries;
+  return said.map(d => d.words);
+}
+
+/**
  * A rule in a sentence, for the sheet's As read list: "puts Prone on the target, on a Success",
  * "puts Off-Guard on you until your next Opportunity, on a Critical Failure, when 2 actions are
  * paid", "takes Prone off you".

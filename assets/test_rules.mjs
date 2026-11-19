@@ -32,7 +32,7 @@ import {
 import { KINDS, registerKind } from "../foundry/starwrought/module/rules/kinds/index.mjs";
 import { collectRules, rulesOfKind, ruleModifiers, rulePreventers, ruleUses, ruleCardOffers, ruleSubstitutions, ruleGives, ruleApplies, givenResults, ruleStateKey, usableByRule, alterationsOf, RULE_ITEM_TYPES } from "../foundry/starwrought/module/rules/engine.mjs";
 // 0.32.0: what a Maneuver puts on a creature. The lines, the record, the window and the build's census are pure.
-import { linesFor, needsCost, appliedWindow, appliedRecord, isAppliedRecord, sameApplication, settleApplied, appliedBy, effectWords, lineWords, effectCensus } from "../foundry/starwrought/module/rules/applied.mjs";
+import { linesFor, needsCost, appliedWindow, appliedRecord, isAppliedRecord, sameApplication, settleApplied, appliedBy, effectWords, lineWords, wordsToSay, effectCensus } from "../foundry/starwrought/module/rules/applied.mjs";
 // 0.24.0: the Move made as part of a Maneuver, pure, shared by the charge and the ruler.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, MOVE_USED_KEPT, moveRecord, recordLive, moveRoleFor, asManeuverMove, usedNonces, withUsed } from "../foundry/starwrought/module/rules/maneuver-move.mjs";
 import { splitOperands, rankMeets, whoMatches, compare, needsMoment, hasTrait, traitKey, againstHolds, markedHolds, readTargetName, readUntil, untilWords, readBonusType, limitKey, limitSpent, effectHolds, readsOtherEffects, effectConditions, emptyOps } from "../foundry/starwrought/module/rules/operators.mjs";
@@ -4273,6 +4273,10 @@ check("requires: a word is true, false, or cannot be told, and `not` of unknown 
   same(holds("[REQUIRES prone]", situation({ conditions: new Set(["prone"]) })), true, "the Conditions as a Set read too");
   same([holds("[REQUIRES not prone]", situation({ conditions: ["prone"] })), holds("[REQUIRES not prone]", situation()), holds("[REQUIRES not prone]", {})], [false, true, null], "not: turned round, and unknown stays unknown");
   same([holds("[REQUIRES supine]", situation()), holds("[REQUIRES supine]", {}), holds("[REQUIRES not supine]", {})], [false, false, true], "Supine is known false until it is built");
+  // 0.32.1: until the Condition is built the word reads the named Effect called Supine, which
+  // Drop Supine's `[EFFECT APPLY: Supine]` puts on, so Stand is listed for a creature on its back.
+  same([holds("[REQUIRES supine]", { effects: ["supine"] }), holds("[REQUIRES supine]", { effects: ["blessed"] }), holds("[REQUIRES supine]", { effects: [] }), holds("[REQUIRES not supine]", { effects: ["supine"] })],
+    [true, false, false, false], "the named Effect Supine answers the word; any other does not; `not` turns it round");
   same([holds("[REQUIRES bind]", situation({ bind: "neutral" })), holds("[REQUIRES bind]", situation({ bind: "controlled" })), holds("[REQUIRES bind]", situation()), holds("[REQUIRES bind]", {})], [true, true, false, null], "a Bind of any kind");
   same([holds("[REQUIRES spell]", situation({ spells: 2 })), holds("[REQUIRES spell]", situation()), holds("[REQUIRES spell]", {})], [true, false, null], "a spell");
   same([holds("[REQUIRES shield]", situation({ shield: { held: true, raised: false } })), holds("[REQUIRES shield raised]", situation({ shield: { held: true, raised: false } })), holds("[REQUIRES shield raised]", situation({ shield: { held: true, raised: true } })), holds("[REQUIRES shield raised]", situation({ shield: { held: false, raised: true } })), holds("[REQUIRES shield]", {})],
@@ -4300,6 +4304,8 @@ check("requires: a block fails only when every alternative is known false (rulin
   const stand = rules("[REQUIRES prone or supine]");
   same(availability(stand, situation()).ok, false, "standing up while standing: known not to apply");
   same(availability(stand, situation({ conditions: ["prone"] })).ok, true, "Prone: it applies");
+  // 0.32.1: on its back by the named Effect Supine (Drop Supine's APPLY), Stand applies too.
+  same([availability(stand, { ...situation(), conditions: [], effects: ["supine"] }).ok, availability(stand, { ...situation(), conditions: [], effects: [] }).ok], [true, false], "Supine by its named Effect: it applies; neither: it does not");
   same(availability(stand, {}), { ok: true, failed: [], unknown: true }, "nothing known: shown, and said to be unknown");
   const grapple = rules("[REQUIRES free hand or weapon grapple][REQUIRES foe in reach]");
   same(availability(grapple, situation({ near: [{ relation: "enemy", gap: 0, inReach: true }] })).ok, true, "a free hand and a foe in reach");
@@ -4630,6 +4636,21 @@ check("applied: the words a card and a sheet say, and the build's census (ruling
   const line = extra => ({ op: "apply", effect: { name: "Off-Guard", slug: "offguard", condition: "offGuard" }, who: "self", until: null, degree: null, cost: null, ...extra });
   same([lineWords(line()), lineWords(line({ until: { who: "giver", n: 1 } }), { giver: "Tess", recipient: "Tess" }), lineWords(line({ op: "remove" }))], ["Off-Guard", "Off-Guard until Tess's next Opportunity", "no longer Off-Guard"], "a line in a few words, for the button");
   same(untilWords({ who: "giver", n: 1, edge: "end" }, { giver: "you" }), "through your next Opportunity", "a card that speaks to its reader says `your`");
+  // 0.32.1 (Mike, of Stand's cell: `REMOVE: prone` and `REMOVE: Supine`): a REMOVE that found
+  // nothing is not said beside a line that did something; when nothing was taken off, all is said.
+  const did = (op, words, result) => ({ line: { op }, result, words });
+  const gone = did("remove", "Tess is no longer Prone.", { ok: true });
+  const none = did("remove", "Tess had no Supine to take off.", { skipped: "absent" });
+  const held = did("remove", "Off-Guard stays on Tess: something else holds it there.", { skipped: "held" });
+  const put = did("apply", "Tess is Off-Guard.", { ok: true });
+  const already = did("apply", "Tess already has Prone by other means: nothing changes.", { skipped: "already" });
+  same([wordsToSay([gone, none]), wordsToSay([none, gone]), wordsToSay([none, put]), wordsToSay([none, held]), wordsToSay([none, already])],
+    [[gone.words], [gone.words], [put.words], [held.words], [already.words]], "the idle REMOVE is left out beside anything else that was done or said");
+  same([wordsToSay([none]), wordsToSay([none, { ...none, words: "Tess had no Prone to take off." }]), wordsToSay([]), wordsToSay(null), wordsToSay([{ line: { op: "apply" }, result: { ok: true }, words: "" }])],
+    [[none.words], [none.words, "Tess had no Prone to take off."], [], [], []], "with nothing else to say every idle REMOVE is said, so a use is never silent; no words, nothing said");
+  // Supine is not a Condition of the system yet: after APPLY and REMOVE it is a named Effect,
+  // shown with its capital whatever the cell's casing.
+  same([applyRule("[EFFECT REMOVE: supine]").effect, applyRule("[EFFECT APPLY: SUPINE]").effect], [{ name: "Supine", slug: "supine", condition: null }, { name: "Supine", slug: "supine", condition: null }], "Supine after REMOVE and APPLY");
   same([untilWords({ who: "giver", n: 1 }, { giver: "they" }), untilWords({ who: "recipient", n: 2 }, { recipient: "they" })], ["until their next Opportunity", "through their second upcoming Opportunity"], "and `their` for a creature the sentence has already named");
   // The census.
   const carrier = (name, type, cell) => ({ source: `Sheet / ${name}`, name, type, rules: parseAutomation(cell, { resolve, itemName: name, itemType: type }).rules });

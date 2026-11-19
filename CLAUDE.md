@@ -930,6 +930,26 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.32.1 (Mike, 2026-11-18; no ruling): Stand's two lines, and Supine as a named Effect.** Mike,
+of Stand's cell: "should it say instead `[EFFECT REMOVE: prone]` `[EFFECT REMOVE: supine]`?",
+then "yes, mend both", and "I split Drop Prone into Drop Prone, and Drop Supine. The alternative
+was some sort of option box to choose Prone or Supine when dropping." **A `REMOVE` that finds
+nothing says nothing beside a line that did something** (`wordsToSay(done)` in
+`module/rules/applied.mjs`, pure; used by `#applyOnUse` in `documents/item.mjs` and `applySide`
+in `documents/cards/apply.mjs`; when nothing at all was taken off every line is said, so a use or
+a press is never silent). **Supine is a NAMED EFFECT until it is a Condition** (it is in the
+handbook and not in the system, ruling 266): `[EFFECT APPLY: Supine]` and `[EFFECT REMOVE:
+Supine]` read it as one, named "Supine" whatever the casing typed (`kinds/apply.mjs`), and the
+bare word `supine` in `[REQUIRES ...]` is true while the creature has that Effect (`bare()` in
+`module/rules/requires.mjs`: `has(s?.effects, "supine") === true`, so with no list of Effects it
+is the known "no" it always was). It is a label: Supine's own rules are the table's. **When
+Supine is built as a Condition, `readEffectName` reads the Condition first, so the same cells
+keep working; `bare()`'s one line then reads the Condition.** The cells: Stand `[REQUIRES prone
+or supine][EFFECT REMOVE: prone][EFFECT REMOVE: Supine]`; Drop Prone `[REQUIRES not
+prone][EFFECT APPLY: prone][EFFECT REMOVE: Supine]`; Drop Supine `[REQUIRES not supine][EFFECT
+APPLY: Supine][EFFECT REMOVE: prone]` (each Drop takes the other state off). Printed in the
+0.32.1 changelog entry and `AUTOMATION_GRAMMAR.md` section 5 for him to paste.
+
 **0.32.0 (Mike, 2026-11-17; rulings 311 to 321): a Maneuver puts Effects on, and takes them off.**
 Mike: "Build 0.32.0", the writing half of named Effects, planned with 0.31.0
 (`dazzling-floating-simon.md`; his decisions by question: the tags are APPLY and REMOVE, an Effect
@@ -2422,8 +2442,9 @@ content build writes them again.
   left out only when the system knows; what counts as near and as a free hand; nothing refused and
   a Maneuver listed once). Not read: Size limits, cover and concealment, tools and supplies,
   mounts and animals, "can hear you", "willing", a Reaction's Trigger, anything about the creature
-  targeted rather than who is near, a hand lost to an Arms Wound, and Supine (the word reads and
-  nothing sets it; when Supine is built `bare()` in `module/rules/requires.mjs` is its one line).
+  targeted rather than who is near, a hand lost to an Arms Wound, and Supine as a Condition
+  (since 0.32.1 the word reads the named Effect Supine, which Drop Supine's APPLY puts on; when
+  Supine is built `bare()` in `module/rules/requires.mjs` is its one line).
   A row with a Trigger and no ↺ in its Cost cell is a Reaction to the tab and a plain Maneuver to
   the engine (the 0.23.0 open point; a ↺ in the cell settles both). Grapple's row reads Cost 0
   with the Reaction trait, so the tab lists it off-turn as a free Reaction. The Reaction Talents
@@ -2630,6 +2651,21 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-18 (Stand's two lines and Supine as a named Effect, system 0.32.1; no ruling):
+"had no supine to take off" said on every Stand beside "is no longer Prone", now left out
+whenever another line of the card did something; `supine` after APPLY and REMOVE in whatever
+casing was typed, now the named Effect "Supine"; the bare word `supine` in REQUIRES always "no",
+now true while the creature has that Effect, so Stand is listed for a creature Drop Supine laid
+on its back. Checked by 227 self-test checks, `node --check`, `build_all.mjs --check` and live
+in the test world as the GM (the 0.32.1 changelog entry: the five card cases and the Maneuvers
+tab standing, Prone and Supine). The test world keeps a world Maneuver Drop Supine (flagged
+`testFixture: "0.32.1"`) beside 0.32.0's fixtures, its Stand and Drop Prone carry the three
+cells, its content is level with these sources (433 messages), and Foundry was restarted for
+the 0.32.1 manifest and left running with the GM joined. His four workbooks were not converted,
+built, staged or written; the three cells are his to paste. Committed on 2026-11-18 at his word
+(his answer when the Conditions workbook was planned: "Yes, commit 0.32.1 first") and tagged
+`v0.32.1`; not pushed until he says.
 
 Cleared 2026-11-17 (a Maneuver puts Effects on, and takes them off, system 0.32.0; rulings 311 to
 321 in the 0.32.0 changelog entry; planned with 0.31.0 in `dazzling-floating-simon.md`, Mike's
