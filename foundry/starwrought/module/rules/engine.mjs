@@ -382,7 +382,15 @@ function callHook(kind, point, hook, entries, context, actor) {
     if (!result) continue;
     let touched = result.length > 0;
     if (needsTrace(entry) && context?.momentOnly && !touched) {
-      const whole = run([entry], { ...context, momentOnly: false, staticOnly: false });
+      // What the sheet's Defense pass folded in is asked AS THAT PASS ASKED IT (0.36.0): a static
+      // rule for this Defense, with no Item. Through 0.35.1 the look was at this roll's own kind
+      // with the split lifted, so a static line to Skill checks answered a Defense rolled as a
+      // check (a Wind roll's Endure) though the Defense's number never held it: a one-roll custom
+      // effect was used up, and a Skip cleared, by a roll that did not apply the line.
+      // WITH NO ROLL'S RANK, as that pass has none (the review of 0.36.0): with this roll's rank
+      // handed on, a static line with `IF: RANK(roll ...)` answered here though no Defense's number
+      // ever held it, and a one-roll effect was used up by a roll that did not apply the line.
+      const whole = run([entry], { ...context, kind: "defense", item: null, rank: undefined, momentOnly: false, staticOnly: true });
       // Only an APPLIED answer says the rule reached this roll (0.21.0, the review of ruling
       // 222's neighbours). With the split lifted a bonus to a Maneuver answers a check made
       // without that Maneuver's Item with an OFFER (ruling 122), and on this branch no box is

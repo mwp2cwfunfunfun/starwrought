@@ -70,8 +70,14 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
     Includes     other Conditions this one also counts as, comma separated. Prone: Off-Guard. A
                  creature is Off-Guard once, however many ways it got there. "Off-Guard against X"
                  means only against the creature that put this Condition on, and needs Takes = X.
-    Automation   lines in the grammar, as on a Talent. A Condition's row reads CHECK, ATK, DEF and
-                 INIT, which act for whoever has the Condition (a character or an adversary), and
+    Automation   lines in the grammar, as on a Talent. A Condition's row reads CHECK, SKILL, ATK,
+                 DEF and INIT, which act for whoever has the Condition (a character or an
+                 adversary). CHECK with no target is EVERY ROLL AND THRESHOLD since 0.36.0 (Skill
+                 checks, Initiative, attacks, Defenses), so Frightened can be the one line [EFFECT
+                 CHECK: -N condition]; SKILL is the checks that are no attack and no Defense; ATK
+                 and DEF are attacks and Defenses (Fatigued: DEF and ATK, two lines). One
+                 Condition counts once on a roll: where two of a row's lines reach it, only the
+                 stronger applies, and the build says which lines meet. A row
                  after IFT: may ask about the attack answered (RANGED, MELEE, BLOW, BLAST, BLIGHT,
                  BEGUILEMENT, TRAIT(...)). -N is the Condition's own value: [EFFECT DEF: -N
                  condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.

@@ -48,7 +48,8 @@ PRONE_LINES = "[EFFECT ATK: -2 situation]\n[EFFECT DEF: 2 situation, evade; IFT:
 # name -> (Includes, Automation), from the plan Mike approved. Every other row is N/A.
 SEED = {
     "Off-Guard": ("", "[EFFECT DEF: -2 situation, evade]\n[EFFECT DEF: -2 situation, guard]"),
-    "Frightened": ("", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]"),
+    # One line since 0.36.0: a bare CHECK reaches every roll and Threshold.
+    "Frightened": ("", "[EFFECT CHECK: -N condition]"),
     "Fatigued": ("", "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]"),
     "Prone": ("Off-Guard", PRONE_LINES),
     "Supine": ("Off-Guard", PRONE_LINES),
@@ -68,7 +69,7 @@ ICONS = {"Supine": "icons/svg/sleep.svg"}
 NOTES = {
     "Off-Guard": "The numbers are this row's lines. A first Torso Wound and a Torso Critical Hit effect count as Off-Guard through this row.",
     "Frightened": "The numbers are this row's lines. It does not yet drop by 1 at the end of each round: lower it by hand.",
-    "Fatigued": "The numbers are this row's lines. The maximum of 3, the Wind check, the rests that end it and the lock to Travel are the system's.",
+    "Fatigued": "The numbers are this row's lines. The maximum of 3, the Wind check, the rests that lower it (ten minutes, by 1) and end it (a night), and the lock to Travel are the system's.",
     "Prone": "The numbers are this row's lines; Off-Guard comes through Includes. Stand takes it off. The second paragraph reads \"Roll Over to become Prone\", which looks like a slip for Supine.",
     "Supine": "A new Condition, made by this row. Its -2 has no exception for melee Attacks against adjacent creatures yet (the grammar has no word for it), and it does not stop movement yet.",
     "Grabbed": "Off-Guard comes through Includes. Evade is marked unavailable by the system; \"can't Move or Step\" is the table's.",
@@ -114,7 +115,7 @@ ABOUT = [
     "Write [X] where the name of the creature the Condition is about should appear (a row whose Takes is X).",
     "Includes: other Conditions this one also counts as, comma separated. Prone: Off-Guard. A creature is Off-Guard once, however many ways it got there. "
     "\"Off-Guard against X\" means only against the creature that put this Condition on (Wrong-Footed), and needs Takes = X.",
-    "Automation: lines in the grammar, one to a line, as on a Talent (AUTOMATION_GRAMMAR.md). A Condition's row reads CHECK, ATK, DEF and INIT, "
+    "Automation: lines in the grammar, one to a line, as on a Talent (AUTOMATION_GRAMMAR.md). A Condition's row reads CHECK (with no target: every roll and Threshold), SKILL (checks that are no attack and no Defense), ATK, DEF and INIT, "
     "and may ask about the attack answered (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...)). "
     "It also reads [EFFECT IMMUNE: TRAIT(Visual)], written alone: whoever has the Condition is immune to anything with that trait. "
     "-N is the Condition's own value: [EFFECT DEF: -N condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.",

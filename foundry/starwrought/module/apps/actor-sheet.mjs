@@ -26,6 +26,8 @@ import { claimsOf, armClaim } from "../rules/claims.mjs";
 // The Threshold tooltip's conditional rules (0.15.0): the As read line of each rule the sheet's number leaves out.
 import { needsMoment } from "../rules/operators.mjs";
 import { summarize } from "../rules/grammar.mjs";
+// Which rolls a scope word reaches (0.36.0), for the Threshold tooltip's list.
+import { scopeReaches } from "../rules/kinds/bonus.mjs";
 import { usableByRule } from "../rules/engine.mjs";
 // CHARACTER EFFECTS (0.16.0): the Effects tab's panel (the Overview's through 0.16.0), its state
 // switch and its custom rows; since 0.17.0 a claim line's "Apply to next roll" button too.
@@ -72,8 +74,11 @@ function conditionalDefenseRules(actor) {
   for (const { rule, item } of actor.rulesOfKind("bonus")) {
     if (!rule?.to?.slug || !needsMoment(rule)) continue;
     const slug = rule.to.slug;
-    if ((slug !== "defenses") && !Object.values(SW.DEFENSES).some(d => d.slug === slug)) continue;
-    out.push({ slug, talent: SW.plainName(item?.name ?? ""), summary: summarize(rule) });
+    // A scope that reaches Defenses (`defenses`, and since 0.36.0 `rolls`, a bare CHECK) is listed
+    // under every Defense; a line to one Defense under that one.
+    const every = (rule.to.type === "scope") && scopeReaches(slug, "defense");
+    if (!every && !Object.values(SW.DEFENSES).some(d => d.slug === slug)) continue;
+    out.push({ slug, every, talent: SW.plainName(item?.name ?? ""), summary: summarize(rule) });
   }
   return out;
 }
@@ -395,7 +400,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       rankLabel: game.i18n.localize(def.rankLabel),
       thresholdTip: [
         game.i18n.localize("STARWROUGHT.Field.thresholdHint"),
-        ...conditional.filter(r => (r.slug === def.slug) || (r.slug === "defenses")).map(r => `${r.talent}: ${r.summary}`)
+        ...conditional.filter(r => r.every || (r.slug === def.slug)).map(r => `${r.talent}: ${r.summary}`)
       ].join("\n")
     }));
     context.bind = bindContext(actor);
@@ -1393,7 +1398,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     return actor.spendComet();
   }
 
-  /** Ten minutes' rest (PHB v4.21): level x Presence Vigor back and Fatigued off; the table's word that the minutes passed. */
+  /** Ten minutes' rest (PHB v4.21): level x Presence Vigor back and Fatigued lowered by 1 (0.36.0); the table's word that the minutes passed. */
   static async #onRestTenMinutes() {
     return this.document.restTenMinutes();
   }

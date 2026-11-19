@@ -43,12 +43,36 @@ export const STRAIN_TYPE = "condition";
 export const WIND_ROUND = 1;
 /**
  * Fatigued N rises by 1 on each failed Wind check and by 2 on a critical failure (PHB v4.21), to
- * this ceiling. It ends with ten minutes of rest and with nothing else: the Fatigued card's "Ten
- * minutes' rest" button or a night's rest clears it (ruling 81), never the end of the Combat.
+ * this ceiling. It goes down with rest and with nothing else (never the end of the Combat,
+ * ruling 81): by `FATIGUED_REST_STEP` for every ten minutes of uninterrupted rest, and whole with
+ * a night's rest (0.36.0; rulings 372 and 373, below).
  */
 export const FATIGUED_MAX = 3;
 export const WIND_FAIL_RISE = 1;
 export const WIND_CRIT_FAIL_RISE = 2;
+
+/**
+ * What ten minutes of uninterrupted rest take off Fatigued (0.36.0; ruling 372). The Fatigued row
+ * of data/conditions.xlsx, the only authority for what a Condition says (ruling 322): "Reduce by 1
+ * after every ten minutes of uninterrupted rest, unless otherwise specified." Through 0.35.1 the
+ * row read "Ends after ten minutes of rest" and the rest took it off whole.
+ */
+export const FATIGUED_REST_STEP = 1;
+
+/**
+ * Fatigued after rest: the value less one step for each ten-minute stretch, never below 0 (0 is
+ * "no longer Fatigued"). Pure, so the self-test drives it; `SwActor#restTenMinutes` is its one
+ * caller, with one stretch for each press (ruling 374). A night's rest does not come through
+ * here: it ends Fatigued whatever its value (ruling 373).
+ * @param {number} value        The Fatigued value now.
+ * @param {number} [stretches]  Ten-minute stretches of uninterrupted rest.
+ * @returns {number}
+ */
+export function fatiguedAfterRest(value, stretches = 1) {
+  const now = Math.max(0, Math.floor(Number(value) || 0));
+  const rested = Math.max(0, Math.floor(Number(stretches) || 0));
+  return Math.max(0, now - (FATIGUED_REST_STEP * rested));
+}
 
 /**
  * Visored (PHB v4.21, Armor Traits): "Can Raise or Lower the visor as a single action. Lowered:

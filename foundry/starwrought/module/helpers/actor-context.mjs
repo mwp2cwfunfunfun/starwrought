@@ -11,8 +11,9 @@ import * as SW from "../config.mjs";
 import { chassisByName } from "./content.mjs";
 // Whether a Control is a momentary one (0.27.0, ruling 278), pure.
 import { momentaryFor } from "../combat/bind-rules.mjs";
-// What the character's Conditions put on an attack (0.33.0), for the weapon rows.
-import { conditionModifiers } from "../rules/engine.mjs";
+// What the character's Conditions put on an attack (0.33.0), and since 0.36.0 its Talents'
+// standing lines too, for the weapon rows.
+import { conditionModifiers, ruleModifiers } from "../rules/engine.mjs";
 
 
 /**
@@ -40,7 +41,12 @@ export function weaponNumbers(actor, item) {
   // The standing attack lines of the Conditions the character has (0.33.0: Fatigued's -N, which
   // was among `attackModifiers` through 0.32.1, Frightened's, Prone's -2), resolved with the rest
   // so one circumstance counts once. Only what needs no other party: the row answers no attack.
-  const conditions = conditionModifiers(actor, { kind: "attack", slug: sys[slugKey]?.slug ?? "", item, rank, staticOnly: true });
+  // Since 0.36.0 a character's Talents are read as well (a bare CHECK reaches attacks now, and a
+  // Talent's standing line was on the die and never in this number): what `ruleModifiers` applies
+  // with no scene, the offers and the marks left alone, since a row is a read. An adversary has
+  // no weapon Items; were one handed in, its Conditions alone are read, as everywhere.
+  const ask = { kind: "attack", slug: sys[slugKey]?.slug ?? "", item, rank, staticOnly: true };
+  const conditions = (actor.type === "character") ? ruleModifiers(actor, ask).applied : conditionModifiers(actor, ask);
   const standing = SW.resolveModifiers([...(sys.attackModifiers ?? []), ...conditions]).total;
   const attackMod = (sys.attributes?.[attribute]?.mod ?? 0) + SW.rankBonus(rank) + (sys.bonuses?.attack ?? 0) + standing;
 

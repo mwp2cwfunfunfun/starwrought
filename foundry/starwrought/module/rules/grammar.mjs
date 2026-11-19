@@ -216,13 +216,18 @@ export function parseAutomation(text, context = {}) {
             // CHECK is both a block and a tag (0.34.0): `[EFFECT CHECK 1 condition, aid]` is the
             // bonus with its colon lost, and is told the colon, not the block.
             const bonus = (keyword === "CHECK") && isBonusShape(inner.args);
+            // Any other tag with its colon lost (`[EFFECT SKILL 1 situation]`, `[EFFECT IMMUNE
+            // prone]`; the review of 0.36.0) is told the colon too, not the list of tags.
+            const tagWord = (!keyword && Object.hasOwn(EFFECT_TAGS, inner.word)) ? inner.word.toUpperCase() : null;
             errors.push({
               line, text: block.text,
               message: bonus
                 ? `CHECK is an effect tag and takes a colon: write \`[EFFECT CHECK: ${inner.args}]\``
                 : keyword
                   ? `${keyword} is a block of its own, not an effect: write \`[${keyword} ${inner.args || "..."}]\``
-                  : `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}`
+                  : tagWord
+                    ? `${tagWord} is an effect tag and takes a colon: write \`[EFFECT ${tagWord}: ${inner.args || "..."}]\``
+                    : `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: ${tagList()}`
             });
           } else if (looksLegacy(splitLine(block.data).args)) {
             errors.push({ line, text: block.text, message: LEGACY_REFUSAL });

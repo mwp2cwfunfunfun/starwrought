@@ -8,12 +8,12 @@ entries between carry 164 to 204, the 0.21.0 entry has 215 to 222, the 0.22.0 en
 the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 to 251, the 0.27.0
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
 297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321, the 0.33.0 entry 322
-to 336, the 0.34.0 entry 337 to 349, the 0.35.0 entry 350 to 360 and the 0.35.1 entry 361 to
-365). Since
+to 336, the 0.34.0 entry 337 to 349, the 0.35.0 entry 350 to 360, the 0.35.1 entry 361 to
+365 and the 0.36.0 entry 366 to 374). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
 their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
-too (section 5). System version **0.35.1**.
+too (section 5). System version **0.36.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -231,8 +231,11 @@ anything it depends on changes.
 - **Two rests** (PHB v4.21). **A night's rest** restores all your Vigor, clears Temporary Vigor and
   Fatigued, gives no Hero Point (the GM awards those), and touches no Wound. **Ten minutes' rest**
   (the Overview's second rest button, and the Fatigued card's) restores level × Presence Vigor when
-  Presence is positive and nothing otherwise (ruling 144), and ends Fatigued; it is the table's word
-  that the ten minutes passed, since the system keeps no clock.
+  Presence is positive and nothing otherwise (ruling 144), and lowers Fatigued by 1 (0.36.0, ruling
+  372: the Fatigued row of the Conditions workbook says "Reduce by 1 after every ten minutes of
+  uninterrupted rest"; through 0.35.1 it ended Fatigued whole). One press is one stretch of ten
+  minutes, so thirty minutes are three presses (ruling 374); it is the table's word that the ten
+  minutes passed, uninterrupted, since the system keeps no clock.
 - **Weapon dice by rank** (PHB v4.21): a Deliberate or Committed Strike rolls one weapon die at
   Trained, two at Expert, three at Master, four at Legendary, in the Melee or Ranged rank the
   Strike rolled (Handling's reduction included); a Quick Strike and a Graze roll one. There is no
@@ -749,11 +752,12 @@ whatever Frightened has done to their Endure Threshold; both halves of the gate 
 sentence now. The exemption is read live from the Threshold the Defense grid shows, so Frightened
 can take it away for a round; the Load Strain field's tooltip gives both numbers. A failure raises
 Fatigued by 1 (Fatigued 1 the first time), to a maximum of 3, and the card names the new value;
-Fatigued N is −N Condition to Evade, Guard and attack rolls. The book ends Fatigued "after ten
-minutes of rest", and the system has no clock for that rest, so the Fatigued card carries a **Ten
-minutes' rest** button for the actor's owner or the GM: it sets Fatigued off and posts a one-line
-card saying the fighter has caught their breath (clicked once Fatigued is already gone, it says so
-quietly and does nothing else). A night's rest clears it too. Nothing clears it at the Combat's
+Fatigued N is −N Condition to every Defense and to attack rolls. Fatigued drops by 1 after
+every ten minutes of uninterrupted rest (0.36.0, ruling 372), and the system has no clock for that
+rest, so the Fatigued card carries a **Ten minutes' rest** button for the actor's owner or the GM:
+it takes the actor's ten minutes' rest (Fatigued lowered by 1, level × Presence Vigor back, one
+card saying both) and can be pressed again for the next ten minutes; an adversary's rest card goes
+to the GM alone. A night's rest ends it whole (ruling 373). Nothing clears it at the Combat's
 end: a fighter who leaves one fight Fatigued carries it into the next scene until someone rests
 (ruling 81; through 0.6.1 the Combat's deletion cleared it).
 **At the start of a round**:
@@ -861,9 +865,9 @@ first, a fighter with Load Strain 1 or more rolls Endure against 10 + Load Strai
 deepening Fatigued by one and a critical failure by two, to Fatigued 3 (PHB v4.21; the Endure
 Threshold exemption of v4.12 to v4.15 is gone from the book and the system follows it, ruling
 150). The Load Strain field's tooltip gives the Wind Threshold and your Endure Threshold, to the GM
-and the player alike. Fatigued, once it has set in, outlasts the fight: ten minutes' rest ends it,
-by the sheet's button, the button on the Fatigued card or a night's rest, never by the Combat's
-end.
+and the player alike. Fatigued, once it has set in, outlasts the fight: every ten minutes of rest
+lowers it by 1 (the sheet's button or the button on the Fatigued card, once for each ten minutes;
+0.36.0) and a night's rest ends it, never the Combat's end.
 
 **Visored** (PHB v4.21): a Head piece with the trait has a visor, up or down. Lowered, it is −1
 Gear to Awareness checks, the Awareness Threshold and Initiative; raised, the piece Protects 1 less.
@@ -2050,7 +2054,8 @@ member Travels and does nothing else: while their Fatigued is above 0 their sele
 Travel with the reason as its tooltip ("Hrolda is Fatigued 2 and can only Travel"), the speed line
 and the cards read them as Travelling, a pick of anything else is refused with a notice before it
 is written, and the stored pick is left as it was, so it comes back the moment the Fatigue ends
-(ten minutes' rest by the Fatigued card's button, or a night's rest; ruling 81). The proposal's
+(ten minutes' rest for each point of it, by the sheet's button or the Fatigued card's, or a
+night's rest; rulings 81, 372 and 373). The proposal's
 sentence says so in the book.
 
 **Say the plan** (GM only; the plan's risk 12). One public card spoken by the party: a line per
@@ -2355,7 +2360,7 @@ What the sheet's rows do today, for a character and for an adversary alike:
 | Condition | What it does |
 |---|---|
 | Off-Guard | -2 Situation to Evade and Guard. A first Torso Wound and the Torso's Critical Hit effect count as Off-Guard |
-| Frightened N | -N Condition to all four Defenses, to every check (an Initiative among them) and to attacks |
+| Frightened N | -N Condition to every roll and Threshold: all four Defenses, every check (an Initiative among them) and attacks. Since 0.36.0 it can be one line, `[EFFECT CHECK: -N condition]`; the three lines the sheet was filled with (`DEF`, `CHECK`, `ATK`) give the same numbers |
 | Fatigued N | -N Condition to all four Defenses and to attacks |
 | Prone, Supine | Off-Guard; -2 Situation to attacks; +2 Situation to Evade against a ranged Attack |
 | Grabbed | Off-Guard |
@@ -2436,9 +2441,9 @@ Visual. Deafened's row waits for `[EFFECT IMMUNE: TRAIT(Auditory)]`.
   Maneuver or a custom effect it is refused for now.
 
 Beyond the sheet's lines the system still runs these itself (a failed Wind check raises
-Fatigued one step at a time to its maximum of 3; the book ends it "after ten minutes of rest",
-and the table says when those have passed: the Fatigued card's Ten minutes' rest button or a
-night's rest clears it, and the Combat's end does not); Grabbed and Restrained make Evade
+Fatigued one step at a time to its maximum of 3; every ten minutes of rest lower it by 1, as the
+row says since 2026-11-19, and the table says when those have passed: the Ten minutes' rest
+button lowers it, a night's rest ends it, and the Combat's end does neither); Grabbed and Restrained make Evade
 unavailable; Slowed N takes its actions at the start of the round. The system keeps
 Dying, Wounded, Spent, Bound, Controlled, Controlling, Preparing and the four Exposed in step
 between the sheet and the token, sets Prone from a final Legs Wound, Unconscious from Dying and
@@ -2756,7 +2761,7 @@ prints them:
 Serrovanian        [LANGUAGE Common, Serrovine]
                    [EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]
 Oathbound          [MANEUVER Oathbound]              (the row: [EFFECT MARK: enemies] / [EFFECT ATK: 1 condition; IFT: MARKED] / [EFFECT DEF: 1 condition; IFT: MARKED])
-Contract Literate  [EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]
+Contract Literate  [EFFECT SKILL: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]
 Iron Etiquette     [EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]
                    [EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]
 Reacher            [LANGUAGE Common, Reachspeak]
@@ -2869,7 +2874,7 @@ Quick Study         [POINT Skill]
 Stubborn Footing    [EFFECT IMMUNE: prone; LIMIT: encounter]
 Close Ranks         [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 Versatile Human     [POINT Opening]
-Jack of All Trades  [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]
+Jack of All Trades  [EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]
 Torchbearer Human   [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
 Steady the Line     [MANEUVER Steady the Line]         (its Effect: @Maneuver[Steady the Line])
 ```
@@ -2913,8 +2918,48 @@ by name), the Target a Constellation or a Maneuver as the book prints it, or one
 `Defenses` (all four), `Checks` (every check that is not an attack or a Defense, an Initiative
 rolled with a Constellation among them), `Attacks`, `Initiative`; a Lore is refused. The 0.10.0
 form (`+1 Condition to Aid if Human is Expert`) is retired and refused with the new shape; an
-owned copy still carrying a 0.10.0 rule is read as it was. Stacking is v4.21's: one Talent's lines
-on one target are one circumstance (`source`), two Talents' add.
+owned copy still carrying a 0.10.0 rule is read as it was. Stacking is v4.21's: one Talent is one
+circumstance (`source`), two Talents' add.
+
+**A bare `CHECK` is every roll, and `SKILL` is the narrow word** (0.36.0; rulings 366 to 371;
+Mike: "Can't CHECK include ALL rolls/thresholds, but ATK and DEF just mean attack checks and
+defense checks respectively?"). `[EFFECT CHECK: -N condition]` with no target reaches every roll
+and Threshold: Skill checks, Initiative, attacks, Defense rolls and Defense Thresholds, for a
+character and for an adversary. `[EFFECT SKILL: 1 situation]` reaches what a bare `CHECK` reached
+through 0.35.1: the checks that are no attack and no Defense, and an Initiative rolled with a
+Skill. It never reaches a check or an Initiative rolled with a Defense's Constellation, so not
+the default Initiative (which rolls Awareness) and not an adversary's. `ATK` and `DEF` are
+attacks and Defenses. `CHECK` with a target is unchanged. Contract Literate's and Jack of All
+Trades' cells are printed in this file with `SKILL`, as they are to be written from this
+release; the workbooks say `CHECK` until Mike changes them, and the shipped copies keep the
+narrow meaning meanwhile.
+
+- **One Talent or Condition counts once on a roll** (ruling 367): of its lines that reach the
+  roll, the strongest bonus and the strongest penalty. `CHECK: -1` beside `DEF: -2` gives
+  Defenses -2 and everything else -1. Through 0.35.1 two lines to different targets that
+  reached one roll both counted. An attack's card lists the lines that counted. A line that is
+  set aside still uses up what it carries: its `LIMIT` counts as used, and a ticked claim weaker
+  than a standing line of the same Talent is spent for nothing.
+- **A line keeps the meaning it was read with** (ruling 369) until its cell is parsed again: a
+  content build (a Talent's or a Maneuver's cell), the Conditions build (a Condition's row), a
+  change to the text in a world Item's Automation box (saving another field of the Item does
+  not), or a change to a custom effect row's text or label. **Sync content never parses a cell**:
+  it writes the rules the build parsed (through 0.35.1 the client parsed the text again for
+  every Item the sync wrote, which under a changed grammar would have changed one character's
+  copy and not the next). A line read before 0.36.0 says "to Skill checks" on its sheet, which is
+  what it does.
+- **Each roll takes an every-roll line once.** It is folded into each Defense's number on the
+  sheet, so a Defense roll, a Defense rolled as a check (the Wind roll, a Recovery) and an
+  Initiative rolled with Awareness carry it through that number and never again. This settles
+  the open question of whether a bonus to every check reaches a Defense rolled as a check.
+- **A claim on a bare `CHECK`** is offered in every roll window, attacks and Defense rolls
+  included, and an armed one is spent by the next roll or Threshold read (ruling 371).
+- **The weapon row's number** counts a Talent's standing line that reaches attacks, as the die
+  does; **an adversary's "in effect" hints** list what counted, one line for a Condition.
+- **Ten minutes' rest lowers Fatigued by 1** (rulings 372 to 374; Mike, of his reworded Fatigued
+  row: "Yes, plan it", folded into this release). A night's rest still ends it. One press is one
+  stretch of ten minutes. So Wind checks start again after one rest from Fatigued 3, and the
+  party's Travel lock takes thirty minutes to lift from there.
 
 **Where the number shows.** A bonus to a Constellation is applied wherever that Constellation's
 modifier is assembled: the roll dialog's terms and total, the card's modifier lines (labelled with
@@ -2937,10 +2982,11 @@ roll dialog ("Humanity: Aid"; ruling 122), never on an attack, a Defense or an I
 Constellation from the Maneuver's Item: an Aid made with Awareness carries Humanity's +1, which was
 lost through 0.20.1, because a Defense rolled as a check rolls what the sheet folded into the
 Defense, and the sheet could never have folded in a bonus that belongs to a Maneuver. Nothing else
-moves on that roll: a bonus to the Defense itself is counted once as before, a bonus to every check
-stays out of it, and nothing is offered there. The wider question, whether a bonus to every check
-reaches a Defense rolled as a check (Wind, Recovery, a Search), is untouched and is an open
-decision. Adversaries roll flat, and nothing of this reaches them.
+moves on that roll: a bonus to the Defense itself is counted once as before, a bonus to Skill checks
+(`SKILL`) stays out of it (a claimed `SKILL` line is still offered in that roll's window, the one
+thing that is), and no other offer is drawn there. Since 0.36.0 a bonus to every roll (a bare
+`CHECK`) does reach a Defense rolled as a check (Wind, Recovery, a Search), once, through the
+Defense's own number. Adversaries roll flat, and of a Talent's lines nothing reaches them.
 
 **The `grant` kind** (0.13.0; ruling 168). `grant: <N>, <Scope> [, DIFFERENT]`: Talent Points at
 creation, the Scope Opening (a Root of a Constellation not yet opened), Calling, Skill, Lore,
@@ -3437,9 +3483,18 @@ before; the sources and the index are.
   Blow, so Prone's +2 Evade does not reach a Blast thrown from range. "Blind" and "Deaf" are
   names of Blinded and Deafened now, so a hand-made effect merely called either is read by
   nothing. A reroll of an adversary's Gain Control reads its Conditions as they then stand. A
-  Condition's row reads CHECK, ATK, DEF and INIT and nothing that asks about an owner. An
+  Condition's row reads CHECK, SKILL, ATK, DEF and INIT and nothing that asks about an owner. An
   adversary's own Talents stay unread. Fatigued's maximum of 3 is kept only where the system
   raises it.
+- **What an every-roll `CHECK` leaves to the table** (0.36.0): a line that asks about the roll's
+  own rank (`IF: RANK(roll = untrained)`) reaches no Defense's number when written with a bare
+  `CHECK` or a `DEF`: not a Defense roll, a Defense rolled as a check (the Wind roll), or the
+  default Initiative. It reads, and the build warns. `SKILL` keeps the old meaning's quirk: it does not reach a check rolled with a
+  Defense's Constellation (a Search with Awareness, the default Initiative), though a claimed
+  `SKILL` line is still offered there. The `REROLL` tag's own "any check", the sheet's "Check
+  bonus" field and the Initiative number shown outside an encounter are as they were. Ticking
+  both offered boxes of one Talent on one roll gives the stronger, not the sum. A GM's world
+  Item with lines to two targets counts once on a roll from this release.
 - **What `[X]` leaves to the table** (0.35.1): only `[X]` is filled in; a Condition's value (N)
   and a Zone stay as prose. The name is the one the sheet already shows for that creature
   beside it (the Bind line, the "Applied" tag), printed as it stands with no "the" in front.
@@ -3702,11 +3757,14 @@ before; the sources and the index are.
   and the Endure check to end one is the table's to act on.
 - **A treated Wound is removed rather than bound.** The book keeps a bound Wound on the count for a
   week; the system takes it off the Zone on a successful Treat and says so on the card.
-- **Ten minutes of rest is a button, not a clock.** The book's Fatigued N "ends after ten minutes
-  of rest". The system has no clock for the rest and no longer guesses at one (through 0.6.1 it
-  cleared Fatigued when the Combat was deleted), so the Fatigued card offers the owner or the GM a
-  Ten minutes' rest button, a night's rest clears it, and whether ten minutes passed between one
-  scene and the next is the table's to say.
+- **Ten minutes of rest is a button, not a clock.** Fatigued N drops by 1 "after every ten minutes
+  of uninterrupted rest" (the Conditions workbook's row since 2026-11-19; the book's table still
+  says it ends). The system has no clock for the rest and no longer guesses at one (through 0.6.1
+  it cleared Fatigued when the Combat was deleted), so the Fatigued card and the Overview offer the
+  owner or the GM a Ten minutes' rest button, one press for each ten minutes; a night's rest ends
+  it; and whether ten minutes passed uninterrupted between one scene and the next is the table's
+  to say. "Unless otherwise specified" is the table's too: Rage's "until you spend three actions to
+  catch your breath" is not built.
 - **Sleeping in armor without Comfort does not set Fatigued.** The book (PHB v4.21, Donning and
   Doffing): sleeping in armor without the Comfort trait leaves you Fatigued equal to your Load
   Strain, to a maximum of 3. The rest card restores Vigor, clears Fatigued and does nothing else;

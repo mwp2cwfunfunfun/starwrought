@@ -65,7 +65,7 @@ const EXAMPLE = "USE: Presence, Origin, aid";
 export const SAME = "same";
 
 /** The scope words of the `bonus` kind, none of which a USE may name: it never means every check. */
-const SCOPE_WORDS = Object.freeze(["checks", "defenses", "attacks", "initiative", "speed"]);
+const SCOPE_WORDS = Object.freeze(["rolls", "checks", "defenses", "attacks", "initiative", "speed"]);
 
 /** The four Attribute words, as a message lists them. */
 function attributeList() {

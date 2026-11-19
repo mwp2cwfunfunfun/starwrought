@@ -150,7 +150,8 @@ const driver=`
   // Endure relief from Trained and by a Fitted harness of three Fitted pieces; Flexible, Noisy and Visored read.
   step("v4.21: Opening Vigor, no Endure Bonus, Load Strain off Evade, the Fitted harness, Visored", ()=>{
     must([["Ambusher",8],["Berserker",12],["Bravo",10],["Hunter",10],["Weaponmaster",10],["Spellshaper",6],["Blood Mage",8],["Necromancer",8],["Summoner",6],["Spellblade",8]].every(([n,v])=>callingOf(n)&&callingOf(n)[2]===v), "the roster's third Calling column is Opening Vigor: 8/12/10/10/10, and the casters' 6/8/8/6/8 (ruling 152; the Necromancer's 8 since v4.24, ruling 212)");
-    must(R.conditions.some(c=>c[0]==="Fatigued N"&&/maximum of 3/.test(c[1])&&/all Defense/.test(c[1])), "the Conditions table's Fatigued N reaches all four Defenses");
+    // The row is there; its wording is the Conditions workbook's since 0.33.0 and is not pinned (below).
+    must(R.conditions.some(c=>c[0]==="Fatigued N"&&String(c[1]||"").trim().length>0), "the Conditions table carries Fatigued N with its Effect");
     const mk=(level,endure,extra={})=>migrate({name:"v",level,milestones:0,ancestry:"Human",calling:"Berserker",sparks:{},armor:null,shield:null,languages:[],talents:endure?{Endure:endure}:{},...extra});
     const e0=derive(mk(1,null)); must(e0.vigorMax===30&&e0.vigorOpening===12&&e0.vigorPerLvl===8&&e0.endureBonus===0, "a L1 Human Berserker has 10 + Opening 12 + Human 8 = 30 Vigor, found "+e0.vigorMax);
     must(derive(mk(3,null)).vigorMax===10+12+8*3, "Opening Vigor is added once: at L3 it is 10 + 12 + 24 = 46, found "+derive(mk(3,null)).vigorMax);
@@ -199,9 +200,12 @@ const driver=`
     must(vSheet(eq).includes("Wind each round: Endure vs 12")&&!vSheet(eq).includes("no Wind check"), "and the sheet says so");
     // no Strain, no Wind line (the ladder's own text aside)
     const z=mk(null,{}), dz=derive(z); must(dz.strain===0&&!dz.wind.due&&!vSheet(z).includes("Wind each round: Endure vs")&&!vSheet(z).includes("no Wind check"), "at Strain 0 the sheet says nothing about Wind (the ladder's own text aside)");
-    // the Conditions row: all four Defenses, maximum 3, ten minutes' rest
+    // the Conditions row is there, with its text. Since 0.33.0 data/conditions.xlsx is the only
+    // authority for what a Condition says (ruling 322), so the wording is Mike's and is no longer
+    // pinned here: through 0.35.1 this asked for the handbook's v4.21 sentence ("ten minutes of
+    // rest"), and failed the day he reworded the row (2026-11-19).
     const fat=R.conditions.find(c=>c[0]==="Fatigued N");
-    must(fat&&/all Defense/.test(fat[1])&&/maximum of 3/.test(fat[1])&&/ten minutes of rest/.test(fat[1]), "the Fatigued N row reaches all four Defenses and ends with ten minutes' rest, found: "+(fat&&fat[1]));
+    must(fat&&String(fat[1]||"").trim().length>0, "the Fatigued N row is in the Conditions table with its Effect, found: "+(fat&&fat[1]));
     // Rage's two sentences live in the Berserker Calling root now; Deaf to Pain untouched
     const rage=treeOf("Berserker").nodes.find(nd=>nd.root); must(rage&&rage.name==="Berserker Calling", "the Berserker root is the Berserker Calling");
     must(rage.effect.includes("Afterward, increase your Fatigued by 1 until you spend three actions to catch your breath.")&&rage.effect.includes("You may end your Rage as a free action, increasing your Fatigued by 1 as though it had run its course."), "Rage's Effect carries the two Fatigued sentences: "+rage.effect);

@@ -2010,7 +2010,7 @@
   ],
   [
    "Bound [X]",
-   "Your implement is in a neutral Bind with X’s. The Bind ends if either of you Moves, Steps, or Recenters, or when either of you attacks."
+   "Your implement is in a neutral Bind with [X]’s. The Bind ends if either of you Moves, Steps, or Recenters, or when either of you attacks. Gain Control to get the upper hand in this contest."
   ],
   [
    "Controlled [X]",
@@ -2022,11 +2022,11 @@
   ],
   [
    "Deafened",
-   "Cannot hear. Immune to Auditory effects."
+   "You cannot hear. You are Immune to Auditory effects. You are Off-Guard."
   ],
   [
    "Dying",
-   "You’re Dying (see Chapter 4: Playing the Game). You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect."
+   "You’re Dying. You may not necessarily be unconscious; you may merely be bleeding out or suffering a similar effect."
   ],
   [
    "Exposed [Zone]",
@@ -2034,11 +2034,11 @@
   ],
   [
    "Fatigued N",
-   "−N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack rolls (rolls with the Attack trait); can Travel but take no other Exploration Mode Activity. Cannot Sustain spells. Ends after ten minutes of rest, unless otherwise specified."
+   "You suffer a -N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack checks (checks with the Attack trait). You can Travel, but you may take no other Exploration Mode Activity. You cannot Sustain spells.\n\nReduce by 1 after every ten minutes of uninterrupted rest, unless otherwise specified."
   ],
   [
    "Frightened N",
-   "-N to all checks and Thresholds; reduce by 1 at the end of each round."
+   "You suffer a -N penalty to all checks.\n\nReduce by 1 at the end of each round."
   ],
   [
    "Grabbed",

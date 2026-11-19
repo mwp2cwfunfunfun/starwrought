@@ -50,7 +50,8 @@ export function bonusType(type) {
  * them standing for the rest. A `source` is a short string naming the circumstance, put on by the
  * code that knows two entries are one thing: `off-guard` on the Off-Guard condition and the first
  * Torso Wound (which is Off-Guard made lasting, so a foe Off-Guard with a Wounded Torso is -2, not
- * -4); `rule:<item>:<target>` on the lines of one Talent's `bonus` rules for one target, so a
+ * -4); `rule:<carrier>` on ALL the lines of one Talent's or one Condition's `bonus` rules (0.36.0;
+ * the carrier and its target through 0.35.1), so a
  * Talent that writes one line per rank gives the higher when two lines happen to apply. Entries
  * with no `source` are independent circumstances and all add (two allies' Support, Frightened and
  * Fatigued, a Parry weapon and a raised shield, ruling 125). `enabled: false` leaves one out;

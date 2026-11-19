@@ -72,7 +72,7 @@ const EXAMPLE = "GIVE: 1 situation, chosen; IF: RESULT(success)";
 export const CHOSEN = "chosen";
 
 /** The scope words of the `bonus` kind, none of which a GIVE may name: it is one Constellation's roll. */
-const SCOPE_WORDS = Object.freeze(["checks", "defenses", "attacks", "initiative", "speed"]);
+const SCOPE_WORDS = Object.freeze(["rolls", "checks", "defenses", "attacks", "initiative", "speed"]);
 
 /** The conditions of a rule as a list, whatever shape `when` was stored in. */
 function whensOf(rule) {

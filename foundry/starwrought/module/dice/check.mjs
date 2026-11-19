@@ -144,7 +144,9 @@ export class SwCheck {
     // ruling 109), so a kept roll can be re-assembled as an Initiative with one typed-stacking pass.
     const extras = [...(cfg.modifiers ?? []), ...dialogExtra]
       .filter(m => Number.isNumeric(m?.value))
-      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null }));
+      // `source` rides along (0.36.0): one Talent or Condition is one circumstance, and a kept
+      // road roll re-counted as an Initiative must know which of its entries were one.
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null, ...(m.source ? { source: String(m.source) } : {}) }));
 
     // PHB v4.21, Answering an Attack: a Reaction is paid "before any roll from the same six you
     // attack with", and its Situation bonus goes onto the Defense it stands on (SW.REACTIONS).
@@ -562,6 +564,13 @@ export class SwCheck {
     };
 
     const applied = [...(Array.isArray(modifiers) ? modifiers : []), ...pairing];
+    // WHAT THE CARD LISTS IS WHAT COUNTED (0.36.0, the review). The die's lines and the pairing's
+    // are one roll, so a line the other's shared source set aside (one Talent's `CHECK: 1` on the
+    // die beside its `ATK: 2; IFT: MARKED` at the pairing) is left off the list, as the total left
+    // it out. `modifiers` stays whole, the die's and then the pairing's: the flags keep it for a
+    // reroll, which hands the two back apart by position.
+    const aside = new Set(pairing.length ? SW.resolveModifiers([...submitted, ...pairing]).suppressed : []);
+    const listed = applied.filter(m => !aside.has(m));
     const result = {
       roll,
       natural,
@@ -572,7 +581,8 @@ export class SwCheck {
       outcome,
       critDenied,
       modifiers: applied,
-      modTotal: applied.length ? applied.reduce((n, m) => n + (Number(m.value) || 0), 0) : (total - (natural ?? 0)),
+      listed,
+      modTotal: listed.length ? listed.reduce((n, m) => n + (Number(m.value) || 0), 0) : (total - (natural ?? 0)),
       config: cfg
     };
 

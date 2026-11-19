@@ -106,8 +106,11 @@ import { closeConditions, conditionSetOf, holdsCondition, heldIds, heldIdsFor } 
 import { conditionCarriers, conditionModifiers, isConditionCarrier, CONDITION_CARRIER_TYPE } from "../foundry/starwrought/module/rules/engine.mjs";
 import { conditionIdsFor, conditionOfRef } from "../foundry/starwrought/module/rules/effect-list.mjs";
 // The build's reading of the Conditions workbook's staged rows (pure Node, no file is touched).
-import { buildConditions, registryRows, listedName, listedRows, listedText, textsOf, pageRows } from "./lib/conditions_build.mjs";
+import { buildConditions, registryRows, listedName, listedRows, listedText, textsOf, pageRows, overlappingLines } from "./lib/conditions_build.mjs";
+// The scopes of the `bonus` kind (0.36.0): what a bare CHECK and the SKILL tag each reach.
+import { SCOPES, scopeReaches } from "../foundry/starwrought/module/rules/kinds/bonus.mjs";
 import { conditionNameFree, conditionNameKey, conditionEffect, conditionFlavor, conditionHasRow, CONDITION_TEXT_X, conditionTakesCreature, hasConditionTextX, fillConditionText } from "../foundry/starwrought/module/config.mjs";
+import { FATIGUED_MAX, FATIGUED_REST_STEP, fatiguedAfterRest } from "../foundry/starwrought/module/config.mjs";
 
 // Foundry's prototype extension, which resolveModifiers uses inside its body (config.mjs says
 // so); plain Node has no such thing, and the stacking section below calls the function directly.
@@ -769,7 +772,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -816,7 +819,8 @@ check("bonus: every accepted form, without a resolver", () => {
   same(bonusRule("[EFFECT CHECK: 3 Situation, armored-fighting]").to, { name: "armored-fighting", slug: "armored-fighting", type: null }, "the slug form of a target");
   same(bonusRule("[EFFECT CHECK: 3 Situation, Armored Fighting]").to.slug, "armored-fighting", "a two-word name slugs the same");
   same(bonusRule("[EFFECT DEF: 1 situation]").to, { name: "Defenses", slug: "defenses", type: "scope" }, "DEF with no descriptor is every Defense");
-  same(bonusRule("[EFFECT check: 1 situation]").to, { name: "Checks", slug: "checks", type: "scope" }, "CHECK with none is every check, the tag case blind");
+  same(bonusRule("[EFFECT check: 1 situation]").to, { name: "every roll and Threshold", slug: "rolls", type: "scope" }, "CHECK with none is every roll and Threshold (0.36.0), the tag case blind");
+  same(bonusRule("[EFFECT skill: 1 situation]").to, { name: "Skill checks", slug: "checks", type: "scope" }, "SKILL is the scope a bare CHECK was through 0.35.1");
   same(bonusRule("[EFFECT ATK: 1 situation]").to.slug, "attacks", "ATK");
   same(bonusRule("[EFFECT INIT: 1 situation]").to.slug, "initiative", "INIT");
   same(bonusRule("[EFFECT DEF: 1 situation, guard]").to, { name: "Guard", slug: "guard", type: "constellation" }, "DEF with a Defense names it, no resolver needed");
@@ -896,7 +900,7 @@ check("bonus: the refusals, each with a message the designer can act on", () => 
   must(/CHECK is written/.test(bonusError("[EFFECT CHECK:]")), "an empty line prints the shape");
   must(/CHECK takes one descriptor, a Constellation or a Maneuver, not 2/.test(bonusError("[EFFECT CHECK: 1 condition, aid, extra]")), "a second descriptor (the 0.13.0 fourth argument)");
   must(/DEF takes one descriptor, a Defense, not 2/.test(bonusError("[EFFECT DEF: 1 condition, guard, evade]")), "two Defenses");
-  must(/"checks" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every check/.test(bonusError("[EFFECT CHECK: 1 condition, checks]")), "a scope word as a descriptor");
+  must(/"checks" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every roll and Threshold/.test(bonusError("[EFFECT CHECK: 1 condition, checks]")), "a scope word as a descriptor");
   must(/a signed whole number first, not "one condition"/.test(bonusError("[EFFECT CHECK: one condition, aid]")), "a non-number");
   must(/the value and its type, then a comma before any descriptor/.test(bonusError("[EFFECT CHECK: 1 condition aid]")), "no comma before the descriptor");
   must(bonusError("bonus: +1 Condition to Aid if Human is Expert") === LEGACY_REFUSAL, "the 0.10.0 prose form is refused as the retired `bonus:` line is");
@@ -920,7 +924,7 @@ check("bonus: the summary", () => {
   must(summarize(bonusRule("[EFFECT CHECK: 1 condition, aid; IF: RANK(Human = expert)]", { resolve })) === "+1 Condition bonus to Aid, while Human is Expert", "the full form");
   must(summarize(bonusRule("[EFFECT CHECK: -2 condition, Stealth]")) === "-2 Condition penalty to Stealth", "a penalty, no components");
   must(summarize(bonusRule("[EFFECT DEF: 3 gear, guard]", { resolve })) === "+3 Gear bonus to Guard", "a bare value prints signed");
-  must(summarize(bonusRule("[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]")) === "+1 Situation bonus to Checks, while the roll's rank is Untrained", "the roll's rank");
+  must(summarize(bonusRule("[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]")) === "+1 Situation bonus to every roll and Threshold, while the roll's rank is Untrained", "the roll's rank");
   must(summarize(bonusRule("[EFFECT DEF: 1 situation; FOR: allies 15; LIMIT: round]")) === "+1 Situation bonus to Defenses, for allies within 15 ft, the first time each round", "FOR and LIMIT: round");
   must(summarize(bonusRule("[EFFECT DEF: 1 situation, guard; IFT: MELEE; IF: RANK(Origin >= Expert)]")) === "+1 Situation bonus to Guard, while Origin is at least Expert, against a melee Blow", ">= and a reach");
 });
@@ -956,32 +960,32 @@ const searchItem = { type: "action", name: "Search ❶", id: "srch0001" };
 check("ruleModifiers: a Constellation target applies on its slug and nowhere else", () => {
   const actor = rulesActor([sneaky, humanity]);
   const onStealth = ruleModifiers(actor, { kind: "check", slug: "stealth", item: null });
-  same(onStealth.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "applied on Stealth, the label the carrier's plain name");
+  same(onStealth.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶" }], "applied on Stealth, the label the carrier's plain name");
   const onAthletics = ruleModifiers(actor, { kind: "check", slug: "athletics", item: null });
   must(!onAthletics.applied.some(m => m.label === "Sneaky"), "absent on Athletics");
   const asInitiative = ruleModifiers(actor, { kind: "initiative", slug: "stealth", item: null });
-  same(asInitiative.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "an Initiative rolled with Stealth is a Stealth check (ruling 111)");
+  same(asInitiative.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶" }], "an Initiative rolled with Stealth is a Stealth check (ruling 111)");
 });
 
 check("ruleModifiers: the rank condition is equality, read from the actor's proficiency", () => {
   const roll = { kind: "check", slug: "diplomacy", item: aidItem };
   same(ruleModifiers(rulesActor([humanity], { human: "untrained" }), roll).applied, [], "Untrained: none of the four");
-  same(ruleModifiers(rulesActor([humanity], { human: "trained" }), roll).applied, [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity:aid" }], "Trained: the +1 alone");
-  same(ruleModifiers(rulesActor([humanity], { human: "expert" }), roll).applied, [{ label: "Humanity", value: 2, type: "condition", source: "rule:Humanity:aid" }], "Expert: the +2 alone");
-  same(ruleModifiers(rulesActor([humanity], { human: "legendary" }), roll).applied, [{ label: "Humanity", value: 4, type: "condition", source: "rule:Humanity:aid" }], "Legendary: the +4 alone");
+  same(ruleModifiers(rulesActor([humanity], { human: "trained" }), roll).applied, [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity" }], "Trained: the +1 alone");
+  same(ruleModifiers(rulesActor([humanity], { human: "expert" }), roll).applied, [{ label: "Humanity", value: 2, type: "condition", source: "rule:Humanity" }], "Expert: the +2 alone");
+  same(ruleModifiers(rulesActor([humanity], { human: "legendary" }), roll).applied, [{ label: "Humanity", value: 4, type: "condition", source: "rule:Humanity" }], "Legendary: the +4 alone");
   same(ruleModifiers(rulesActor([humanity], {}), roll).applied, [], "a Constellation the actor has no entry for reads as Untrained");
 });
 
 check("ruleModifiers: a conditioned rule never fires for an actor without proficiency; an unconditioned one does", () => {
   const actor = rulesActor([humanity, sneaky], null);
   must(!("proficiency" in actor.system), "the fake adversary has no proficiency");
-  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: aidItem }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "only the unconditioned rule");
+  same(ruleModifiers(actor, { kind: "check", slug: "stealth", item: aidItem }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶" }], "only the unconditioned rule");
 });
 
 check("ruleModifiers: a Maneuver target applies when the roll carries that Maneuver, glyphs ignored", () => {
   const actor = rulesActor([humanity], { human: "trained" });
   const withAid = ruleModifiers(actor, { kind: "check", slug: "diplomacy", item: aidItem });
-  same(withAid.applied, [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity:aid" }], "applied from the Aid Item");
+  same(withAid.applied, [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity" }], "applied from the Aid Item");
   same(withAid.offered, [], "and not offered as well");
   const withSearch = ruleModifiers(actor, { kind: "check", slug: "awareness", item: searchItem });
   same(withSearch.applied, [], "a Search is not an Aid");
@@ -997,7 +1001,7 @@ check("ruleModifiers: a Maneuver target is offered unticked on a check made with
   must(first.offered.length === 1, `one offer, got ${first.offered.length}`);
   const [offer] = first.offered;
   same(offer, {
-    label: "Humanity: Aid", value: 2, type: "condition", source: "rule:Humanity:aid", offer: true,
+    label: "Humanity: Aid", value: 2, type: "condition", source: "rule:Humanity", offer: true,
     key: "bonus-Humanity-2",
     hint: "Humanity: this bonus applies to checks to Aid. Tick it if this roll is one.",
     ticked: false
@@ -1021,7 +1025,7 @@ check("ruleModifiers: never offered on an attack, a Defense or an Initiative", (
 
 check("ruleModifiers: a Defense is a Constellation target, so the Defense pass can fold it in", () => {
   const roll = { kind: "defense", slug: "guard", item: null };
-  same(ruleModifiers(rulesActor([braced], { human: "expert" }), roll).applied, [{ label: "Braced", value: 1, type: "gear", source: "rule:Braced:guard" }], "Guard at Expert");
+  same(ruleModifiers(rulesActor([braced], { human: "expert" }), roll).applied, [{ label: "Braced", value: 1, type: "gear", source: "rule:Braced" }], "Guard at Expert");
   same(ruleModifiers(rulesActor([braced], { human: "trained" }), roll).applied, [], "not at Trained");
   same(ruleModifiers(rulesActor([braced], { human: "expert" }), { kind: "defense", slug: "evade", item: null }).applied, [], "not on Evade");
 });
@@ -1030,7 +1034,7 @@ check("ruleModifiers: no rules, no kinds with the hook, or nothing at all is thr
   same(ruleModifiers(rulesActor([]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [], marks: [] }, "no rules");
   same(ruleModifiers(rulesActor([talentA]), { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [], marks: [] }, "a kind without the hook is skipped");
   same(ruleModifiers(null, { kind: "check", slug: "stealth", item: null }), { applied: [], offered: [], marks: [] }, "null actor");
-  same(ruleModifiers({ items: [sneaky] }, { kind: "check", slug: "stealth", item: null }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "an actor with no prepared index is collected on the spot");
+  same(ruleModifiers({ items: [sneaky] }, { kind: "check", slug: "stealth", item: null }).applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶" }], "an actor with no prepared index is collected on the spot");
 });
 
 check("ruleModifiers: a hook that throws contributes nothing and does not throw", () => {
@@ -1050,7 +1054,7 @@ check("ruleModifiers: a hook that throws contributes nothing and does not throw"
   } finally {
     console.error = original;
   }
-  same(result.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶:stealth" }], "the other kind's modifiers still arrive");
+  same(result.applied, [{ label: "Sneaky", value: 2, type: "situation", source: "rule:Sneaky ❶" }], "the other kind's modifiers still arrive");
   must(errors.length === 1 && /the "explosive" kind's modifiers hook failed/.test(String(errors[0][0])), `the failure is reported once: ${JSON.stringify(errors.map(e => String(e[0])))}`);
 });
 
@@ -1275,10 +1279,10 @@ check("resolveModifiers: entries sharing a source are one circumstance, the stro
   const { total, applied, suppressed } = resolveModifiers([
     { label: "Off-Guard", value: -2, type: "situation", source: "off-guard" },
     { label: "Wounded Torso", value: -2, type: "situation", source: "off-guard" },
-    { label: "line +1", value: 1, type: "condition", source: "rule:Humanity:aid" },
-    { label: "line +3", value: 3, type: "condition", source: "rule:Humanity:aid" },
-    { label: "line −1", value: -1, type: "condition", source: "rule:Humanity:aid" },
-    { label: "another Talent", value: 1, type: "condition", source: "rule:Other:aid" }
+    { label: "line +1", value: 1, type: "condition", source: "rule:Humanity" },
+    { label: "line +3", value: 3, type: "condition", source: "rule:Humanity" },
+    { label: "line −1", value: -1, type: "condition", source: "rule:Humanity" },
+    { label: "another Talent", value: 1, type: "condition", source: "rule:Other" }
   ]);
   must(total === 1, `−2 +3 −1 +1 is 1, got ${total}`);
   same(applied.map(m => m.label).sort(), ["Off-Guard", "another Talent", "line +3", "line −1"], "what counts");
@@ -1323,12 +1327,12 @@ check("bonus: `IF(Origin=<Rank>)` reads the shared Origin rank, and a group is r
   same(ruleModifiers(rulesActor([atLeast], { origin: "trained" }), guard).applied, [], "and not below it");
 });
 
-check("bonus hook: one Talent's lines on one target share a source, two Talents do not", () => {
+check("bonus hook: one Talent's lines share a source, two Talents do not", () => {
   // Two blocks on one line, as a cell may write them.
   const twice = talentWith("Twice", "[EFFECT CHECK: 1 condition, aid][EFFECT CHECK: 3 condition, aid]");
   const other = talentWith("Other", "[EFFECT CHECK: 1 condition, aid]");
   const { applied } = ruleModifiers(rulesActor([twice, other]), { kind: "check", slug: "diplomacy", item: aidItem });
-  same(applied.map(m => m.source), ["rule:Twice:aid", "rule:Twice:aid", "rule:Other:aid"], "the sources");
+  same(applied.map(m => m.source), ["rule:Twice", "rule:Twice", "rule:Other"], "the sources");
   must(resolveModifiers(applied).total === 4, "+3 (the higher of Twice's) +1 (Other's) is 4");
 });
 
@@ -1339,7 +1343,7 @@ check("bonus hook: a 0.10.0 rule stored on an owned copy (when as one object) st
 
 /* The operators in play (0.13.0): scope targets, the roll's rank, the scene, the Threat, the marks. */
 
-const jack = talentWith("Jack of Trades", "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]");
+const jack = talentWith("Jack of Trades", "[EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]");
 const closeRanks = talentWith("Close Ranks", "[EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]", { resolve });
 const torchbearer = talentWith("Torchbearer Human", "[EFFECT DEF: 1 situation; FOR: allies 15; LIMIT: round]");
 const allDefenses = talentWith("Stout", "[EFFECT DEF: 1 gear]");
@@ -2223,11 +2227,11 @@ check("0.31.0: a bonus waits on an Effect: the sheet reads the roller's, the rol
 
   // The pairing is resolved with the die's own modifiers, as the one roll they are (the review;
   // ruling 125: one circumstance is counted once). `SwCheck.resolveAgainst` adds the difference.
-  const die = [{ label: "Might", value: 2 }, { label: "Opportunist", value: 1, type: "situation", source: "rule:Opportunist:attacks" }];
-  const pairing = [{ label: "Opportunist", value: 2, type: "situation", source: "rule:Opportunist:attacks" }];
+  const die = [{ label: "Might", value: 2 }, { label: "Opportunist", value: 1, type: "situation", source: "rule:Opportunist" }];
+  const pairing = [{ label: "Opportunist", value: 2, type: "situation", source: "rule:Opportunist" }];
   same([resolveModifiers(die).total, resolveModifiers([...die, ...pairing]).total - resolveModifiers(die).total, resolveModifiers(pairing).total], [3, 1, 2],
     "a Talent's +1 on the die and its +2 against a Prone defender are +2 in all, so the pairing adds 1 and not 2");
-  const stranger = [{ label: "Oathbound", value: 1, type: "condition", source: "rule:Oathbound:attacks" }];
+  const stranger = [{ label: "Oathbound", value: 1, type: "condition", source: "rule:Oathbound" }];
   same(resolveModifiers([...die, ...stranger]).total - resolveModifiers(die).total, 1, "another Talent's line at the pairing adds its whole worth");
 });
 
@@ -2468,10 +2472,12 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
-  must(err("[EFFECT IMMUNE]").message.startsWith("EFFECT wraps an effect line"), "a tag without its colon is no tag");
+  // A tag with its colon lost is told the colon (0.36.0, the review), not the list of tags.
+  must(err("[EFFECT IMMUNE]").message === "IMMUNE is an effect tag and takes a colon: write `[EFFECT IMMUNE: ...]`", "a tag without its colon is told the colon");
+  must(err("[EFFECT SKILL 1 situation]").message === "SKILL is an effect tag and takes a colon: write `[EFFECT SKILL: 1 situation]`", "and with what followed it");
   // CHECK is a block of its own since 0.34.0, as SPEED has been since 0.16.0: without its colon
   // inside EFFECT it is told its block.
   must(err("[EFFECT CHECK]").message.startsWith("CHECK is a block of its own, not an effect"), "CHECK without its colon is told its own block");
@@ -2563,7 +2569,10 @@ check("0.16.0: the refusals of the two layers", () => {
   // kinds' own "is a feature" messages are never printed from a cell; the grammar says to bracket a
   // feature keyword typed as a line, and gives the aura's old kind line the retirement message.
   must(/^TRAIT is a feature and is written in brackets/.test(err("trait: Human")), "a feature keyword as a line");
-  must(/is not a feature keyword/.test(err("[MARK enemies]")), "an effect kind as a block");
+  // An effect tag in a block of its own (0.36.0, the review): told the EFFECT block and the colon.
+  must(err("[MARK enemies]") === "\"MARK\" is an effect tag, and an effect goes in an EFFECT block with a colon after the tag: write `[EFFECT MARK: enemies]`", "an effect kind as a block");
+  must(err("[SKILL 1 situation]") === "\"SKILL\" is an effect tag, and an effect goes in an EFFECT block with a colon after the tag: write `[EFFECT SKILL: 1 situation]`", "SKILL as a block");
+  must(/is not a feature keyword/.test(err("[NONSENSE 1]")), "a word that is no tag and no keyword is still no feature keyword");
   must(err("AURA: 15 allies") === LEGACY_REFUSAL, "an aura as a tag");
   must(/is not a Maneuver/.test(err("[MANEUVER Fly]")), "a Maneuver that is no row");
   must(/is not a Size/.test(err("[SIZE Vast]")), "a bad Size");
@@ -2936,7 +2945,7 @@ check("0.21.0: the Effects tab switches exactly the kinds the effect tags name",
 });
 
 check("0.21.0: a bonus to a Maneuver reaches a check rolled with a Defense from that Maneuver's Item, and nothing else changes there (ruling 222)", () => {
-  const plus = [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity:aid" }];
+  const plus = [{ label: "Humanity", value: 1, type: "condition", source: "rule:Humanity" }];
   const actor = rulesActor([humanity], { human: "trained" });
   const withAwareness = ruleModifiers(actor, { kind: "check", slug: "awareness", item: aidItem, rank: "trained", momentOnly: true });
   same([withAwareness.applied, withAwareness.offered], [plus, []], "Aid made with Awareness: Humanity's +1, applied");
@@ -2945,8 +2954,8 @@ check("0.21.0: a bonus to a Maneuver reaches a check rolled with a Defense from 
   same([plain.applied, plain.offered], [[], []], "a Defense rolled as a check with no Item: nothing applied and nothing offered");
   same(ruleModifiers(actor, { kind: "check", slug: "awareness", item: searchItem, rank: "trained", momentOnly: true }).applied, [], "another Maneuver's Item");
   for (const kind of ["defense", "initiative"]) same(ruleModifiers(actor, { kind, slug: "awareness", item: aidItem, rank: "trained", momentOnly: true }).applied, [], `not on ${kind === "initiative" ? "an" : "a"} ${kind}`);
-  const everyCheck = talentWith("Jack of All Trades", "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]");
-  same(ruleModifiers(rulesActor([everyCheck]), { kind: "check", slug: "awareness", item: aidItem, rank: "untrained", momentOnly: true }).applied, [], "a bonus to every check stays out of the Defense branch, as before");
+  const everyCheck = talentWith("Jack of All Trades", "[EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]");
+  same(ruleModifiers(rulesActor([everyCheck]), { kind: "check", slug: "awareness", item: aidItem, rank: "untrained", momentOnly: true }).applied, [], "a bonus to Skill checks stays out of the Defense branch, as before");
   const toGuard = talentWith("Braced for it", "[EFFECT CHECK: 2 condition, guard]");
   same(ruleModifiers(rulesActor([toGuard]), { kind: "check", slug: "guard", item: aidItem, rank: "trained", momentOnly: true }).applied, [], "a bonus to the Defense itself was the sheet's pass's, and is not added again");
   const untyped = talentWith("Helpful", "[EFFECT CHECK: 1 condition, aid]", {});
@@ -4742,7 +4751,8 @@ const EXPOSED_TEXT = "The named Zone has no Protection against the next Hit.";
 function seedRows() {
   return [
     { name: "Off-Guard", rules: conditionCell("Off-Guard", "", "[EFFECT DEF: -2 situation, evade]\n[EFFECT DEF: -2 situation, guard]") },
-    { name: "Frightened N", takes: "N", rules: conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]") },
+    // One line since 0.36.0: a bare CHECK reaches every roll and Threshold.
+    { name: "Frightened N", takes: "N", rules: conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition]") },
     { name: "Fatigued N", takes: "N", rules: conditionCell("Fatigued", "n", "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]") },
     { name: "Prone", includes: ["Off-Guard"], rules: conditionCell("Prone", "", PRONE_CELL) },
     { name: "Supine", includes: ["Off-Guard"], effect: "On your back.", description: "The sky is all you see.", rules: conditionCell("Supine", "", PRONE_CELL) },
@@ -4883,10 +4893,10 @@ check("conditions: a row the registry cannot take is refused in words, and nothi
 });
 
 check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` for its own value (ruling 326)", () => {
-  same(CONDITION_ROW_TAGS, ["check", "atk", "def", "init", "immune"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone)");
+  same(CONDITION_ROW_TAGS, ["check", "skill", "atk", "def", "init", "immune"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone; SKILL since 0.36.0)");
   const frightened = conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]\n[EFFECT INIT: N situation]");
-  same(frightened.map(r => [r.kind, r.value, r.scale, r.type, r.to.slug]), [["bonus", -1, "N", "condition", "defenses"], ["bonus", -1, "N", "condition", "checks"], ["bonus", -1, "N", "condition", "attacks"], ["bonus", 1, "N", "situation", "initiative"]], "N is stored as a sign and a scale");
-  same(frightened.map(summarize), ["-N Condition penalty to Defenses", "-N Condition penalty to Checks", "-N Condition penalty to Attacks", "+N Situation bonus to Initiative"], "and said as N");
+  same(frightened.map(r => [r.kind, r.value, r.scale, r.type, r.to.slug]), [["bonus", -1, "N", "condition", "defenses"], ["bonus", -1, "N", "condition", "rolls"], ["bonus", -1, "N", "condition", "attacks"], ["bonus", 1, "N", "situation", "initiative"]], "N is stored as a sign and a scale");
+  same(frightened.map(summarize), ["-N Condition penalty to Defenses", "-N Condition penalty to every roll and Threshold", "-N Condition penalty to Attacks", "+N Situation bonus to Initiative"], "and said as N");
   const prone = conditionCell("Prone", "", PRONE_CELL);
   same(prone.map(r => [r.value, r.scale, r.type, r.to.slug]), [[-2, undefined, "situation", "attacks"], [2, undefined, "situation", "evade"]], "a whole number carries no scale");
   must(needsMoment(prone[1]) && !needsMoment(prone[0]), "a line that asks about the attack is read where the attack is known");
@@ -4906,7 +4916,7 @@ check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` f
     const message = conditionRowError(cell);
     must(/on a Condition's row does not take/.test(message) && message.includes(what), `${what} is refused on a Condition's row: ${message}`);
   }
-  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT, IMMUNE$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
+  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
   // IMMUNE on a Condition's row (0.35.0): a trait, alone.
   const immune = conditionCell("Blinded", "", "[EFFECT IMMUNE: TRAIT(Visual)]");
   same(immune, [{ effect: "trait", trait: "visual", name: "Visual", kind: "prevent", line: 1, text: "[EFFECT IMMUNE: TRAIT(Visual)]" }], "the stored rule: the trait's key and its name as written");
@@ -5027,7 +5037,7 @@ check("conditions: a Condition's lines act for whoever has it, through one carri
     // One Condition is one circumstance, however the creature came to have it.
     const piled = creature({ statuses: ["prone", "offGuard", "grabbed"], torso: { wounds: 1, critical: true } });
     same(defenseLines(piled, "guard", { staticOnly: true }), [["Off-Guard", -2, "situation"]], "Off-Guard five ways is -2 once");
-    same(ruleModifiers(piled, { kind: "defense", slug: "evade", item: null, staticOnly: true }).applied[0].source, "rule:condition:offGuard:evade", "one source");
+    same(ruleModifiers(piled, { kind: "defense", slug: "evade", item: null, staticOnly: true }).applied[0].source, "rule:condition:offGuard", "one source");
     same(defenseLines(creature({ torso: { wounds: 1 } }), "evade", { staticOnly: true }), [["Off-Guard (Torso)", -2, "situation"]], "a Torso Wound alone, named for it");
     // Today's numbers (0.32.1), from the sheet: Fatigued N is the four Defenses and attacks, never a check.
     const tired = creature({ statuses: ["fatigued"], values: { fatigued: 3 } });
@@ -5086,7 +5096,7 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
   const row = (name, extra = {}) => ({ name, takes: "", description: "", effect: `${name}.`, includes: [], automation: "N/A", system: false, listed: true, icon: "", notes: "", row: 2, workbook: "conditions.xlsx", ...extra });
   const cells = {
     "Off-Guard": { automation: "[EFFECT DEF: -2 situation, evade]\n[EFFECT DEF: -2 situation, guard]" },
-    Frightened: { takes: "N", automation: "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]" },
+    Frightened: { takes: "N", automation: "[EFFECT CHECK: -N condition]" },
     Fatigued: { takes: "N", automation: "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]" },
     Prone: { includes: ["Off-Guard"], automation: PRONE_CELL, effect: "Off-Guard.\nStand to clear.", description: "Face in the dirt." },
     "Wrong-Footed": { takes: "X", includes: ["Off-Guard against X"] },
@@ -5100,11 +5110,11 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
   };
   try {
     const built = buildConditions({ staged: sheet() });
-    same([built.errors, built.warnings, built.created, built.rules, built.cells], [[], [], ["Supine"], 11, 5], `the seed sheet reads: ${built.errors.join(" | ")}`);
+    same([built.errors, built.warnings, built.created, built.rules, built.cells], [[], [], ["Supine"], 9, 5], `the seed sheet reads: ${built.errors.join(" | ")}`);
     same(built.json.conditions.length, 26, "every row is written");
     const byName = Object.fromEntries(built.json.conditions.map(c => [c.name, c]));
     same([byName.Supine.id, byName.Supine.builtIn, byName.Supine.statusId, byName.Blinded.id, byName.Blinded.builtIn, "statusId" in byName.Blinded, byName.Exposed.id, byName.Frightened.rules.length, byName.Grabbed.rules, byName.Prone.includes],
-      ["supine", false, newStatusId("supine"), "blinded", true, false, "exposed", 3, [], [{ name: "Off-Guard", against: false }]], "what each record carries: a new Condition's status id is fixed by the build");
+      ["supine", false, newStatusId("supine"), "blinded", true, false, "exposed", 1, [], [{ name: "Off-Guard", against: false }]], "what each record carries: a new Condition's status id is fixed by the build");
     // The roster's block: the Listed rows alone, named as the tables print them, paragraphs kept apart.
     const block = Object.fromEntries(built.block);
     same([built.block.length, "Frightened N" in block, "Exposed [Zone]" in block, "Wrong-Footed [X]" in block, "Wounded [Zone]" in block, "Dead" in block, "Concealed" in block, block.Prone, block.Supine],
@@ -5158,11 +5168,21 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     // The sheet as Mike saved it: Blinded's line reads, and is one more rule in one more cell.
     const withImmune = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Blinded") ? { ...r, includes: ["Off-Guard"], automation: "[EFFECT IMMUNE: TRAIT(Visual)]" } : r)) });
     same([withImmune.errors, withImmune.warnings, withImmune.rules, withImmune.cells, withImmune.json.conditions.find(c => c.name === "Blinded").rules.map(r => [r.kind, r.effect, r.trait, r.name])],
-      [[], [], 12, 6, [["prevent", "trait", "visual", "Visual"]]], "Blinded's IMMUNE line builds");
-    // The author's traps are warnings, and the sheet still builds.
+      [[], [], 10, 6, [["prevent", "trait", "visual", "Visual"]]], "Blinded's IMMUNE line builds");
+    // Two lines of one row that reach one roll (0.36.0): one Condition counts once, so the weaker
+    // does nothing there. Said in one warning for the row, and the sheet still builds.
     const trapped = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT CHECK: -N condition]\n[EFFECT INIT: -N condition]\n[EFFECT DEF: -N condition]\n[EFFECT DEF: -N condition, evade]" } : r)) });
-    same([trapped.errors, trapped.warnings.length], [[], 2], "two lines of one row that both reach one roll");
-    must(/a CHECK line and an INIT line/.test(trapped.warnings[0]) && /a DEF line for every Defense and a DEF line for one of them/.test(trapped.warnings[1]), "each said");
+    same([trapped.errors, trapped.warnings.length], [[], 1], "lines of one row that meet on a roll: one warning for the row");
+    must(/Frightened: lines 1 and 2 both reach Initiative; lines 1 and 3 both reach Defenses; lines 1 and 4 both reach Evade; lines 2 and 3 both reach Initiative rolled with Awareness; lines 3 and 4 both reach Evade\. A Condition counts once on a roll, so only the stronger of two such lines applies there; a bare CHECK reaches every roll and Threshold, so a line of the same size beside it can go$/.test(trapped.warnings[0]), `each pair said: ${trapped.warnings[0]}`);
+    // Two narrow lines that meet in one place: said, and NOT told that either can go (a SKILL line
+    // does not reach the default Initiative, so the INIT line beside it is not covered).
+    const narrowPair = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT SKILL: -N condition]\n[EFFECT INIT: -N condition]" } : r)) });
+    same([narrowPair.errors, narrowPair.warnings.length], [[], 1], "SKILL beside INIT: one warning");
+    must(/Frightened: lines 1 and 2 both reach Initiative rolled with a Skill\. A Condition counts once on a roll, so only the stronger of two such lines applies there$/.test(narrowPair.warnings[0]), `no line is called spare: ${narrowPair.warnings[0]}`);
+    // The sheet as it stood through 0.35.1, rebuilt unchanged: said, and it builds.
+    const threeLines = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]" } : r)) });
+    same([threeLines.errors, threeLines.warnings.length, threeLines.rules], [[], 1, 11], "Frightened's three lines still build");
+    must(/lines 1 and 2 both reach Defenses; lines 2 and 3 both reach attacks/.test(threeLines.warnings[0]), `and the row is told its narrower lines can go: ${threeLines.warnings[0]}`);
     // `[X]` (0.35.1): the creature a Condition is about. A row that takes one and still writes it
     // as a bare X is told to write [X]; a row that takes none and writes [X] is told it prints as
     // typed. Both are warnings, and the sheet still builds.
@@ -5533,6 +5553,278 @@ check("immunity: a Condition held against one creature alone is passed over for 
     // Held outright, the other party does not matter.
     must(ruleTraitImmunity(creature({ statuses: ["blinded"] }), ["Visual"], { other: { uuid: "Actor.wren" } }) !== null, "a Condition held against everyone answers whoever asks");
   }, [...immuneRows(), { name: "Dazzled [X]", takes: "X", includes: ["Blinded against X"] }]);
+});
+
+/* -------------------------------------------- */
+/*  Every roll, and the narrow word (0.36.0)    */
+/* -------------------------------------------- */
+
+console.log("\nEvery roll, and the narrow word (0.36.0)");
+
+/** What counts on a roll: the hook's answer resolved, as every consumer resolves it. */
+const counted = (actor, context) => resolveModifiers(ruleModifiers(actor, context).applied).total;
+/** The asks a roll or a Threshold makes, by name. `stored` is the Defense pass's, `moment` the roll's on top of it. */
+const ASKS = {
+  "the sheet's Threshold": { kind: "defense", slug: "guard", item: null, staticOnly: true },
+  "a Defense roll, on top of the Threshold": { kind: "defense", slug: "guard", item: null, momentOnly: true },
+  "a Threshold read, on top of the Threshold": { kind: "defense", slug: "guard", item: null, momentOnly: true, read: true },
+  "a Defense rolled as a check, on top of the Threshold": { kind: "check", slug: "endure", item: null, rank: "trained", momentOnly: true },
+  "Initiative with Awareness, on top of the Threshold": { kind: "initiative", slug: "awareness", item: null, rank: "trained", momentOnly: true },
+  "Initiative with Stealth": { kind: "initiative", slug: "stealth", item: null, rank: "trained" },
+  "a Skill check": { kind: "check", slug: "stealth", item: null, rank: "trained" },
+  "a Maneuver's check": { kind: "check", slug: "diplomacy", item: aidItem, rank: "trained" },
+  "an attack": { kind: "attack", slug: "melee", item: null, rank: "trained" },
+  "a Move": { kind: "move", slug: "", item: null }
+};
+const reachOf = actor => Object.fromEntries(Object.entries(ASKS).map(([name, ask]) => [name, counted(actor, ask)]));
+
+check("0.36.0: a bare CHECK is every roll and Threshold, SKILL is the narrow scope, and each slip is told what to write (rulings 366 and 368)", () => {
+  same([SCOPES.rolls.kinds, SCOPES.checks.kinds, SCOPES.checks.name, SCOPES.rolls.name], [["check", "initiative", "attack", "defense"], ["check", "initiative"], "Skill checks", "every roll and Threshold"], "the two scopes");
+  same([scopeReaches("rolls", "defense"), scopeReaches("rolls", "attack"), scopeReaches("rolls", "move"), scopeReaches("checks", "attack"), scopeReaches("checks", "initiative"), scopeReaches("nothing", "check")], [true, true, false, false, true, false], "which rolls a scope reaches");
+  same([EFFECT_TAGS.check, EFFECT_TAGS.skill, Object.keys(EFFECT_TAGS).find(t => EFFECT_TAGS[t] === "bonus")], ["bonus", "bonus", "check"], "SKILL is a tag of the bonus kind, and CHECK is still its first");
+  same([bonusRule("[EFFECT CHECK: 1 situation]").to.slug, bonusRule("[EFFECT SKILL: 1 situation]").to.slug, bonusRule("[EFFECT SKILL: -2 condition; IF: RANK(roll = untrained)]").value], ["rolls", "checks", -2], "each tag's scope");
+  same([summarize(bonusRule("[EFFECT CHECK: -2 condition]")), summarize(bonusRule("[EFFECT SKILL: 1 situation]"))], ["-2 Condition penalty to every roll and Threshold", "+1 Situation bonus to Skill checks"], "As read");
+  // A rule stored before 0.36.0 says what it does, whatever name it was stored with.
+  same(summarize({ kind: "bonus", value: 1, type: "situation", to: { name: "Checks", slug: "checks", type: "scope" } }), "+1 Situation bonus to Skill checks", "a stored rule is named as the scope is known now");
+  must(/^SKILL takes no descriptor: to name a Constellation or a Maneuver write `CHECK: 1 situation, stealth`$/.test(bonusError("[EFFECT SKILL: 1 situation, stealth]", { resolve })), "SKILL with a target");
+  for (const word of ["skill", "Skills", "skill checks"]) {
+    must(/^for checks that are no attack and no Defense write the tag: `SKILL: 1 situation`$/.test(bonusError(`[EFFECT CHECK: 1 situation, ${word}]`, { resolve })), `"${word}" after CHECK is told the tag`);
+  }
+  for (const word of ["rolls", "checks", "attacks", "defenses", "initiative"]) {
+    must(/is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every roll and Threshold \(SKILL, ATK, DEF and INIT are the narrower tags\)$/.test(bonusError(`[EFFECT CHECK: 1 situation, ${word}]`, { resolve })), `"${word}" as a target`);
+  }
+  must(/"rolls" is a scope word; GIVE names one Constellation/.test(bonusError("[EFFECT GIVE: 1 situation, rolls; IF: RESULT(success)]", { resolve, itemType: "action" })), "GIVE refuses the new scope word");
+  must(/"rolls" is a scope word, and USE never means every check/.test(bonusError("[EFFECT USE: Presence, Origin, rolls]", { resolve })), "and USE");
+  // On a Condition's row, with the Condition's own value.
+  same(conditionCell("Dazed", "n", "[EFFECT SKILL: -N condition]").map(r => [r.to.slug, r.value, r.scale]), [["checks", -1, "N"]], "a Condition's row reads SKILL");
+  must(/SKILL on a Condition's row does not take IF: RANK/.test(conditionRowError("[EFFECT SKILL: -1 condition; IF: RANK(Origin >= trained)]")), "and refuses on it what CHECK refuses");
+});
+
+check("0.36.0: an every-roll line counts once on each kind of roll and Threshold, and a SKILL line where a bare CHECK did before (rulings 366 and 369)", () => {
+  const lucky = rulesActor([talentWith("Lucky", "[EFFECT CHECK: 1 situation]")]);
+  same(reachOf(lucky), {
+    "the sheet's Threshold": 1, "a Defense roll, on top of the Threshold": 0, "a Threshold read, on top of the Threshold": 0,
+    "a Defense rolled as a check, on top of the Threshold": 0, "Initiative with Awareness, on top of the Threshold": 0,
+    "Initiative with Stealth": 1, "a Skill check": 1, "a Maneuver's check": 1, "an attack": 1, "a Move": 0
+  }, "every roll: once in the Threshold, and never again by a roll that rolls that Threshold");
+  const narrow = { "the sheet's Threshold": 0, "a Defense roll, on top of the Threshold": 0, "a Threshold read, on top of the Threshold": 0,
+    "a Defense rolled as a check, on top of the Threshold": 0, "Initiative with Awareness, on top of the Threshold": 0,
+    "Initiative with Stealth": 1, "a Skill check": 1, "a Maneuver's check": 1, "an attack": 0, "a Move": 0 };
+  same(reachOf(rulesActor([talentWith("Handy", "[EFFECT SKILL: 1 situation]")])), narrow, "SKILL: checks and an Initiative rolled with a Constellation, no attack and no Defense");
+  // A rule STORED before 0.36.0 (a bare CHECK as it was read then) is the narrow scope still.
+  const stored = { type: "talent", name: "Old Hand", id: "old1", system: { rules: [{ kind: "bonus", line: 1, text: "[EFFECT CHECK: 1 situation]", value: 1, type: "situation", to: { name: "Checks", slug: "checks", type: "scope" }, when: null, for: null, while: null, against: null, seen: false, limit: null, claim: null, marked: false }] } };
+  same(reachOf(rulesActor([stored])), narrow, "a stored rule keeps the meaning it was read with");
+  // A line that needs the moment is read where the moment is known, once.
+  const fearless = rulesActor([talentWith("Fearless", "[EFFECT CHECK: 1 situation; IFT: TRAIT(Fear)]")]);
+  const fear = { threat: "blow", melee: true, traits: ["fear"] };
+  same([counted(fearless, { ...ASKS["the sheet's Threshold"] }), counted(fearless, { ...ASKS["a Defense roll, on top of the Threshold"], threat: fear }), counted(fearless, { ...ASKS["a Threshold read, on top of the Threshold"], threat: fear }), counted(fearless, { ...ASKS["a Defense roll, on top of the Threshold"] }), counted(fearless, { ...ASKS["a Skill check"] })],
+    [0, 1, 1, 0, 0], "an every-roll line that asks about the attack: not in the sheet's number, once on the Defense that answers it");
+  // Two Talents are two circumstances.
+  same(counted(rulesActor([talentWith("Lucky", "[EFFECT CHECK: 1 situation]"), talentWith("Luckier", "[EFFECT CHECK: 2 situation]")]), ASKS["an attack"]), 3, "two carriers both count");
+});
+
+check("0.36.0: one Talent or Condition counts once on a roll, its strongest bonus and its strongest penalty (ruling 367)", () => {
+  const both = (cell) => rulesActor([talentWith("Twofold", cell)]);
+  const on = (actor, ...names) => names.map(n => counted(actor, ASKS[n]));
+  same(on(both("[EFFECT CHECK: 1 situation]\n[EFFECT DEF: 2 situation]"), "the sheet's Threshold", "a Skill check", "an attack"), [2, 1, 1], "CHECK beside DEF: Defenses take the stronger, the rest the CHECK");
+  same(on(both("[EFFECT CHECK: 2 situation]\n[EFFECT ATK: 1 situation]"), "an attack", "a Skill check"), [2, 2], "CHECK beside ATK");
+  same(on(both("[EFFECT CHECK: 1 situation]\n[EFFECT INIT: 3 situation]"), "Initiative with Stealth", "a Skill check"), [3, 1], "CHECK beside INIT");
+  same(on(both("[EFFECT CHECK: 1 situation]\n[EFFECT SKILL: 2 situation]"), "a Skill check", "an attack"), [2, 1], "CHECK beside SKILL");
+  same(on(both("[EFFECT CHECK: 1 situation]\n[EFFECT CHECK: 3 situation, stealth]"), "a Skill check", "an attack"), [3, 1], "CHECK beside a line to one Constellation");
+  same(on(both("[EFFECT CHECK: -1 condition]\n[EFFECT DEF: 2 situation, guard]"), "the sheet's Threshold", "a Skill check"), [1, -1], "a bonus and a penalty of one carrier both stand");
+  same(on(both("[EFFECT DEF: 1 situation]\n[EFFECT DEF: 2 situation, guard]"), "the sheet's Threshold"), [2], "every Defense beside one of them: the stronger, where both added through 0.35.1");
+  // Awareness Initiative: the every-roll line is in the Threshold, the INIT line comes at the roll,
+  // and the two are one carrier's, so the roll takes the stronger of them.
+  const awarenessInitiative = cell => {
+    const actor = both(cell);
+    return resolveModifiers([
+      ...ruleModifiers(actor, { kind: "defense", slug: "awareness", item: null, staticOnly: true }).applied,
+      ...ruleModifiers(actor, { kind: "initiative", slug: "awareness", item: null, rank: "trained", momentOnly: true }).applied
+    ]).total;
+  };
+  same([awarenessInitiative("[EFFECT CHECK: 1 situation]"), awarenessInitiative("[EFFECT CHECK: 1 situation]\n[EFFECT INIT: 3 situation]"), awarenessInitiative("[EFFECT INIT: 3 situation]"), awarenessInitiative("[EFFECT SKILL: 1 situation]")], [1, 3, 3, 0], "Initiative with Awareness: once, the stronger of the two");
+  // A claim of the moment beside a standing line of the same Talent, on a Defense: stored and moment are resolved together.
+  const mixed = both("[EFFECT DEF: 1 situation]\n[EFFECT CHECK: 2 situation; IFT: TRAIT(Fear)]");
+  same(resolveModifiers([
+    ...ruleModifiers(mixed, { kind: "defense", slug: "guard", item: null, staticOnly: true }).applied,
+    ...ruleModifiers(mixed, { kind: "defense", slug: "guard", item: null, momentOnly: true, threat: { threat: "blow", melee: true, traits: ["fear"] } }).applied
+  ]).total, 2, "a standing line and a moment line of one Talent on one Defense: the stronger");
+});
+
+check("0.36.0: Frightened gives the same numbers as three stored lines, as one line, and as three lines rebuilt, for a character and for an adversary", () => {
+  const threeNow = conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]");
+  // As conditions.json holds the row through 0.35.1: the CHECK line stored as the narrow scope.
+  const threeStored = threeNow.map(r => (r.to.slug === "rolls") ? { ...r, to: { name: "Checks", slug: "checks", type: "scope" } } : r);
+  const oneLine = conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition]");
+  const numbers = rules => seeded(() => {
+    const afraid = creature({ statuses: ["frightened"], values: { frightened: 2 } });
+    const npcInitiative = resolveModifiers([
+      ...conditionModifiers(afraid, { kind: "defense", slug: "awareness", item: null, staticOnly: true }),
+      ...conditionModifiers(afraid, { kind: "initiative", slug: "awareness", item: null, momentOnly: true })
+    ]).total;
+    return {
+      ...Object.fromEntries(["evade", "guard", "endure", "awareness"].map(slug => [slug, counted(afraid, { kind: "defense", slug, item: null, staticOnly: true })])),
+      "Defense roll": counted(afraid, { kind: "defense", slug: "guard", item: null, momentOnly: true }),
+      attack: counted(afraid, { kind: "attack", slug: "melee", item: null }),
+      check: counted(afraid, { kind: "check", slug: "stealth", item: null }),
+      initiative: counted(afraid, { kind: "initiative", slug: "stealth", item: null }),
+      "adversary Threshold": resolveModifiers(conditionModifiers(afraid, { kind: "defense", slug: "guard", item: null, staticOnly: true })).total,
+      "adversary attack": resolveModifiers(conditionModifiers(afraid, { kind: "attack", slug: "", item: null, staticOnly: true })).total,
+      "adversary check": resolveModifiers(conditionModifiers(afraid, { kind: "check", slug: "athletics", item: null })).total,
+      "adversary Initiative": npcInitiative
+    };
+  }, seedRows().map(r => (r.name === "Frightened N") ? { ...r, rules } : r));
+  const want = { evade: -2, guard: -2, endure: -2, awareness: -2, "Defense roll": 0, attack: -2, check: -2, initiative: -2, "adversary Threshold": -2, "adversary attack": -2, "adversary check": -2, "adversary Initiative": -2 };
+  same(numbers(threeStored), want, "the three lines as stored through 0.35.1");
+  same(numbers(oneLine), want, "the one line");
+  same(numbers(threeNow), want, "the three lines read again unchanged: each roll takes -N once");
+  // What an adversary's sheet lists beside a number is what counted.
+  seeded(() => {
+    const afraid = creature({ statuses: ["frightened"], values: { frightened: 2 } });
+    same(lines(resolveModifiers(conditionModifiers(afraid, { kind: "defense", slug: "guard", item: null, staticOnly: true })).applied), [["Frightened", -2, "condition"]], "one line of hint, not one for each line of the row");
+  }, seedRows().map(r => (r.name === "Frightened N") ? { ...r, rules: threeNow } : r));
+});
+
+check("0.36.0: a claim on an every-roll line is offered on every kind of roll, and a Threshold read applies it only when armed (ruling 371)", () => {
+  const talent = { ...talentWith("Wide Claim", "[EFFECT CHECK: 2 condition; IF: CLAIM(when it suits)]"), id: "wide1" };
+  const actor = rulesActor([talent]);
+  const offers = context => ruleModifiers(actor, context).offered.map(o => [o.value, o.ticked === true]);
+  same([offers(ASKS["a Skill check"]), offers(ASKS["an attack"]), offers(ASKS["a Defense roll, on top of the Threshold"]), offers(ASKS["Initiative with Stealth"]), offers(ASKS["Initiative with Awareness, on top of the Threshold"])],
+    [[[2, false]], [[2, false]], [[2, false]], [[2, false]], [[2, false]]], "offered unticked on a check, an attack, a Defense roll and an Initiative");
+  same([ruleModifiers(actor, ASKS["the sheet's Threshold"]).applied, ruleModifiers(actor, ASKS["a Threshold read, on top of the Threshold"]).applied], [[], []], "never in the sheet's number, and a Threshold read leaves an unarmed claim alone");
+  const armed = rulesActor([talent]);
+  armed.flags = { starwrought: { rules: { armed: { wide1: true } } } };
+  const read = ruleModifiers(armed, ASKS["a Threshold read, on top of the Threshold"]);
+  same([read.applied.map(m => m.value), read.marks], [[2], [{ key: "wide1", per: "claim" }]], "armed: a foe's Threshold read applies it, with the mark that spends it");
+  // The narrow word keeps a claim off attacks, as a bare CHECK did through 0.35.1.
+  const narrow = rulesActor([{ ...talentWith("Contract Literate", "[EFFECT SKILL: 2 condition; IF: CLAIM(noticing hidden clauses)]"), id: "lit1" }]);
+  same([ruleModifiers(narrow, ASKS["a Skill check"]).offered.length, ruleModifiers(narrow, ASKS["an attack"]).offered.length, ruleModifiers(narrow, ASKS["a Defense roll, on top of the Threshold"]).offered.length, ruleModifiers(narrow, ASKS["a Threshold read, on top of the Threshold"]).applied.length],
+    [1, 0, 0, 0], "a SKILL claim: on a check, never on an attack, a Defense roll or a Threshold read");
+});
+
+check("0.36.0: a one-roll effect is used up only by a roll its line reached (the Defense pass is asked as it asked)", () => {
+  const rowActor = text => {
+    const parsed = parseAutomation(text, { resolve, itemName: "Row", itemType: "effect" });
+    must(parsed.errors.length === 0, `"${text}" should parse: ${parsed.errors.map(e => e.message).join("; ")}`);
+    const actor = { items: [], system: { effects: [{ id: "fx36", label: "Row", text, duration: "roll", rules: parsed.rules }] } };
+    actor.system.proficiency = () => ({ rank: "trained" });
+    actor.system.rules = collectRules(actor);
+    return actor;
+  };
+  const spent = [{ key: "fx36", per: "effect" }];
+  const wind = { kind: "check", slug: "endure", item: null, rank: "trained", momentOnly: true };
+  const skill = ruleModifiers(rowActor("SKILL: 1 situation"), wind);
+  same([skill.applied, skill.marks], [[], []], "a one-roll bonus to Skill checks is not used up by a Wind roll, which never held it (it was through 0.35.1)");
+  same(ruleModifiers(rowActor("SKILL: 1 situation"), { kind: "check", slug: "stealth", item: null, rank: "trained" }).marks, spent, "and is by a Skill check");
+  same(ruleModifiers(rowActor("CHECK: 1 situation"), wind).marks, spent, "a one-roll bonus to every roll IS used up by the Wind roll: the Defense's own number held it");
+  same(ruleModifiers(rowActor("DEF: 1 situation, endure"), wind).marks, spent, "as a one-roll bonus to that Defense is");
+  same(ruleModifiers(rowActor("DEF: 1 situation, guard"), wind).marks, [], "and one to another Defense is not");
+  same(ruleModifiers(rowActor("INIT: 1 situation"), { kind: "initiative", slug: "awareness", item: null, rank: "trained", momentOnly: true }).marks, spent, "an INIT line on an Initiative rolled with Awareness, as before");
+});
+
+check("0.36.0: the build says which lines of a row meet on a roll, and stays quiet for lines that cannot", () => {
+  const meets = cell => overlappingLines(conditionCell("Row", "n", cell)).map(m => `${m.a}+${m.b}: ${m.what}`);
+  same(meets("[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]"), ["1+2: Defenses", "2+3: attacks"], "Frightened as it stood");
+  same(meets("[EFFECT CHECK: -N condition]"), [], "one line");
+  same(meets("[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]"), [], "Fatigued: two lines that never meet");
+  same(meets("[EFFECT ATK: -2 situation]\n[EFFECT DEF: 2 situation, evade; IFT: RANGED]"), [], "Prone: opposite signs, and different rolls");
+  same(meets("[EFFECT DEF: -2 situation, evade]\n[EFFECT DEF: -2 situation, guard]"), [], "Off-Guard: two Defenses");
+  same(meets("[EFFECT CHECK: -1 condition]\n[EFFECT DEF: 2 situation, guard]"), [], "a penalty and a bonus both stand, so nothing is said");
+  same(meets("[EFFECT SKILL: -1 condition]\n[EFFECT INIT: -1 condition]"), ["1+2: Initiative rolled with a Skill"], "SKILL beside INIT: only where the Initiative is rolled with a Skill");
+  // The pairs the first cut missed (the review): a scope beside a line to one Constellation or
+  // Maneuver, and every Defense or Awareness beside INIT on the default Initiative.
+  same(meets("[EFFECT CHECK: -1 condition]\n[EFFECT CHECK: -2 condition, stealth]"), ["1+2: checks with Stealth"], "CHECK beside a line to one Constellation");
+  same(meets("[EFFECT SKILL: -1 condition]\n[EFFECT CHECK: -2 condition, stealth]"), ["1+2: checks with Stealth"], "SKILL beside one");
+  same(meets("[EFFECT ATK: -1 condition]\n[EFFECT CHECK: -2 condition, stealth]"), ["1+2: attacks made with Stealth"], "ATK beside one");
+  same(meets("[EFFECT INIT: -1 condition]\n[EFFECT CHECK: -2 condition, stealth]"), ["1+2: Initiative rolled with Stealth"], "INIT beside one");
+  same(meets("[EFFECT DEF: -1 condition]\n[EFFECT CHECK: -2 condition, stealth]"), [], "every Defense and a Skill never meet");
+  same(meets("[EFFECT CHECK: -1 condition]\n[EFFECT CHECK: -2 condition, aid]"), ["1+2: checks to Aid"], "CHECK beside a line to a Maneuver");
+  same(meets("[EFFECT ATK: -1 condition]\n[EFFECT CHECK: -2 condition, aid]"), [], "an attack is never a Maneuver's check");
+  same(meets("[EFFECT DEF: -1 condition]\n[EFFECT INIT: -1 condition]"), ["1+2: Initiative rolled with Awareness"], "every Defense beside INIT: the default Initiative");
+  same(meets("[EFFECT DEF: -1 condition, awareness]\n[EFFECT INIT: -1 condition]"), ["1+2: Initiative rolled with Awareness"], "Awareness beside INIT");
+  same(meets("[EFFECT DEF: -1 condition, evade]\n[EFFECT INIT: -1 condition]"), [], "another Defense beside INIT");
+  same(meets("[EFFECT CHECK: -1 condition, stealth]\n[EFFECT CHECK: -1 condition, aid]"), [], "two named targets never meet");
+  // `covers`: one of the two is a bare CHECK, which reaches everything the other does.
+  const covers = cell => overlappingLines(conditionCell("Row", "n", cell)).map(m => m.covers);
+  same([covers("[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]"), covers("[EFFECT SKILL: -1 condition]\n[EFFECT INIT: -1 condition]"), covers("[EFFECT DEF: -1 condition]\n[EFFECT INIT: -1 condition]")], [[true], [false], [false]], "which pairs a bare CHECK covers");
+  same(meets("[EFFECT CHECK: -1 condition]\n[EFFECT SKILL: -2 condition]"), ["1+2: checks, Initiative"], "CHECK beside SKILL");
+  same(meets("[EFFECT DEF: -1 condition]\n[EFFECT DEF: -1 condition]"), [], "the same target twice was always one");
+  same([overlappingLines(null), overlappingLines([])], [[], []], "no rules, no pairs");
+});
+
+check("0.36.0, the review: a message says the value as written, a lost comma is refused, and a line that asks about the roll's rank is warned of", () => {
+  // `-N` through the refusals that say what to write: the letter, never the sign it is stored as.
+  must(/write `CHECK: -N condition, stealth`$/.test(conditionRowError("[EFFECT SKILL: -N condition, stealth]", "n")), "SKILL with a target, written with -N");
+  must(/write the tag: `SKILL: -N condition`$/.test(conditionRowError("[EFFECT CHECK: -N condition, skill]", "n")), "CHECK, skill, written with -N");
+  must(/^ATK takes no descriptor: `ATK: -N condition`$/.test(conditionRowError("[EFFECT ATK: -N condition, melee]", "n")), "ATK with a descriptor, written with -N");
+  must(/^DEF takes one descriptor, a Defense, not 2: `DEF: N condition, guard`$/.test(conditionRowError("[EFFECT DEF: N condition, guard, evade]", "n")), "and a positive N");
+  // A comma with nothing after it is a target that was deleted: refused, never read as every roll.
+  for (const cell of ["[EFFECT CHECK: 1 situation, ]", "[EFFECT CHECK: 1 situation,]", "[EFFECT DEF: 1 situation, ; IFT: BLOW]", "[EFFECT CHECK: 1 situation, , stealth]"]) {
+    must(/a comma with nothing after it; name the target after the comma, or take the comma out$/.test(bonusError(cell, { resolve })), `"${cell}" is refused`);
+  }
+  same(bonusRule("[EFFECT CHECK: 1 situation, stealth]", { resolve }).to.slug, "stealth", "a target after its comma still reads");
+  // The shape a tag is told is its own: only CHECK, DEF and GIVE take a descriptor.
+  must(/^SKILL is written `SKILL: <value> <type>`, as in `SKILL: 1 condition`: a signed whole number first, not "situation"$/.test(bonusError("[EFFECT SKILL: situation]", { resolve })), "SKILL's shape has no descriptor");
+  must(/^DEF is written `DEF: <value> <type>, <descriptor>`, as in `DEF: 1 condition, guard`/.test(bonusError("[EFFECT DEF: situation]", { resolve })), "DEF's has");
+  // A line that reaches Defenses and asks about the roll's own rank: it reads, with a warning.
+  const warned = cell => parseAutomation(cell, { resolve, itemName: "Jack", itemType: "talent" });
+  const wide = warned("[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]");
+  same([wide.errors, wide.rules.length, wide.warnings.length], [[], 1, 1], "a bare CHECK with a roll-rank condition reads, with one warning");
+  must(/^CHECK with IF: RANK\(roll \.\.\.\) is not read on a Defense yet: .* For checks alone write SKILL$/.test(wide.warnings[0].message), `the warning: ${wide.warnings[0].message}`);
+  same(warned("[EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]").warnings, [], "SKILL with the same condition: nothing to say");
+  same(warned("[EFFECT CHECK: 1 situation, stealth; IF: RANK(roll = untrained)]").warnings, [], "nor a line to one Constellation");
+  same(warned("[EFFECT ATK: 1 situation; IF: RANK(roll >= trained)]").warnings, [], "nor ATK");
+  must(/^DEF with IF: RANK\(roll \.\.\.\) is not read on a Defense yet/.test(warned("[EFFECT DEF: 1 situation, guard; IF: RANK(roll >= trained)]").warnings[0]?.message ?? ""), "DEF with it is warned too");
+  same(warned("[EFFECT CHECK: 1 situation; IF: RANK(Origin >= trained)]").warnings, [], "a rank of the owner's is no roll's rank");
+  // What such a line does: checks, attacks, an Initiative rolled with a Skill, and no Defense's number.
+  const jack = rulesActor([{ ...talentWith("Wide Jack", "[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]"), id: "wj1" }]);
+  const at = (ask, rank) => counted(jack, { ...ASKS[ask], rank });
+  same([at("a Skill check", "untrained"), at("a Skill check", "trained"), at("an attack", "untrained"), at("Initiative with Stealth", "untrained"), counted(jack, ASKS["the sheet's Threshold"]), at("a Defense rolled as a check, on top of the Threshold", "untrained"), at("Initiative with Awareness, on top of the Threshold", "untrained")],
+    [1, 0, 1, 1, 0, 0, 0], "where a roll-rank line on a bare CHECK counts");
+});
+
+check("0.36.0, the review: a Defense rolled as a check takes an every-roll line once, and the second look has no roll's rank", () => {
+  // The Wind roll's sum as the roll makes it: the Defense's stored lines and what the moment adds.
+  const wind = actor => resolveModifiers([
+    ...ruleModifiers(actor, { kind: "defense", slug: "endure", item: null, staticOnly: true }).applied,
+    ...ruleModifiers(actor, ASKS["a Defense rolled as a check, on top of the Threshold"]).applied
+  ]).total;
+  same([wind(rulesActor([talentWith("Lucky", "[EFFECT CHECK: 1 situation]")])), wind(rulesActor([talentWith("Handy", "[EFFECT SKILL: 1 situation]")])), wind(rulesActor([talentWith("Twofold", "[EFFECT CHECK: 1 situation]\n[EFFECT DEF: 2 situation, endure]")]))],
+    [1, 0, 2], "once for a bare CHECK, nothing for SKILL, the stronger of one Talent's two");
+  // A one-roll row whose line asks about the roll's rank is not used up by a roll that never
+  // applied it (through the review the second look handed this roll's rank on, and it answered).
+  const rowActor = text => {
+    const parsed = parseAutomation(text, { resolve, itemName: "Row", itemType: "effect" });
+    must(parsed.errors.length === 0, `"${text}" should parse: ${parsed.errors.map(e => e.message).join("; ")}`);
+    const actor = { items: [], system: { effects: [{ id: "fx36r", label: "Row", text, duration: "roll", rules: parsed.rules }] } };
+    actor.system.proficiency = () => ({ rank: "untrained" });
+    actor.system.rules = collectRules(actor);
+    return actor;
+  };
+  const ranked = "CHECK: 1 situation; IF: RANK(roll = untrained)";
+  for (const [name, ask] of [
+    ["a Wind roll", { kind: "check", slug: "endure", item: null, rank: "untrained", momentOnly: true }],
+    ["a Defense roll", { kind: "defense", slug: "guard", item: null, rank: "untrained", momentOnly: true }],
+    ["a Threshold read", { kind: "defense", slug: "guard", item: null, rank: "untrained", momentOnly: true, read: true }],
+    ["the default Initiative", { kind: "initiative", slug: "awareness", item: null, rank: "untrained", momentOnly: true }]
+  ]) {
+    const got = ruleModifiers(rowActor(ranked), ask);
+    same([got.applied, got.marks], [[], []], `${name} neither applies the line nor uses the row up`);
+  }
+  same(ruleModifiers(rowActor(ranked), { kind: "check", slug: "stealth", item: null, rank: "untrained" }).marks, [{ key: "fx36r", per: "effect" }], "a Skill check at that rank does both");
+});
+
+check("0.36.0: ten minutes of uninterrupted rest lower Fatigued by 1, and never below nothing (rulings 372 and 374)", () => {
+  same([FATIGUED_REST_STEP, FATIGUED_MAX], [1, 3], "one step for ten minutes, to a ceiling of 3");
+  same([3, 2, 1, 0].map(value => fatiguedAfterRest(value)), [2, 1, 0, 0], "one stretch: 3 to 2, 2 to 1, 1 ends, and nothing stays nothing");
+  same([fatiguedAfterRest(3, 2), fatiguedAfterRest(3, 3), fatiguedAfterRest(3, 9), fatiguedAfterRest(2, 0)], [1, 0, 0, 2], "several stretches, never below 0, and no rest changes nothing");
+  // Three presses of the button are thirty minutes: the value after each.
+  let value = FATIGUED_MAX;
+  const steps = [];
+  while (value > 0) { value = fatiguedAfterRest(value); steps.push(value); }
+  same(steps, [2, 1, 0], "Fatigued 3 takes three stretches to end");
+  // What a hand may have left in the value: read as a whole number, and never raised by rest.
+  same([fatiguedAfterRest(undefined), fatiguedAfterRest(null), fatiguedAfterRest("2"), fatiguedAfterRest(2.9), fatiguedAfterRest(-1), fatiguedAfterRest(2, -1), fatiguedAfterRest(2, "x")], [0, 0, 1, 1, 0, 2, 2], "odd values are read safely");
 });
 
 /* -------------------------------------------- */

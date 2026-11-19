@@ -1,4 +1,53 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0; a bare CHECK is every roll, 0.36.0)
+
+**0.36.0 (2026-11-19).** No new kind and no new hook point: ONE NEW TAG, `SKILL`, AND TWO RULES
+OF THE `bonus` KIND CHANGED (rulings 366 to 371). Mike: "Can't CHECK include ALL rolls/thresholds,
+but ATK and DEF just mean attack checks and defense checks respectively?"
+
+- **Two scopes** (`SCOPES` in `kinds/bonus.mjs`; `scopeReaches(slug, kind)` is the one test). The
+  new scope `rolls` reaches `check`, `initiative`, `attack` and `defense`, and is what a bare
+  `CHECK:` is read as. The scope `checks` is UNCHANGED (`check`, `initiative`) and is what the
+  new bare tag `SKILL:` is read as. So **a stored rule keeps the meaning it was read with**: a
+  rule stored before 0.36.0 with `to.slug: "checks"` behaves as it did, and becomes `rolls` only
+  when its cell is parsed again: by the build, by `SwItem#_preUpdate` when a world Item's
+  `system.automation` TEXT is in the change, or by `prepareEffectsUpdate` (`rules/effects-state.mjs`) when a custom effect row's
+  text or label changed. **Sync content does not parse**: it passes `swBuilt: true` with the
+  source's whole `system`, and `_preUpdate` then leaves the build's `system.rules` as they are
+  (through 0.35.1 it parsed the text again for every Item the sync wrote, so a client newer than
+  the pack sources changed the meaning of whichever copies it happened to write). `summary()`
+  names a scope as it is known now, so such a rule reads "to Skill checks".
+- **One carrier is one circumstance.** The hook's `source` is `rule:<carrierKey>` (it was
+  `rule:<carrierKey>:<target slug>`), so `resolveModifiers` keeps the strongest bonus and the
+  strongest penalty of ALL of one carrier's lines that reach a roll. Every consumer resolves the
+  union of what the Defense pass stored and what the moment adds, so this holds on every path:
+  the second reader of the design ran ten kinds of roll and seven adversary numbers. A kept road
+  roll keeps `source` on its record AND hands it back (`roadRoll` in `helpers/party.mjs`), and an
+  attack's pairing card lists what counted (`listed` on the result of `SwCheck.resolveAgainst`;
+  `modifiers` stays the die's lines and then the pairing's, which a reroll splits by position).
+  A line that is set aside still files its `LIMIT` mark, and a ticked claim weaker than a
+  standing line of the same carrier is spent for nothing: both stated, neither built.
+- **An every-roll line is counted once because the Defense pass folds it in.** `prepareDefenses`
+  asks `kind: "defense"`, which `rolls` reaches, so the line is in each Defense's stored
+  modifiers; a roll that rolls those modifiers (a Defense roll, a Defense rolled as a check, an
+  Initiative with Awareness) asks `momentOnly`, which drops a static line. A NEW SCOPE THAT
+  REACHES `defense` IS COUNTED THIS WAY AND NEEDS NO EXCEPTION; one that does not reach
+  `defense` is not in the stored modifiers and stays out of those rolls (the `SKILL` quirk).
+- **`callHook`'s second look asks what the Defense pass asked** (`kind: "defense"`, no Item, NO
+  RANK, `staticOnly`): a one-roll custom effect, or a Skip, is spent only by a roll whose Defense
+  number really held the line. Through 0.35.1 a static line to Skill checks was spent by a Wind
+  roll that never applied it.
+- **A kind's own name for a tag list is derived**: `SKILL` is in `EFFECT_TAGS` (after `check`,
+  which stays the `bonus` kind's first tag), `MODIFIER_TAGS` and `CONDITION_ROW_TAGS`; the
+  scope words `rolls` and `checks` are refused as targets by `bonus`, `give` and `substitute`.
+- **Not built:** `prepareDefenses` passes no `rank`, so a static line with `IF: RANK(roll ...)`
+  never holds on a Defense, an every-roll one included: such a line reaches checks, attacks and
+  an Initiative rolled with a Skill, and no Defense roll, Defense rolled as a check or default
+  Initiative. The kind WARNS at parse (`context.warn`) for a bare `CHECK` and for `DEF`.
+- **Three slips are told what to write** (the review): a tag in a block of its own (`[SKILL 1
+  situation]`, `readBlock` in `features.mjs`), a tag inside EFFECT with its colon lost (any tag
+  now, `grammar.mjs`), and a comma with nothing after it (`effects.mjs`: refused, since the line
+  would otherwise read as every roll). A message that says what to write prints the value AS
+  WRITTEN (`-N`, never the sign it is stored as).
 
 **0.35.0 (2026-11-19).** No new kind and no new hook point: THE `prevent` KIND READS A THIRD
 FORM, AND ITS HOOK POINT IS ASKED A SECOND QUESTION (rulings 350 to 360). Mike: "I want to add
@@ -437,7 +486,8 @@ The arguments and the operators are AUTOMATION_GRAMMAR.md's; the stored rule:
   against: { threat, reach } | null, limit: { per: "round" | "encounter" } | null }
 ```
 
-A scope target (`Defenses`, `Checks`, `Attacks`, `Initiative`) is `type: "scope"` with the word's
+A scope target (`Defenses`, `Attacks`, `Initiative`, and since 0.36.0 `rolls` for a bare `CHECK`
+and `checks` for `SKILL`) is `type: "scope"` with the word's
 slug; a Constellation's or a Maneuver's `type` comes from `context.resolve` as before, null with no
 resolver. A 0.10.0 rule stored on an owned copy (`when` as one object, no `op`) still reads as
 equality, so a copy a GM did not refresh keeps working.
@@ -468,14 +518,15 @@ Awareness, lost through 0.20.1). It is matched by the Item alone: the roll's kin
 roll carries an Item of type `action`, the rule's `to.type` is `"action"` (or null, a rule parsed
 without a resolver) and its `to.slug` is the slug of that Item's plain name; an untyped target
 whose slug is also the roll's own Constellation was the pass's and is left out. Nothing is offered
-on that branch, and a bonus to every check and a bonus to the Defense itself stay out of it as
-before; the wider question, whether a bonus to every check reaches a Defense rolled as a check
-(Wind, Recovery, a Search), is untouched and is an open decision. Then the target: a scope applies
+on that branch, and a bonus to Skill checks (`SKILL`) and a bonus to the Defense itself stay out of
+it as before; since 0.36.0 a bonus to every roll (a bare `CHECK`) reaches a Defense rolled as a
+check through the Defense's own stored modifiers, once. Then the target: a scope applies
 by the roll's kind; a Constellation on its slug; a Maneuver when the roll carries its Item, and is
 **offered** unticked on a check made without one (ruling 122), never on an attack, a Defense or an
 Initiative. The label is the carrier's plain name, with the owner's name in parentheses when it is
 another token's Talent
-("Torchbearer Human (Tess)"); one Talent's lines on one target share `source: rule:<item>:<target>`.
+("Torchbearer Human (Tess)"); ALL of one Talent's or one Condition's lines share `source: rule:<carrier>`
+(0.36.0; the carrier and its target through 0.35.1).
 
 ## The contract of a kind
 
@@ -764,8 +815,8 @@ line reads the swap.
   read as a number); gives a keyless offer a key of its own (`<kind>-<n>`) and suffixes a key two
   offers share. Stacking is not its job: the caller's `SW.resolveModifiers` treats what comes back
   as it treats every other term (PHB v4.21: everything adds; entries sharing a `source` are one
-  circumstance, counted once, which is how the `bonus` kind keeps one Talent's lines on one target
-  from adding: `source: "rule:<item>:<target>"`).
+  circumstance, counted once, which is how the `bonus` kind keeps one Talent's lines from adding:
+  `source: "rule:<carrier>"` since 0.36.0, the carrier and its target through 0.35.1).
 
 ### `substitutions` (0.21.0)
 

@@ -47,7 +47,7 @@ export const CONDITION_ROW = "condition";
  * its `TRAIT(...)` form alone (Blinded: `[EFFECT IMMUNE: TRAIT(Visual)]`; the kind refuses the
  * rest, ./kinds/prevent.mjs).
  */
-export const CONDITION_ROW_TAGS = Object.freeze(["check", "atk", "def", "init", "immune"]);
+export const CONDITION_ROW_TAGS = Object.freeze(["check", "skill", "atk", "def", "init", "immune"]);
 
 /* -------------------------------------------- */
 /*  "No automation"                             */

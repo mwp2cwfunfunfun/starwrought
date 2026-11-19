@@ -966,8 +966,9 @@ export class SwNpcData extends SwActorData {
     this.defenses = {};
     for (const [key, def] of Object.entries(SW.DEFENSES)) {
       const base = this.thresholds[key];
-      const conditions = conditionModifiers(this.parent, { kind: "defense", slug: def.slug, item: null, staticOnly: true });
-      const shift = conditions.length ? SW.resolveModifiers(conditions).total : 0;
+      // The lines that COUNTED (0.36.0): one Condition counts once, so of its lines that reach
+      // this number the stronger stands, and the sheet's hint lists that one alone.
+      const { total: shift, applied: conditions } = SW.resolveModifiers(conditionModifiers(this.parent, { kind: "defense", slug: def.slug, item: null, staticOnly: true }));
       this.defenses[key] = {
         key,
         slug: def.slug,
@@ -984,8 +985,9 @@ export class SwNpcData extends SwActorData {
     }
     // What the Conditions put on its attacks, standing (Frightened's and Fatigued's -N, Prone's
     // -2): read by `attackThreshold` and by its own die, and shown on the sheet's attack rows.
-    this.attackModifiers = conditionModifiers(this.parent, { kind: "attack", slug: "", item: null, staticOnly: true });
-    this.attackShift = this.attackModifiers.length ? SW.resolveModifiers(this.attackModifiers).total : 0;
+    const attackLines = SW.resolveModifiers(conditionModifiers(this.parent, { kind: "attack", slug: "", item: null, staticOnly: true }));
+    this.attackModifiers = attackLines.applied;
+    this.attackShift = attackLines.total;
     for (const attack of this.attacks) attack.inEffect = (Number(attack.threshold) || 0) + this.attackShift;
     const statuses = this.parent.statuses ?? new Set();
     // Asked of what the creature HAS since 0.33.0: a Condition that includes Grabbed counts.
@@ -1033,8 +1035,7 @@ export class SwNpcData extends SwActorData {
    * @returns {{base: number, threshold: number, shift: number, conditions: object[]}}
    */
   checkNumber(slug) {
-    const conditions = conditionModifiers(this.parent, { kind: "check", slug: String(slug ?? ""), item: null });
-    const shift = conditions.length ? SW.resolveModifiers(conditions).total : 0;
+    const { total: shift, applied: conditions } = SW.resolveModifiers(conditionModifiers(this.parent, { kind: "check", slug: String(slug ?? ""), item: null }));
     return { ...adversaryCheck(this.checkBase(slug), shift), conditions };
   }
 }

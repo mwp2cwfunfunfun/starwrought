@@ -1257,6 +1257,14 @@ export class SwItem extends Item {
     }
     const text = foundry.utils.getProperty(changed, "system.automation") ?? changed["system.automation"];
     if (typeof text !== "string") return;
+    // THE BUILD'S PARSE STANDS (0.36.0, the review; ruling 369). Sync content writes a source
+    // document whole (`recursive: false, diff: false`), its `system.rules` the ones the build
+    // parsed from the cell, and says so with `swBuilt`. Parsed again here, under the grammar this
+    // client runs, a cell read before a word changed its meaning would change with it on the one
+    // copy the sync happened to write (a bare CHECK stored as the narrow scope became every roll on
+    // a character whose copy was refreshed, and stayed narrow on the next). A stored rule keeps the
+    // meaning it was read with until its CELL is built again.
+    if ((options?.swBuilt === true) && Array.isArray(foundry.utils.getProperty(changed, "system.rules"))) return;
     const parsed = parseAutomation(text, {
       itemName: this.name,
       constellation: (this.type === "constellation") ? this.name : (this.system.constellationName || this.system.category || ""),

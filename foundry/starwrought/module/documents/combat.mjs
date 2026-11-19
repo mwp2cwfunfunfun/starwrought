@@ -666,8 +666,9 @@ async function endRound(combat, round) {
  * memory goes with it, and nothing else happens here. Through 0.6.1 Fatigued came off every
  * combatant at this point, the end of the fight standing in for the "ten minutes of rest" that
  * end it (ruling 70); Mike's word (2026-10-02) is that it "should only go away with a 10 minutes'
- * rest", so the condition now outlives the Combat and is cleared by the Fatigued card's own
- * button (onWindRest) or by a night's rest (SwActor#restForTheNight), ruling 81.
+ * rest", so the condition now outlives the Combat and goes down only with rest: by 1 for each
+ * press of the Fatigued card's own button (onWindRest; 0.36.0, ruling 372), and whole with a
+ * night's rest (SwActor#restForTheNight), rulings 81 and 373.
  */
 async function onCombatEnds(combat) {
   localStreaks.delete(combat.id);

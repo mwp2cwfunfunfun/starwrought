@@ -135,6 +135,13 @@ function readBlock(inner) {
     const also = (tag === "check") ? "; the check a Maneuver rolls has no colon, as in `[CHECK Athletics vs Guard]`" : "";
     throw new RuleSyntaxError(`"${words[0]}" begins an effect line, and an effect goes in an EFFECT block: write \`[EFFECT ${inner}]\`${also}`);
   }
+  // The same word with no colon (`[SKILL 1 situation]`, `[IMMUNE prone]`; the review of 0.36.0):
+  // an effect tag that is no feature keyword is told the EFFECT block and its colon, where the
+  // keywords message below sent the red-cell tool looking for a kind that does not exist.
+  if (!tag && Object.hasOwn(EFFECT_TAGS, keyword) && !Object.hasOwn(FEATURE_KEYWORDS, keyword)) {
+    const rest = inner.slice(words[0].length).trim();
+    throw new RuleSyntaxError(`"${words[0]}" is an effect tag, and an effect goes in an EFFECT block with a colon after the tag: write \`[EFFECT ${words[0].toUpperCase()}: ${rest}]\``);
+  }
   throw new RuleSyntaxError(`"${words[0]}" is not a feature keyword: write ${FEATURE_KEYWORD_LIST.join(", ")}, or \`[<Constellation> trained]\`; an effect goes in \`[EFFECT <tag>: ...]\``);
 }
 

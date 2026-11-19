@@ -173,7 +173,8 @@ export async function cardContext(result, position) {
     natural: result.natural,
     threshold: result.threshold,
     thresholdLabel: result.thresholdLabel,
-    modifiers: result.modifiers,
+    // `listed` (0.36.0): an attack's pairing card leaves out a line its shared source set aside.
+    modifiers: result.listed ?? result.modifiers,
     // A check made with other terms (0.21.0, ruling 216): the swap in words, under the modifiers.
     // The rows above already read "Presence +2" and "Origin (Trained) +3", but a term of +0 is
     // left out of them, so the note is what says a swap stood and what it replaced.

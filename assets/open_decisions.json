@@ -1,5 +1,25 @@
 [
   {
+    "id": "0.36.0-check-cells",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Data",
+    "where": "data/conditions.xlsx (Frightened); data/talents_cultures.xlsx, Serrovane (Contract Literate); data/talents_ancestries.xlsx, Human (Jack of All Trades); printed in foundry/starwrought/CHANGELOG.md (0.36.0)",
+    "question": "Since 0.36.0 a bare CHECK reaches every roll and Threshold, and SKILL is the word for checks that are no attack and no Defense. Three cells use a bare CHECK. Frightened's three lines (DEF, CHECK, ATK) were read again by the Conditions build of 2026-11-19: its CHECK line is every roll now, the numbers are the same, and the build says the DEF and ATK lines can go. Contract Literate's claimed +2 and Jack of All Trades' +1 mean the narrow scope, and keep it only until their cells are parsed again: at the next content build a cell that still says CHECK becomes an every-roll line (Contract Literate's claim would be offered on attack and Defense rolls and could be spent by a foe's attack). Sync content does not change them.",
+    "recommendation": "Frightened: leave the three lines, or write the one line [EFFECT CHECK: -N condition] to quiet the build's warning; either gives the same numbers. Contract Literate: write [EFFECT SKILL: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)] BEFORE the next content build. Jack of All Trades: when its cell is written, [EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)].",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.36.0-claudes-readings",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.36.0, rulings 369 to 371 and 374",
+    "question": "Three readings 0.36.0 makes that Mike did not rule on. 369: a line keeps the meaning it was read with, so a rule stored before 0.36.0 from a bare CHECK stays narrow until its cell is parsed again (a content build, the Conditions build, a change to the text in a world Item's Automation box, a change to a custom effect row's text or label; never by Sync content). 370: an every-roll line reaches a Defense rolled as a check (the Wind roll, a Recovery, a Search with Awareness, the default Initiative) once, through the Defense's own number; a SKILL line and a bonus to a Maneuver made without its Item still do not. 371: a claim on a bare CHECK is offered on every roll, attacks and Defense rolls included, and an armed one is spent by the next roll or Threshold read, a foe's attack among them. Also unbuilt: an every-roll line with IF: RANK(roll ...) does not reach Defenses. 374: one press of Ten minutes' rest is one stretch of ten minutes, so each press restores level x Presence Vigor and lowers Fatigued by 1 (thirty minutes are three presses), for a character and for an adversary alike.",
+    "recommendation": "Leave them. The one to know is 369: Contract Literate must be rewritten with SKILL before the next content build, or its claim becomes an every-roll claim. Say so if SKILL should also reach checks rolled with a Defense's Constellation (a Search with Awareness): it does not today, as a bare CHECK did not.",
+    "decidedBy": ""
+  },
+  {
     "id": "conditions-x-cells",
     "since": "2026-11-19",
     "status": "open",
@@ -42,12 +62,12 @@
   {
     "id": "deafened-needs-its-line",
     "since": "2026-11-19",
-    "status": "open",
+    "status": "decided",
     "category": "Data",
     "where": "data/conditions.xlsx, the Deafened row's Automation cell",
     "question": "Deafened's Effect says 'Immune to Auditory effects' and its Automation cell is N/A, so a Deafened creature is immune to nothing. The line is [EFFECT IMMUNE: TRAIT(Auditory)]. It reaches further than Blinded's: Demoralize, Rally, Talk Them Down, Command the Field, Anticipate, Battle Cry, Bolster and Direct Animal are all Auditory.",
     "recommendation": "Type [EFFECT IMMUNE: TRAIT(Auditory)] in place of the N/A and double-click sync_conditions.cmd, then run Sync content in the open world.",
-    "decidedBy": ""
+    "decidedBy": "Mike, 2026-11-19: the cell reads [EFFECT IMMUNE: TRAIT(Auditory)] and the Conditions build of that day read it. He also made Deafened count as Off-Guard (its Includes cell)."
   },
   {
     "id": "conditions-about-sheet-stale",
@@ -285,8 +305,8 @@
     "status": "open",
     "category": "Rules decision",
     "where": "module/rules/kinds/bonus.mjs, the Defense branch of a check; ruling 222 (0.21.0)",
-    "question": "Ruling 222 lets a bonus to a Maneuver reach a check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid made with Awareness). Should a bonus to every check, and a bonus to a Maneuver made without its Item, also reach a Defense rolled as a check (Wind's Endure, a Recovery, a Search with Awareness)? Today neither does: nothing is applied and nothing is offered there.",
-    "recommendation": "Yes, as its own ruling, with a Wind roll driven live, because it changes numbers outside Aid.",
+    "question": "Ruling 222 lets a bonus to a Maneuver reach a check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid made with Awareness). Should a bonus to every check, and a bonus to a Maneuver made without its Item, also reach a Defense rolled as a check (Wind's Endure, a Recovery, a Search with Awareness)? Today neither does: nothing is applied and nothing is offered there. Since 0.36.0 (ruling 370) a bonus to EVERY ROLL, a bare CHECK, does reach a Defense rolled as a check, once, through the Defense's own number. What is still open is the narrow pair: a SKILL line, and a bonus to a Maneuver made without its Item.",
+    "recommendation": "Half settled by 0.36.0. For the narrow pair: leave it unless a Talent wants a SKILL bonus on a Search made with Awareness; that would need SKILL to be counted on a check rolled with a Defense's Constellation.",
     "decidedBy": ""
   },
   {
@@ -568,5 +588,25 @@
     "where": "data/actions_maneuvers.xlsx (Talk Them Down, Anticipate, Bolster, Feint, Tumble Through); AUTOMATION_GRAMMAR.md section 5, Putting Effects on",
     "question": "APPLY puts an Effect on a creature, but a Basic Maneuver's row cannot make that Effect DO anything for everyone: 'it takes -2 to its next Attack against you' needs a line on the creature that reads the Effect, and such a line lives on a Talent or an owned Maneuver. The same gap leaves the Wrong-Footed Condition's own effect (Off-Guard against that creature only) to the table, though Feint now records who Wrong-Footed whom.",
     "recommendation": "Plan it as the next step in two parts. First the small one: treat Wrong-Footed applied by X as Off-Guard against X in the Defense read, since the record now says who. Then an Effect that carries its own lines, written on the APPLY line's row, so Talk Them Down and Anticipate can be automated from a Basic row."
+  },
+  {
+    "id": "fatigued-rest-text",
+    "since": "2026-11-19",
+    "status": "decided",
+    "category": "Rules decision",
+    "where": "data/conditions.xlsx, the Fatigued row's Effect; module/documents/actor/rest.mjs (restTenMinutes)",
+    "question": "The Fatigued row's Effect now reads 'Reduce by 1 after every ten minutes of uninterrupted rest, unless otherwise specified', where it read 'Ends after ten minutes of rest'. The system still ENDS Fatigued after ten minutes' rest (the Overview's button, the Fatigued card's button, a night's rest), by Mike's word of 2026-10-02. The sheet is the only authority for what a Condition says, so the text players read and what the button does now differ.",
+    "recommendation": "Say which is meant. If the new sentence is the rule, Claude changes ten minutes' rest to lower Fatigued by 1 (a small change, planned first); if the old rule stands, put the old sentence back in the cell.",
+    "decidedBy": "Mike, 2026-11-19: the system follows the sheet (rulings 372 and 373). Ten minutes of uninterrupted rest lower Fatigued by 1, a night's rest ends it; built into 0.36.0."
+  },
+  {
+    "id": "0.36.0-set-aside-lines",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Automation",
+    "where": "module/rules/kinds/bonus.mjs; module/config/modifiers.mjs (resolveModifiers); found by the review of 0.36.0",
+    "question": "One Talent or Condition counts once on a roll, the stronger of its lines. A line that is set aside still uses up what it carries: a LIMIT (once a round, once an encounter) is counted as used, and a ticked claim that is weaker than a standing line of the same Talent is spent for nothing. And an every-roll line that asks about the roll's own rank (IF: RANK(roll ...)) reaches no Defense: the build warns. No cell on the sheets does either today.",
+    "recommendation": "Leave both until a Talent runs into one. Write SKILL for a roll-rank bonus that is about checks (Jack of All Trades).",
+    "decidedBy": ""
   }
 ]

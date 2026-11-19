@@ -1099,7 +1099,8 @@ export function travelActivity(activities) {
  * row is locked with the reason (ruling 101): the book's Fatigued row says "can't use Exploration
  * Mode Activities", and read literally the party cannot move once a fighter in plate is winded,
  * so Travel stays open and nothing else does. The stored pick is left as it was and comes back
- * when the Fatigue ends (ten minutes' rest, ruling 81); `stored` says what is waiting.
+ * when the Fatigue ends (ten minutes' rest for each point of it since 0.36.0, or a night's;
+ * rulings 81, 372 and 373); `stored` says what is waiting.
  * @param {Actor} actor
  * @param {Item[]} activities
  * @returns {{item: Item|null, stored: Item|null, locked: boolean, lockedReason: string, fatigued: number}}
@@ -1272,7 +1273,7 @@ export async function rememberActivityRoll(actor, result) {
     // kept roll can be re-counted as an Initiative in one typed-stacking pass (ruling 109).
     modifiers: (Array.isArray(result.extras) ? result.extras : [])
       .filter(m => Number.isNumeric(m?.value))
-      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null }))
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null, ...(m.source ? { source: String(m.source) } : {}) }))
   };
   await actor.update({ "system.exploration.roll": record }, { swAnnounced: true });
   return record;
@@ -1333,7 +1334,10 @@ export function roadRoll(actor, item) {
     time,
     modifiers: (Array.isArray(record.modifiers) ? record.modifiers : [])
       .filter(m => Number.isNumeric(m?.value))
-      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null })),
+      // `source` (0.36.0, the review): the record keeps whose each bonus was, and it must come
+      // back out, or the recount as Initiative counts two lines of one Talent that the check
+      // counted once.
+      .map(m => ({ label: String(m.label ?? ""), value: Number(m.value), type: m.type ?? null, ...(m.source ? { source: String(m.source) } : {}) })),
     usable: slug === initiativeFor(actor, item).slug,
     ago: agoText(time)
   };

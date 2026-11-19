@@ -309,8 +309,9 @@ Off-Guard), **Condition** (something on you: Frightened, a stance), **Gear** (wh
 a raised shield). **Stacking is PHB v4.21's (system 0.11.0; ruling 125): every bonus and penalty
 adds, whatever its type, and one circumstance is counted once.** `resolveModifiers` in
 `config/modifiers.mjs` sums, and collapses entries that share a `source` to the strongest positive
-and strongest negative (Off-Guard and the first Torso Wound are one source; one Talent's `bonus`
-lines on one target are one), so the types are labels for where a number comes from and no longer
+and strongest negative (Off-Guard and the first Torso Wound are one source; ALL of one Talent's
+or one Condition's `bonus` lines are one since 0.36.0, where through 0.35.1 it was its lines on
+one target), so the types are labels for where a number comes from and no longer
 a stacking rule. Through 0.10.1 it was highest bonus and worst penalty of each type, added across
 types. They were circumstance, status and item until PHB v3.3; the engine still maps the old
 names (`LEGACY_BONUS_TYPES` in `config.mjs`) for macros that pass typed modifiers, and
@@ -443,7 +444,8 @@ third column. Ancestry Vigor is per level (Human 8). The Endure Bonus of v4.11 t
 (ruling 151, Mike's by silence): Endure Training grants Load Strain relief and nothing to Vigor.
 **Two rests** (ruling 144): a night's rest restores all Vigor and clears Fatigued; ten minutes' rest
 (`restTenMinutes`, the Overview's second button and the Fatigued card's) restores level × Presence
-when Presence is positive, else nothing, and ends Fatigued. **Comets** replace the Deferred Talent
+when Presence is positive, else nothing, and lowers Fatigued by 1 (0.36.0, ruling 372; it ended
+it whole through 0.35.1). **Comets** replace the Deferred Talent
 Point (`system.comets`, migrated from `deferred`; ruling 145): one with every level, and a
 Milestone point becomes one when no Flare can take it; counted, never enforced. Endure Training
 ships since 0.6.1 (ruling 77) and Awareness Training since 0.6.2 (ruling 83), so every Defense can
@@ -462,9 +464,14 @@ from round 1, a fighter with Load Strain 1 or more rolls Endure against 10 + Loa
 raises Fatigued by 1, a critical failure by 2 (`WIND_FAIL_RISE`, `WIND_CRIT_FAIL_RISE`), to Fatigued
 3 (−N Condition to all four Defenses and attack rolls). The Endure Threshold exemption of v4.12 to
 v4.15 (ruling 74) is gone from the book and the system (ruling 150); the data model's `wind` keeps
-`threshold`, `endureThreshold` and `due`, and the field's tooltip gives both numbers. Fatigued ends
-with ten minutes' rest and with nothing else (Mike, 2026-10-02): the Combat's end does not clear
-it; a night's rest does, and the Fatigued card's button runs `restTenMinutes`. **Armor types, not
+`threshold`, `endureThreshold` and `due`, and the field's tooltip gives both numbers. Fatigued goes
+down with rest and with nothing else (Mike, 2026-10-02): the Combat's end does not clear it.
+**Since 0.36.0 (Mike, 2026-11-19; rulings 372 to 374) ten minutes of uninterrupted rest LOWER it
+by 1**, as the Fatigued row of `data/conditions.xlsx` says, and a night's rest ends it whole;
+`SW.fatiguedAfterRest` (`config/load.mjs`, pure) is the arithmetic, `restTenMinutes` its one
+caller, one press one stretch, from the Overview's button and the Fatigued card's, which can be
+pressed again; the rest card goes by `tableFor` (public for a player's creature, the GM's for an
+adversary). **Armor types, not
 materials** (ruling 149): the Armor sheet's `Type` column (padded, leather, mail, lamellar,
 brigandine, splint, plate; `ARMOR_TYPES`, Scale migrating to Lamellar) names what a piece is and
 turns no damage type poorly; the material-weakness step and the adversary Zone's `material` are
@@ -942,6 +949,88 @@ is named when it is Trained** (ruling 198): `SwActor#nameLore(field)` (`document
 spending into the template and holding Next until named, `onCreateItem` prompting for a Lore
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
+
+**0.36.0 (Mike, 2026-11-19; rulings 366 to 374; 372 to 374 are the rest change folded into it,
+under Load Strain above): a bare `CHECK` reaches every roll, and `SKILL`
+is the narrow word.** Mike, of Frightened's three lines: "is this redundance ... Since Defense
+rolls/thresholdes and Attack rolls/thresholds are checks too?", then "Can't CHECK include ALL
+rolls/thresholds, but ATK and DEF just mean attack checks and defense checks respectively?"
+Planned first (`dazzling-floating-simon.md`; his decisions by question: every roll and Threshold;
+lines of one Condition or Talent that meet on a roll count once, the stronger; `SKILL` for the
+narrow meaning). **One tag is new, `SKILL`; no kind and no hook point is.** **Two scopes**
+(`SCOPES` in `module/rules/kinds/bonus.mjs`; `scopeReaches(slug, kind)` the one test): the NEW
+scope `rolls` (`check`, `initiative`, `attack`, `defense`; name "every roll and Threshold") is
+what a bare `[EFFECT CHECK: ...]` parses to; the scope `checks` (`check`, `initiative`; now named
+"Skill checks") is UNCHANGED and is what the bare tag `[EFFECT SKILL: ...]` parses to. **A STORED
+RULE KEEPS THE MEANING IT WAS READ WITH** (ruling 369): a rule stored before 0.36.0 with
+`to.slug: "checks"` behaves as it did and becomes `rolls` only when its cell is parsed again (a
+content build, the Conditions build, a world Item's Automation box saved); `summary()` names a
+scope as `SCOPES` knows it now, so such a rule reads "to Skill checks". `SKILL` takes no
+descriptor (told to write `CHECK: ..., <target>`); `skill` written as a `CHECK` target is told
+the tag; a scope word as a target is refused, `rolls` included, in `bonus`, `give` and
+`substitute`. `skill` is in `EFFECT_TAGS` AFTER `check` (the grammar names a kind by its first
+tag), in `MODIFIER_TAGS` (`module/rules/effects.mjs`) and in `CONDITION_ROW_TAGS`
+(`module/rules/syntax.mjs`). **ONE CARRIER IS ONE CIRCUMSTANCE** (ruling 367): the `bonus`
+hook's `source` is `rule:<carrierKey>` (it was `rule:<carrierKey>:<target slug>`), so
+`resolveModifiers` keeps the strongest bonus and the strongest penalty of ALL of one Talent's or
+one Condition's lines that reach a roll; through 0.35.1 two lines to different targets that
+reached one roll both counted. This holds on every path because every consumer resolves the
+UNION of what the Defense pass stored and what the moment adds (`dice/check.mjs`,
+`dice/check/modifiers.mjs`, `dice/check/dialog.mjs`, `documents/actor/defense.mjs`, the npc
+model, `npcInitiative`, `weaponNumbers`, `checkShift`); **a new consumer must do the same, and
+never add a resolved total to separately resolved lines of the same carriers.** **AN EVERY-ROLL
+LINE IS COUNTED ONCE BECAUSE THE DEFENSE PASS FOLDS IT IN**: `prepareDefenses` asks `kind:
+"defense"`, which `rolls` reaches, so the line is in each Defense's stored modifiers, and a roll
+that rolls those (a Defense roll, a Defense rolled as a check, an Initiative with Awareness)
+asks `momentOnly`, which drops a static line. A scope that does not reach `defense` (`checks`)
+is not stored there and stays out of those rolls, which is `SKILL`'s quirk, kept from the old
+bare CHECK. This settles the wide half of ruling 222's open question (ruling 370). **Mended
+with it**: `callHook` in `module/rules/engine.mjs` asks the second look as the Defense pass
+asked (`kind: "defense"`, no Item, `staticOnly`), so a one-roll custom effect or a Skip is
+spent only by a roll whose Defense number held the line (a static line to Skill checks was
+spent by a Wind roll through 0.35.1); `conditionalDefenseRules` in `module/apps/actor-sheet.mjs`
+lists any scope that reaches `defense`; `weaponNumbers` (`module/helpers/actor-context.mjs`)
+asks `ruleModifiers(...staticOnly).applied` for a character, so a Talent's standing attack line
+is in the weapon row's number; the npc model's `defenses[key].conditions`, `attackModifiers`
+and `checkNumber().conditions` hold what COUNTED (`resolveModifiers(...).applied`); `source`
+rides on a roll's `extras` and a kept road roll's `modifiers`. **The build**:
+`overlappingLines(rules)` in `assets/lib/conditions_build.mjs` and ONE warning for a Condition's
+row whose lines of one sign reach one roll ("A Condition counts once on a roll, so only the
+stronger ..."), in place of the two "takes both" warnings; its row is in `RULES`. A Talent's
+cell gets no such warning. **Not built**: `prepareDefenses` passes no `rank`, so a static line
+with `IF: RANK(roll ...)` never holds on a Defense: such a line reaches checks, attacks and an
+Initiative rolled with a Skill, and the kind WARNS at parse (`context.warn`) for a bare `CHECK`
+and for `DEF`. **What the review of 0.36.0 added (two readers, seventeen findings, two medium),
+and a later change must keep**: **SYNC CONTENT NEVER PARSES A CELL** (it passes `swBuilt: true`
+with each source document it writes, pack documents and owned copies alike, and
+`SwItem#_preUpdate` then leaves the `system.rules` the build parsed; through 0.35.1 it parsed
+the text again under the running grammar for every Item the sync wrote, so a client newer than
+the pack sources changed the meaning of whichever copies it happened to write; a world Item is
+parsed again only when the TEXT of `system.automation` is in the change, a custom effect row
+when its text or its label changes, `prepareEffectsUpdate`); `roadRoll` hands `source` back
+out of the record; `SwCheck.resolveAgainst` puts `listed` on its result (the die's lines and
+the pairing's less what their shared source set aside), which the card prints, while
+`modifiers` and the flags stay the die's lines and then the pairing's, which a reroll splits
+by position; `callHook`'s second look passes `rank: undefined`; a message that says what to
+write prints the value AS WRITTEN (`written` in `bonus.mjs`: `-N`, never the sign it is stored
+as); a comma with nothing after it (`CHECK: 1 situation, `) is refused in `effects.mjs`, since
+with no target the line would read as every roll; a tag in a block of its own (`[SKILL 1
+situation]`, `readBlock`) and a tag inside EFFECT with its colon lost (any tag, `grammar.mjs`)
+are told what to write, and `highlight_automation.py` has the hint; `overlappingLines` returns
+`covers` (one of the pair is a bare `CHECK`) and knows a scope beside a named target and every
+Defense or Awareness beside `INIT`, and the build's "can go" clause is printed only for a pair
+a bare `CHECK` covers (a `SKILL` line does not reach the default Initiative, so an `INIT` line
+beside it is not spare). **Stated and not built**: a set-aside line still files its `LIMIT`
+mark, and a ticked claim weaker than a standing line of the same carrier is spent for nothing.
+**The smoke test no longer pins the wording of a Condition's row** (`assets/smoke_test.js`): it
+failed the day Mike reworded Fatigued, and the sheet is the only authority for that text.
+**The Conditions sheet was built as Mike saved it at 14:44 on 2026-11-19** (`build_all.mjs
+--conditions`): 26 Conditions, 13 rules on 7 rows; Deafened carries `[EFFECT IMMUNE:
+TRAIT(Auditory)]` and Includes Off-Guard (his edit); Bound writes `[X]`; Frightened's three
+lines were read again, the middle one now `rolls`, the numbers the same, and the build says
+the `DEF` and `ATK` lines can go. The two Talent cells (Contract Literate, Jack of All Trades)
+are printed in the 0.36.0 changelog entry for him to change; their stored rules are still the
+narrow `checks`.
 
 **0.35.1 (Mike, 2026-11-19; rulings 361 to 365): `[X]` in a Condition's text is the creature it
 is about.** Mike, of Bound's "Your implement is in a neutral Bind with X's": "should we make it
@@ -2392,9 +2481,11 @@ content build writes them again.
   `conditions` block (the Listed rows, `[name, effect]`) together, only when the whole sheet
   reads; `build_foundry.mjs` writes `content/conditions.json` for the client. A row that names no
   Condition the system has MAKES one (the build prints `NEW CONDITION`); a row the system needs
-  may not be deleted (the build refuses). A Condition's row reads `CHECK`, `ATK`, `DEF` and
+  may not be deleted (the build refuses). A Condition's row reads `CHECK` (with no target every
+  roll and Threshold, 0.36.0), `SKILL` (0.36.0), `ATK`, `DEF` and
   `INIT`, with `-N` for its own value, and since 0.35.0 `IMMUNE` for a trait (`[EFFECT IMMUNE:
-  TRAIT(Visual)]`); Includes is how one Condition counts as another, with
+  TRAIT(Visual)]`); a row's lines count once on a roll, the stronger (0.36.0); Includes is how
+  one Condition counts as another, with
   `against X` (`AUTOMATION_GRAMMAR.md`, section 11). **`node assets/build_all.mjs --conditions`
   (`sync_conditions.cmd`) builds this workbook alone.** The handbook still prints its Conditions
   table; the sheet wins, and nothing checks the book against it.
@@ -2729,11 +2820,41 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
-- **0.35.1 leaves to the table or to Mike** (`[X]` in a Condition's text): **the four cells wait
-  for him to paste** into `data/conditions.xlsx` (the 0.35.1 changelog entry: Bound, Controlled
-  and Controlling with `[X]` for each X, and Wrong-Footed as "Off-Guard against [X] only.").
-  Until he saves them the build warns on Bound, Controlled and Controlling and the tooltips read
-  as before; then run `node assets/build_all.mjs --conditions` and Sync content. Rulings 364 and
+- **0.36.0 leaves to the table or to Mike** (a bare `CHECK` is every roll): **two cells wait
+  for him to change** (the 0.36.0 changelog entry): Contract Literate to `[EFFECT SKILL: 2
+  condition; IF: CLAIM(...)]` in `data/talents_cultures.xlsx`, and Jack of All Trades to
+  `[EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]` on the Human sheet when its cell is
+  written. **Both must be changed BEFORE the next content build**: a cell that still says
+  `CHECK` then becomes an every-roll line, and Contract Literate's claim would be offered on
+  attack and Defense rolls and could be spent by a foe's attack (Sync content does not change
+  them). Frightened's one line, `[EFFECT CHECK: -N condition]`, is optional: its three lines
+  were built on 2026-11-19 and give the same numbers, with the build's warning that the `DEF`
+  and `ATK` lines can go. **Ten minutes' rest lowers Fatigued by 1 since this release** (Mike:
+  "Yes, plan it"; a night's rest still ends it; folded into 0.36.0, rulings 372 to 374), as his
+  reworded Fatigued row says; the row's Notes cell still says "the rests that end it" (a
+  sentence to paste is in the changelog); "unless otherwise specified" (Rage's "catch your
+  breath", sleeping in armor) and Frightened's and Slowed's drop at each round's end are not
+  built. Found by that live drive and mended: an adversary's rest card was public, and goes to
+  the GM alone now. Rulings 369 to 371 and 374 are
+  Claude's readings and his to overrule. Not built: an every-roll line with `IF: RANK(roll
+  ...)` on a Defense (warned of); `SKILL` on a check rolled with a Defense's Constellation (a
+  claimed one is still offered there, the old quirk); a `LIMIT` kept unused when its line is
+  set aside; a build warning for a Talent's cell whose lines meet on a roll; `REROLL`'s own
+  "any check", the sheet's "Check bonus" field and the out-of-encounter Initiative number, each
+  as it was. Ticking both offered boxes of one Talent on one roll now gives the stronger. Not
+  driven live: a claim armed by its pin and spent by a foe's attack, a kept road roll through
+  the party sheet's own dialog, a table with no GM. The test world was driven on 0.36.0 with a
+  GM tab and a player tab and left as found but for one "Content synced" card (438 messages):
+  its content and its Conditions are level with these sources (Deafened's line, Bound's `[X]`,
+  Frightened's three lines as read again), Mike's Combat with testpc8 is the active one at
+  round 4, the Bandit is Prone as found, the fixtures of earlier releases are untouched, and
+  Foundry is running on 0.36.0 with the GM joined.
+- **0.35.1 leaves to the table or to Mike** (`[X]` in a Condition's text): **three of the four
+  cells still wait for him to paste** into `data/conditions.xlsx` (the 0.35.1 changelog entry:
+  Controlled and Controlling with `[X]` for each X, and Wrong-Footed as "Off-Guard against [X]
+  only."; Bound has its `[X]` since the build of 2026-11-19). Until he saves them the build
+  warns on Controlled and Controlling and their tooltips read as before; then run `node
+  assets/build_all.mjs --conditions` and Sync content. Rulings 364 and
   365 are Claude's readings and his to overrule (who X is; where `[X]` is read). The About
   sheet wants one more sentence (the changelog has it). Not built: `[N]` and `[Zone]`; a choice
   of the token's name over the sheet's; `[X]` in the reference tables naming anybody. The
@@ -2743,8 +2864,9 @@ content build writes them again.
   messages): Mike's Combat with testpc8 active at round 4, the 0.35.0 fixtures untouched,
   Foundry restarted for the 0.35.1 manifest and left running with the GM joined.
 - **0.35.0 leaves to the table or to Mike** (immunity to a trait, and the two texts):
-  **Deafened's row needs its line** (`[EFFECT IMMUNE: TRAIT(Auditory)]` in place of the `N/A`),
-  and it will reach further than Blinded's: Demoralize, Rally, Talk Them Down, Command the
+  **Deafened's row has its line since 2026-11-19** (`[EFFECT IMMUNE: TRAIT(Auditory)]`, built
+  with 0.36.0; Mike also made Deafened count as Off-Guard), and it reaches further than
+  Blinded's: Demoralize, Rally, Talk Them Down, Command the
   Field, Anticipate, Battle Cry, Bolster and Direct Animal are all Auditory. **At the table
   today the feature is mostly the note**: no Visual or Auditory Maneuver on the sheets carries
   an `APPLY`, `REMOVE` or `GIVE` line, and no weapon, attack or spell carries either trait; only
@@ -2978,13 +3100,12 @@ content build writes them again.
   ruling 256, Claude's reading, his to overrule); a Persistent Damage
   effect other than a Torso Wound's bleed, which still has no sheet field or control; an
   adversary's Off-Guard, which has never moved its typed Thresholds.
-- **Whether a bonus reaches a Defense rolled as a check is open** (ruling 222's wider question; a
-  row in `assets/open_decisions.json`). Ruling 222 is narrow: a bonus to a Maneuver applies to a
-  check rolled with a Defense Constellation from that Maneuver's Item (Humanity's +1 on an Aid
-  made with Awareness). A bonus to every check, and a bonus to a Maneuver made without its Item,
-  still stay out of a Defense rolled as a check (Wind's Endure, a Recovery, a Search with
-  Awareness): nothing is applied and nothing is offered there. Recommended: yes, as its own
-  ruling, with a Wind roll driven live, because it changes numbers outside Aid.
+- **Whether a bonus reaches a Defense rolled as a check: half settled by 0.36.0** (ruling 370). A
+  bonus to EVERY ROLL (a bare `CHECK`) reaches a Defense rolled as a check (Wind's Endure, a
+  Recovery, a Search with Awareness), once, through the Defense's own number. Still out of
+  those rolls, and still open (a row in `assets/open_decisions.json`): a `SKILL` line, and a
+  bonus to a Maneuver made without its Item. Ruling 222 itself is unchanged: a bonus to a
+  Maneuver applies to a check rolled with a Defense Constellation from that Maneuver's Item.
 - **The five caster Callings are disabled in `data/talents_callings.xlsx`** as Mike saved it on 2026-11-05
   (their `Enabled?` cells blank), so Spellshaper, Blood Mage, Necromancer, Summoner and Spellblade
   and their Talents left the pack sources in 0.13.0; setting the rows to Yes restores them under
@@ -3146,6 +3267,51 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (ten minutes' rest lowers Fatigued by 1, folded into system 0.36.0; rulings
+372 to 374 in the 0.36.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's
+decisions by question: a night's rest still ends it, fold it into 0.36.0): the Fatigued row's
+new words, "Reduce by 1 after every ten minutes of uninterrupted rest", against a system that
+ended Fatigued whole after ten minutes, now the rest lowering it by 1 for each press, from the
+Overview's button and the Fatigued card's; an adversary's rest card shown to the whole table,
+now the GM's alone. Checked by the self-test (259 checks), the gates, the Conditions build
+(the app's two Wind sentences; `assets/conditions.json` did not move) and live as the GM and
+as the player (the 0.36.0 changelog entry lists what). No handbook moved: the book says how
+Fatigued ends in its Conditions table alone, which the sheet overrides.
+
+Cleared 2026-11-19 (a bare `CHECK` is every roll, system 0.36.0; rulings 366 to 371 in the 0.36.0
+changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: every
+roll and Threshold, once and the stronger, `SKILL` for the narrow meaning): Frightened's three
+lines, which Mike called redundant since Defense and Attack rolls are checks too, now sayable as
+one, a bare `CHECK` reaching every roll and Threshold (the new scope `rolls`); the narrow
+meaning a bare `CHECK` had, now the tag `SKILL` over the unchanged scope `checks`, so no stored
+rule changed meaning; two lines of one Condition or Talent to different targets both counting
+on a roll they both reached, now one carrier one circumstance, its strongest bonus and its
+strongest penalty; a bonus to every check never reaching a Defense rolled as a check (an open
+decision since 0.21.0), now reaching it once through the Defense's own number; the build's "a
+row takes both" warnings, now one that says which lines meet and that the stronger counts.
+Mended beside it, each found by the second reader of the design: a one-roll effect used up by
+a Defense rolled as a check that never applied it; the Threshold tooltip's list; the weapon
+row's number missing a Talent's standing attack line; an adversary's hints listing every line
+of a row; a kept road roll forgetting whose each bonus was. Checked by 258 self-test checks,
+`node --check` on every module, `build_all.mjs --check`, the style check (one failure, the
+em-dash in Dwarf Lore B13), the smoke test on the rebuilt app (its pin on Fatigued's wording
+taken out), the Conditions build on the sheet as Mike saved it that day (Deafened's line and
+its Off-Guard, Bound's `[X]`, five reworded Effects, Frightened's three lines read again),
+an independent review by two readers (seventeen findings, two of them medium: Sync content
+parsed every cell again on the client, which under this release's grammar would have changed
+Contract Literate's meaning on whichever copies a sync wrote; and a kept road roll lost its
+sources on the way back out of the record; all mended but two stated) and live in the test
+world with a GM tab and a player tab, before the review and again for its mends (the 0.36.0
+changelog entry lists what, and what was not driven; 258 checks then, 259 with the rest
+change). Not built, and said
+so: an every-roll line with a roll-rank condition on a Defense; `SKILL` on a check rolled with
+a Defense's Constellation; a `LIMIT` kept unused when its line is set aside. Two cells are his
+to change before the next content build, and his four workbooks in progress were not converted,
+built, staged or written. No handbook moved and
+`data/SYNC.json` is untouched. Committed on 2026-11-19 at his word, with the rest change
+folded in, and tagged `v0.36.0`, his edits to the four workbooks and the v4.24 draft left out;
+not pushed until he says.
 
 Cleared 2026-11-19 (`[X]` in a Condition's text, system 0.35.1; rulings 361 to 365 in the
 0.35.1 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:

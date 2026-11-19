@@ -6,7 +6,7 @@
  * knows nothing of the grammar or of which Conditions the system has; this module is the rest:
  *
  *   1. every Automation cell parsed with the system's grammar, as a Condition's row
- *      (`itemType: "condition"`: CHECK, ATK, DEF, INIT, with `-N` for the Condition's own value;
+ *      (`itemType: "condition"`: CHECK, SKILL, ATK, DEF, INIT, with `-N` for the Condition's own value;
  *      and since 0.35.0 `IMMUNE: TRAIT(<Trait>)`);
  *   2. the rows laid over the system's own Conditions (`registerConditions`), which refuses a row
  *      it cannot take and says which rows made NEW Conditions;
@@ -39,6 +39,74 @@ import { readEffectName } from "../../foundry/starwrought/module/rules/effect-li
 import {
   CONDITIONS as REGISTRY, registerConditions, conditionLabel, conditionRowName, readInclude, hasConditionTextX
 } from "../../foundry/starwrought/module/config.mjs";
+// Which rolls a scope reaches (0.36.0), for the "counts once" warning.
+import { SCOPES, scopeReaches } from "../../foundry/starwrought/module/rules/kinds/bonus.mjs";
+
+/** The words of a kind of roll, for a message. */
+const KIND_WORDS = Object.freeze({ check: "checks", initiative: "Initiative", attack: "attacks", defense: "Defenses" });
+
+/**
+ * Where two of a row's lines reach one roll (0.36.0; ruling 367): `[{ a, b, what, covers }]`, the
+ * two lines' numbers, the rolls they share in words, and whether one of them is a bare CHECK
+ * (which covers the other wholly). ONE CONDITION COUNTS ONCE on a roll, the strongest bonus and
+ * the strongest penalty of its lines, so two lines of one sign that both reach a roll mean the
+ * weaker does nothing there. Lines of opposite signs both stand and are not listed, nor are two
+ * lines to one same target (they were always one), nor two lines to two different named targets
+ * (they never meet).
+ *
+ * Where each target reaches, as the engine counts it (module/rules/kinds/bonus.mjs):
+ *  - a scope by the roll's kind (`SCOPES`); and two scopes that share no kind still meet in two
+ *    places: every Defense (`DEF`) and `INIT` on the default Initiative, which is rolled with
+ *    Awareness; and `SKILL` and `INIT` on an Initiative rolled with a Skill ALONE (a SKILL line
+ *    never reaches the default Initiative, nor an adversary's), which is said in those words so
+ *    nobody deletes an INIT line a SKILL line does not cover (the review of 0.36.0);
+ *  - a line to one Defense on that Defense, and on the default Initiative when it is Awareness;
+ *  - a line to a Constellation or a Maneuver by name on the checks made with it, which a bare
+ *    CHECK and a SKILL line both reach, and for a Constellation on the attacks and the Initiative
+ *    rolled with it.
+ * @param {object[]} rules  The row's parsed rules.
+ */
+export function overlappingLines(rules) {
+  const describe = rule => {
+    const to = rule?.to ?? {};
+    const slug = String(to.slug ?? "");
+    if (to.type === "scope") return { scope: slug };
+    if (Object.hasOwn(DEFENSES, slug)) return { defense: slug, name: DEFENSES[slug].name };
+    return { target: slug, name: String(to.name ?? slug), maneuver: to.type === "action" };
+  };
+  const meet = (x, y) => {
+    if (x.scope && y.scope) {
+      const pair = [x.scope, y.scope];
+      if (pair.includes("checks") && pair.includes("initiative")) return "Initiative rolled with a Skill";
+      if (pair.includes("defenses") && pair.includes("initiative")) return "Initiative rolled with Awareness";
+      const shared = (SCOPES[x.scope]?.kinds ?? []).filter(k => (SCOPES[y.scope]?.kinds ?? []).includes(k) && KIND_WORDS[k]);
+      return shared.length ? shared.map(k => KIND_WORDS[k]).join(", ") : null;
+    }
+    const [scope, other] = x.scope ? [x.scope, y] : (y.scope ? [y.scope, x] : [null, null]);
+    if (!scope) return null;
+    if (other.defense) {
+      if (scopeReaches(scope, "defense")) return other.name;
+      return ((scope === "initiative") && (other.defense === "awareness")) ? "Initiative rolled with Awareness" : null;
+    }
+    if ((scope === "rolls") || (scope === "checks")) return `checks ${other.maneuver ? "to" : "with"} ${other.name}`;
+    if (other.maneuver) return null;
+    if (scope === "attacks") return `attacks made with ${other.name}`;
+    if (scope === "initiative") return `Initiative rolled with ${other.name}`;
+    return null;
+  };
+  const bonus = (rules ?? []).filter(r => (r?.kind === "bonus") && Number.isFinite(r.value) && r.to?.slug);
+  const out = [];
+  for (let i = 0; i < bonus.length; i += 1) {
+    for (let j = i + 1; j < bonus.length; j += 1) {
+      const [a, b] = [bonus[i], bonus[j]];
+      if ((Math.sign(a.value) !== Math.sign(b.value)) || ((a.to.type === b.to.type) && (a.to.slug === b.to.slug))) continue;
+      const [da, db] = [describe(a), describe(b)];
+      const what = meet(da, db);
+      if (what) out.push({ a: a.line, b: b.line, what, covers: (da.scope === "rolls") || (db.scope === "rolls") });
+    }
+  }
+  return out;
+}
 
 /**
  * A bare X in a text: the capital letter standing alone, as the four rows that take a creature
@@ -181,13 +249,15 @@ export function buildConditions({ staged, resolve = null } = {}) {
     } else if ((takes === "x") && !hasConditionTextX(written) && BARE_X.test(written)) {
       warnings.push(`${where}: the text writes a bare X and no [X]: write [X] where the creature's name should appear (a bare X is printed as the letter)`);
     }
-    // The author's traps: two lines of one row that both reach one roll are both counted.
-    const scopes = new Set(parsed.rules.filter(r => r.to?.type === "scope").map(r => r.to.slug));
-    if (scopes.has("checks") && scopes.has("initiative")) {
-      warnings.push(`${where}: a CHECK line and an INIT line: an Initiative is a check, so it takes both. Keep the CHECK line alone unless Initiative is meant to count twice`);
-    }
-    if (scopes.has("defenses") && parsed.rules.some(r => (r.to?.type !== "scope") && Object.hasOwn(DEFENSES, String(r.to?.slug ?? "")))) {
-      warnings.push(`${where}: a DEF line for every Defense and a DEF line for one of them: that Defense takes both`);
+    // ONE CONDITION COUNTS ONCE ON A ROLL (0.36.0; ruling 367). Through 0.35.1 two lines of one
+    // row that reached one roll were both counted, and this warned that they would add. Now the
+    // stronger alone applies, so the warning says which lines meet, and where: the weaker one does
+    // nothing there. One line for the row, however many pairs.
+    const meets = overlappingLines(parsed.rules);
+    if (meets.length) {
+      const pairs = meets.map(m => `lines ${m.a} and ${m.b} both reach ${m.what}`).join("; ");
+      warnings.push(`${where}: ${pairs}. A Condition counts once on a roll, so only the stronger of two such lines applies there`
+        + (meets.some(m => m.covers) ? "; a bare CHECK reaches every roll and Threshold, so a line of the same size beside it can go" : ""));
     }
     parsedRows.push({ row, name, takes, where, includes, rules: parsed.errors.length ? [] : parsed.rules });
   }

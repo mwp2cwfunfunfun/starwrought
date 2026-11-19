@@ -521,7 +521,8 @@ async function applyPack(packPlan, plan, { cache, result, say }) {
           await cls.deleteDocuments(updated.map(d => d._id), operation);
           await cls.createDocuments(updated, { ...operation, keepId: true });
         } else {
-          await cls.updateDocuments(updated.map(asUpdate), { ...operation, recursive: false, diff: false });
+          // `swBuilt`: the source's `system.rules` are the build's parse and stand (SwItem#_preUpdate).
+          await cls.updateDocuments(updated.map(asUpdate), { ...operation, recursive: false, diff: false, swBuilt: true });
         }
         done.update += updated.length;
       }
@@ -607,7 +608,7 @@ async function refreshCopies(plan, { cache, result, say }) {
     }
     if (!updates.length) continue;
     try {
-      await actor.updateEmbeddedDocuments("Item", updates, { recursive: false, diff: false, swAnnounced: true });
+      await actor.updateEmbeddedDocuments("Item", updates, { recursive: false, diff: false, swAnnounced: true, swBuilt: true });
       result.copies.count += updates.length;
       result.copies.actors.push({ name, count: updates.length });
     } catch (error) {

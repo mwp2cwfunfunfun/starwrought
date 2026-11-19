@@ -44,7 +44,9 @@ import { readEffectName } from "./effect-list.mjs";
 
 /** The tags an effect line may begin with, each to the kind that reads it. Upper case in the document; case blind here. */
 export const EFFECT_TAGS = Object.freeze({
-  check: "bonus", atk: "bonus", def: "bonus", init: "bonus", speed: "bonus",
+  // `skill` (0.36.0) sits after `check`, which stays the first tag of the `bonus` kind (the
+  // grammar names a kind by its first tag).
+  check: "bonus", skill: "bonus", atk: "bonus", def: "bonus", init: "bonus", speed: "bonus",
   immune: "prevent", mark: "mark", reroll: "reroll", ignore: "ignore",
   // 0.21.0: `USE: <Attribute>, <Constellation>, <Maneuver>`, the terms a check is made with.
   use: "substitute",
@@ -66,7 +68,7 @@ export const EFFECT_TAGS = Object.freeze({
 });
 
 /** The modifier tags: a value and a bonus type come first. */
-export const MODIFIER_TAGS = Object.freeze(["check", "atk", "def", "init", "speed", "give"]);
+export const MODIFIER_TAGS = Object.freeze(["check", "skill", "atk", "def", "init", "speed", "give"]);
 
 /**
  * The component words after the tag. `UNTIL` is read on a GIVE line alone and `VALUE` on an ALTER
@@ -120,6 +122,12 @@ export function readEffectLine(text, { context = {} } = {}) {
   if (MODIFIER_TAGS.includes(tag)) {
     const parts = splitOperands(rest);
     const first = parts.shift() ?? "";
+    // A comma with nothing after it (`CHECK: 1 situation, `): a target was deleted and its comma
+    // left. Refused: with no target the line means something wider, and since 0.36.0 a bare CHECK
+    // is every roll and Threshold (the review of 0.36.0; the empty descriptor was dropped).
+    if (/,\s*(?:,|$)/.test(rest) || parts.some(p => !String(p ?? "").trim())) {
+      throw new RuleSyntaxError(`${tag.toUpperCase()}: a comma with nothing after it; name the target after the comma, or take the comma out`);
+    }
     const words = first.split(/\s+/).filter(Boolean);
     // `N` (0.33.0; ruling 326): the Condition's own value, on a Condition's row of the Conditions
     // workbook. `DEF: -N condition` on Frightened is -2 at Frightened 2. Stored as the sign with
@@ -141,7 +149,9 @@ export function readEffectLine(text, { context = {} } = {}) {
       // `[EFFECT CHECK: Athletics vs Evade]` (0.34.0): the check a Maneuver rolls, written as the
       // bonus tag. Told its own block, beside the tag's shape.
       const block = (tag === "check") ? ". The check a Maneuver rolls is a block of its own, with no EFFECT and no colon: `[CHECK Athletics vs Evade]`" : "";
-      throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: <value> <type>, <descriptor>\`, as in \`${tag.toUpperCase()}: ${example}\`: a signed whole number first, not "${first}"${block}`);
+      // The shape of the tag itself: only CHECK, DEF and GIVE take a descriptor.
+      const shape = ["check", "def", "give"].includes(tag) ? "<value> <type>, <descriptor>" : "<value> <type>";
+      throw new RuleSyntaxError(`${tag.toUpperCase()} is written \`${tag.toUpperCase()}: ${shape}\`, as in \`${tag.toUpperCase()}: ${example}\`: a signed whole number first, not "${first}"${block}`);
     } else {
       value = Number(words[0]);
       if (value === 0) throw new RuleSyntaxError("a bonus of 0 does nothing");

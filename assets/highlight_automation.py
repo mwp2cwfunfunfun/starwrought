@@ -406,6 +406,11 @@ def why(message, text, data, vocab, item_name=""):
         if near:
             return "mis-typed", f"did you mean \"{near}\"?"
         return "no kind yet", f"the grammar has no keyword \"{bare}\""
+    # `[SKILL 1 situation]`, `[EFFECT SKILL 1 situation]`: an effect tag with its EFFECT or its colon
+    # lost (0.36.0). The message already says what to write.
+    m = re.search(r"is an effect tag(?:, and an effect goes in an EFFECT block with a colon after the tag| and takes a colon): (write `[^`]+`)", message)
+    if m:
+        return "mis-typed", m.group(1)
     for pattern, what in NAME_PATTERNS:
         m = pattern.search(message)
         if not m:

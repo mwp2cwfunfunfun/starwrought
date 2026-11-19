@@ -183,10 +183,15 @@ RULES = [
      "Clear the System cell: only the Conditions the system itself runs are System, and they are fixed in code."),
     (r"the Exposed row describes the four Zones", "Fix", "Automation cell",
      "Set the Exposed row's Automation cell to N/A: an Exposed Zone is read off the Zone, and the row only holds the text."),
-    (r"a CHECK line and an INIT line", "Fix", "Automation cell",
-     "Delete the INIT line unless Initiative should take the Condition twice: an Initiative is a check, so the CHECK line already reaches it."),
-    (r"a DEF line for every Defense and a DEF line for one of them", "Fix", "Automation cell",
-     "Keep one of the two DEF lines, or accept that the named Defense takes both."),
+    # 0.36.0: one Condition counts once on a roll; a bare CHECK reaches every roll.
+    (r"A Condition counts once on a roll", "Fix", "Automation cell",
+     "Two lines of this row reach the same roll, and only the stronger counts there. Where one of them is a bare CHECK, which reaches "
+     "every roll and Threshold, a DEF, ATK or INIT line of the same size beside it can be deleted (Frightened is one line: "
+     "[EFFECT CHECK: -N condition]). Otherwise leave both: each still counts on the rolls the other does not reach (a SKILL line "
+     "does not reach the default Initiative, so an INIT line beside it is not covered)."),
+    (r"is not read on a Defense yet", "Fix", "Automation cell",
+     "A line that asks about the roll's own rank (IF: RANK(roll ...)) never reaches a Defense's number. If the bonus is for checks, "
+     "write SKILL in place of CHECK; if it should reach Defenses too, say so and Claude will plan it."),
     # 0.35.0: the sheet's two texts. Effect is the rules text; Description is the flavor line.
     (r"no Effect; players will read nothing for this Condition", "Fix", "Data",
      "Write the Effect cell: it is the tooltip on the Condition's row and on the token's hover card, and the reference tables' text. "
@@ -215,7 +220,7 @@ RULES = [
      "Write the line alone, as [EFFECT IMMUNE: TRAIT(Visual)]: it acts for whoever has the Condition. If the immunity should be "
      "limited or conditional, say how and Claude will propose the word."),
     (r"is not read on a Condition's row yet|on a Condition's row does not take|on a Condition's row yet|a Condition's row takes", "Fix", "Automation cell",
-     "A Condition's row reads CHECK, ATK, DEF and INIT lines, and IMMUNE: TRAIT(...) written alone, all of which act for whoever has "
+     "A Condition's row reads CHECK, SKILL, ATK, DEF and INIT lines, and IMMUNE: TRAIT(...) written alone, all of which act for whoever has "
      "the Condition. What this line asks for has no word there yet: say what the Condition should do and Claude will propose it, and "
      "mark the cell N/A meanwhile."),
     (r"is a Condition's own value|this Condition takes none", "Fix", "Automation cell",

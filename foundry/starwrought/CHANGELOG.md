@@ -7,6 +7,268 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.36.0 (2026-11-19): a bare `CHECK` reaches every roll, `SKILL` is the narrow word, and ten minutes' rest lowers Fatigued by 1
+
+Built from **Player's Handbook v4.25**, which did not move. Mike, of Frightened's three lines:
+"is this redundance ... Since Defense rolls/thresholdes and Attack rolls/thresholds are checks
+too?", then "Can't CHECK include ALL rolls/thresholds, but ATK and DEF just mean attack checks
+and defense checks respectively?" Planned first; his decisions, by question: a bare `CHECK`
+reaches every roll and Threshold; when one Condition or Talent has lines that both reach a roll
+they count once, the stronger; and `SKILL` is the word for what a bare `CHECK` meant until now.
+**One tag is new, `SKILL`, for the `bonus` kind; no rule kind and no hook point is.** Two cells
+are printed below for him to change before the next content build. The Conditions sheet was
+built as he saved it on the day (below); his four workbooks in progress were not converted,
+built, staged or written. **Folded into the release on his word: ten minutes' rest lowers
+Fatigued by 1**, as his reworded Fatigued row says (its own section, below).
+
+| You write | It reaches |
+|---|---|
+| `[EFFECT CHECK: -N condition]` | Every roll and Threshold: Skill checks, Initiative, attacks, Defenses |
+| `[EFFECT SKILL: 1 situation]` | Checks that are no attack and no Defense, and an Initiative rolled with a Skill |
+| `[EFFECT ATK: -N condition]` | Attacks |
+| `[EFFECT DEF: -N condition]` | Defenses |
+| `[EFFECT INIT: 1 situation]` | Initiative |
+
+`CHECK` with a target is unchanged: `[EFFECT CHECK: 1 condition, aid]` still names what is
+rolled. `SKILL` takes no target.
+
+| | 0.35.1 | 0.36.0 |
+|---|---|---|
+| A bare `CHECK` | Skill checks and Initiative | Every roll and Threshold |
+| "Checks that are not attacks or Defenses" | A bare `CHECK` | `SKILL` |
+| Frightened | Three lines: `DEF`, `CHECK`, `ATK` | Can be one line, `CHECK`. The three give the same numbers |
+| Two lines of one Condition or Talent that reach one roll | Both counted, when their targets differed | Counted once: the strongest bonus and the strongest penalty |
+| A bonus to every check, on a Defense rolled as a check (the Wind roll) | Not applied (an open decision) | Applied once, through the Defense's own number |
+| The build, of a row whose lines meet on a roll | "takes both" | "only the stronger applies there" |
+| A line already on a sheet that read "to Checks" | | Reads "to Skill checks", which is what it does |
+| Sync content, of an Item it writes | Parsed the cell's text again on the client | Keeps the rules the build parsed |
+
+**The cells.**
+
+```
+  Contract Literate   (data/talents_cultures.xlsx, Serrovane)
+      [EFFECT SKILL: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]
+
+  Jack of All Trades  (data/talents_ancestries.xlsx, Human; when you write its cell)
+      [EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]
+
+  Frightened          (data/conditions.xlsx; optional)
+      [EFFECT CHECK: -N condition]
+```
+
+**When each changes.** A line keeps the meaning it was read with until its cell is parsed
+again, so nothing on the sheets changes the moment the code changes.
+
+- **Contract Literate and Jack of All Trades** keep today's meaning until the next content
+  build. If a cell still says `CHECK` then, it becomes an every-roll line. For Contract
+  Literate that would offer its claim on attack and Defense rolls, and an armed pin could be
+  spent by a foe's attack. Change the cell before that build. Sync content does not change
+  them.
+- **Frightened** was read again by the Conditions build of this release, its three lines
+  unchanged. Its `CHECK` line is every roll now; each roll still takes -N once, so the numbers
+  are the same. The build says the `DEF` and `ATK` lines can go. Writing the one line is
+  optional.
+
+**The Conditions sheet as built** (`node assets/build_all.mjs --conditions`, on the file as
+saved at 14:44 on 2026-11-19): 26 Conditions, 13 rules on 7 rows.
+
+- **Deafened** carries `[EFFECT IMMUNE: TRAIT(Auditory)]`, and counts as Off-Guard (its
+  Includes cell). A Deafened creature is immune to Demoralize, Rally, Talk Them Down, Command
+  the Field, Anticipate, Battle Cry, Bolster and Direct Animal, and takes Off-Guard's -2 to
+  Evade and Guard.
+- **Bound** writes `[X]`, so the sheet and the hover card name the Bind partner. **Controlled
+  and Controlling** still write a bare X, and the build warns on both.
+- **Reworded Effects**: Bound, Deafened, Dying, Fatigued, Frightened.
+- **Fatigued's Effect now says "Reduce by 1 after every ten minutes of uninterrupted rest"**,
+  where it said "Ends after ten minutes of rest". The system follows it from this release
+  (the next section).
+
+**Ten minutes' rest lowers Fatigued by 1.** Mike, asked whether the system should follow the
+reworded row: "Yes, plan it". Planned first; his decisions, by question: a full night's rest
+still ends Fatigued, and the change is folded into this release.
+
+| | 0.35.1 | 0.36.0 |
+|---|---|---|
+| Ten minutes' rest, Fatigued 3 | Fatigued ends | Fatigued 2 |
+| Ten minutes' rest, Fatigued 1 | Fatigued ends | Fatigued ends |
+| A full night's rest | Fatigued ends | Fatigued ends |
+| Vigor back from ten minutes' rest | level × Presence | The same |
+| An adversary's Fatigued | Ends | Drops by 1 |
+| The rest card | "Fatigued 3 ends with it." | "Fatigued drops from 3 to 2." or "Fatigued 1 ends." |
+| An adversary's rest card | Public | The GM's alone, as its Wind and Fatigued cards are |
+
+- **One press is one stretch of ten minutes.** Thirty minutes of rest is three presses, of the
+  Overview's Ten minutes' rest or of the button on the Fatigued card, which can be pressed
+  again. Each press gives the Vigor the book gives for ten minutes.
+- **Wind checks start again sooner.** At Fatigued 3 nobody rolls Wind. One rest brings a
+  fighter to Fatigued 2, so the next encounter's rounds ask for Wind checks again.
+- **The Travel lock lasts longer.** A Fatigued member of the party can only Travel. At
+  Fatigued 3 that now takes thirty minutes of rest to lift, where it took ten.
+- **"Uninterrupted" is the table's word**, as "the ten minutes passed" already was. The system
+  has no clock.
+- **Found by the live drive and mended: an adversary's rest card was public.** Its Wind card
+  and its Fatigued card go to the GM alone, but the card the button posted told the whole table
+  that the adversary had rested and how winded it still was. It goes to the GM alone now. A
+  player's character's card is public, as before.
+- **The Fatigued row's Notes cell** still says "the rests that end it". If you want it to
+  match: "The numbers are this row's lines. The maximum of 3, the Wind check, the rests that
+  lower it (ten minutes, by 1) and end it (a night), and the lock to Travel are the system's."
+- **Not built**: "unless otherwise specified" (Rage's "until you spend three actions to catch
+  your breath", and waking Fatigued after sleeping in armor without Comfort, are the table's);
+  Frightened and Slowed dropping by 1 at the end of each round, which their rows say and which
+  is still done by hand; a button for a longer rest.
+
+In the code: `FATIGUED_REST_STEP` and the pure `fatiguedAfterRest(value, stretches)` in
+`module/config/load.mjs`; `restTenMinutes` in `module/documents/actor/rest.mjs`, which lowers
+Fatigued through it and whispers its card by `tableFor`; `restForTheNight` unchanged but for
+its card's words; `onWindRest` in `module/documents/cards/round.mjs`, its unreachable second
+branch and the two language keys only it used taken out; twelve language strings reworded; two
+Wind sentences in `assets/app_template.html` and one in `assets/build_phb.js` (the compendium
+document is rebuilt by the next full build). The handbook says how Fatigued ends in its
+Conditions table alone, which the sheet overrides, so no handbook change was made.
+
+**The rulings** (366 to 368, 372 and 373 are Mike's; the rest are Claude's readings and his
+to overrule).
+
+- **366. A bare `CHECK` reaches every roll and Threshold** (Mike): Skill checks, Initiative,
+  attack rolls, Defense rolls and Defense Thresholds, for a character and for an adversary.
+  `ATK` and `DEF` are attack checks and Defense checks.
+- **367. One Condition or Talent counts once on a roll** (Mike): of its lines that reach the
+  roll, the strongest bonus and the strongest penalty. `CHECK: -1` beside `DEF: -2` gives
+  Defenses -2 and everything else -1. Two Talents, or two Conditions, still add.
+- **368. `SKILL` is the narrow word** (Mike): what a bare `CHECK` reached through 0.35.1.
+- **369. A line keeps the meaning it was read with.** A rule stored before this release is the
+  narrow scope still. It becomes every-roll when its cell is parsed again: a content build, the
+  Conditions build, a change to the text in a world Item's Automation box, or a change to a
+  custom effect row's text or label. Sync content never parses a cell.
+- **370. An every-roll line reaches a Defense rolled as a check**, once, through the Defense's
+  own number: the Wind roll's Endure, a Recovery, a Search with Awareness, the default
+  Initiative. This settles the wide half of the question ruling 222 left open. A `SKILL` line
+  and a bonus to a Maneuver made without its Item still stay out of those rolls.
+- **371. A claim on a bare `CHECK` is offered on every roll**, attacks and Defense rolls
+  included, and an armed one is applied to, and spent by, the next roll or Threshold read, a
+  foe's attack among them. Write `SKILL`, or name a target, for a claim about one kind of
+  check.
+- **372. Ten minutes of uninterrupted rest lowers Fatigued by 1** (Mike, by the sheet's text).
+- **373. A full night's rest ends Fatigued** (Mike, by question).
+- **374. One press is one stretch of ten minutes**: each press restores level × Presence Vigor
+  and lowers Fatigued by 1, for a character and for an adversary alike.
+
+**Worth knowing.**
+
+- **`SKILL` never reaches a roll made with a Defense's Constellation**: not a Search with
+  Awareness, not the default Initiative, and so not an adversary's Initiative. A claimed
+  `SKILL` line is still offered in such a roll's window. That is the behaviour of a bare
+  `CHECK` until now, unchanged.
+- **An every-roll line that asks about the roll's own rank** (`IF: RANK(roll = untrained)`)
+  reaches checks, attacks and an Initiative rolled with a Skill, and no Defense: not a Defense
+  roll, a Defense rolled as a check, or the default Initiative. The build warns. No cell is
+  affected once Jack of All Trades is written with `SKILL`.
+- **A line that is set aside still uses up what it carries.** Its `LIMIT` counts as used, and
+  a ticked claim weaker than a standing line of the same Talent is spent for nothing. No cell
+  on the sheets does either today.
+- **One visible change from "once"**: ticking both offered boxes of one Talent on a single
+  roll (Elven Poise, Bough Runner, Waterwise Balance) gives the stronger where it gave the sum.
+  A roll is one Maneuver, so both should never have applied.
+- **A GM's own world Items follow the same rules**: one with lines to two targets counts once
+  on a roll from this release, and a bare `CHECK` on one becomes every-roll when the text in
+  its Automation box is next changed.
+- **The weapon row's number** now counts a Talent's standing line that reaches attacks, as the
+  die always did. No Talent on the sheets has one today.
+- **An adversary's "in effect" hints** list what counted: one line for a Condition, however
+  many lines its row has. **An attack's card** lists the lines that counted too.
+- **Three slips are told what to write**: a tag in a block of its own (`[SKILL 1 situation]`),
+  a tag inside EFFECT with its colon lost (`[EFFECT SKILL 1 situation]`), and a comma with
+  nothing after it (`[EFFECT CHECK: 1 situation, ]`), which is refused: with no target the
+  line would have read as every roll.
+
+**In the code.** `SCOPES` and `scopeReaches` in `module/rules/kinds/bonus.mjs`: the new scope
+`rolls` for a bare `CHECK`, the unchanged scope `checks` for `SKILL`, and the hook's `source`
+now the carrier alone (`rule:<carrierKey>`), so `resolveModifiers` keeps one carrier's strongest
+bonus and strongest penalty. `skill` in `EFFECT_TAGS` and `MODIFIER_TAGS`
+(`module/rules/effects.mjs`) and in `CONDITION_ROW_TAGS` (`module/rules/syntax.mjs`). An
+every-roll line is counted once because the sheet's Defense pass folds it into each Defense's
+stored modifiers, and a roll that rolls those asks only for what the moment adds. Mended with
+it: `callHook` in `module/rules/engine.mjs` asks what the Defense pass asked, with no Item and
+no roll's rank, so a one-roll effect is used up only by a roll that held its line; the
+Threshold tooltip's list (`module/apps/actor-sheet.mjs`); `weaponNumbers`
+(`module/helpers/actor-context.mjs`); an adversary's hint lists (`module/data/actor.mjs`);
+`source` kept on a roll's extras and on a kept road roll, and handed back by `roadRoll`
+(`module/dice/check.mjs`, `module/helpers/party.mjs`); `listed` on the result of
+`SwCheck.resolveAgainst`, which the card prints; and **`swBuilt`**: Sync content passes it with
+each source document it writes, and `SwItem#_preUpdate` then keeps the `system.rules` the build
+parsed (`module/helpers/content-sync.mjs`, `module/documents/item.mjs`). In the build:
+`overlappingLines` and its one warning in `assets/lib/conditions_build.mjs`, with its row and
+the roll-rank warning's row in `assets/build_report.py`; the red-cell tool's hint for a tag with
+its EFFECT or its colon lost (`assets/highlight_automation.py`). The smoke test no longer pins
+the wording of a Condition's row (`assets/smoke_test.js`): it failed the day Fatigued was
+reworded, and the sheet is the only authority for that text.
+
+**Not built.** An every-roll line reading a Defense's rank for `IF: RANK(roll ...)`. `SKILL`
+reaching checks rolled with a Defense's Constellation. The `REROLL` tag's own "any check", the
+sheet's "Check bonus" field and the Initiative number shown outside an encounter, each as it
+was. A warning for a Talent's cell whose lines meet on a roll (the build says so for a
+Condition's row only). A `LIMIT` kept unused when its line is set aside.
+
+**Reviewed.** Two independent readers, after the build passed its own checks. The reader of the
+grammar, the build, the tests and the documents had twelve findings, none high; the reader of
+the engine at run time had five, two of them medium. All are mended but the two stated above
+(a set-aside line's `LIMIT` and claim; the roll-rank line on a Defense, which is now warned of).
+The two medium ones:
+
+- **Sync content parsed every cell again on the client** for each Item it wrote. Under this
+  release's grammar that would have turned Contract Literate's stored narrow line into an
+  every-roll line on whichever character's copy the sync happened to refresh, and not on the
+  next. Sync content now keeps the build's rules.
+- **A road roll kept as Initiative lost whose each bonus was** on the way back out of the
+  record, so the recount could count two lines of one Talent that the check had counted once.
+
+Also from the review: a message that says what to write printed `-1` where the author had
+written `-N`; the build's warning missed a bare `CHECK` beside a line to one Constellation or
+Maneuver, and every Defense beside `INIT`; its advice that "the other can go" was wrong for
+`SKILL` beside `INIT` (a `SKILL` line does not reach the default Initiative), and is now said
+only when one of the lines is a bare `CHECK`; an attack's card listed a line that the total
+had set aside.
+
+**Checked.** 259 self-test checks. `node --check` on every module. `node assets/build_all.mjs
+--check`. The style check (one failure, the em-dash in Dwarf Lore B13 of
+`data/talents_ancestries.xlsx`). The smoke test on the rebuilt app. The Conditions build on the
+sheet as saved, compared row by row with the committed file. Live in the test world, Foundry
+restarted first, a GM tab and a player tab:
+
+- Frightened 2 on Tess: -2, once, on each Defense, a Skill check, the Wind roll, Initiative
+  with Awareness and with Stealth, and the weapon row. On the Bandit: its Thresholds, its
+  attack and its Athletics, with one hint line each. The same numbers for the row as shipped
+  (three stored lines), as one line read now, and as three lines read again.
+- A world Talent with `CHECK: 1` and `DEF: 2`: Defenses +2, Stealth +1, the weapon row +1, the
+  Wind roll +2. One with `SKILL: 1`: Stealth +1 and nothing else. One with `CHECK: -1` and
+  `DEF: 2, guard`: Guard +1, the rest -1.
+- A claimed bare `CHECK` on a world Talent is offered in an attack's window; Contract
+  Literate's shipped copy is not. Both are offered on a Skill check.
+- After the review's mends, as the GM: a whole-document write with `swBuilt` keeps a stored
+  narrow rule, the same write without it parses the text again (so the defect and the mend are
+  both seen), and a save of another field parses nothing; `roadRoll` hands back each bonus's
+  source; an attack's card with one Talent's +1 on the die and +2 at the pairing lists the +2
+  alone and totals one more than the die; Frightened 2 again on Tess and the Bandit, the same
+  numbers, and both left as found.
+
+- The rest change, the tab reloaded first: Tess at Fatigued 3 and 2 Vigor, three presses of
+  the Overview's button give Fatigued 2, 1 and none and 3, 3 and 2 Vigor, her Defenses and her
+  weapon row following each step, and a fourth press says there is nothing to recover. A Wind
+  card's Endure roll with the die pinned to a 1 made her Fatigued 2; the Fatigued card's button
+  gave 1, then ended it, and was still there. A night's rest from Fatigued 2 ended it. At
+  Fatigued 1 the party's Travel lock still holds (the function was asked; that world has no
+  party). The Bandit, by the same Wind card and button: 2, then 1, then none; its rest card
+  was public before the mend and is the GM's alone after it, and the player's client does not
+  see it. As the player: the button on Tess's own sheet ended her Fatigued 1.
+
+Not driven: a claim armed by its pin and spent by a foe's attack (covered by the self-test), a
+kept road roll through the party sheet's own dialog (the function was called directly), the
+party sheet itself for the Travel lock, and a table with no GM. The rest change had no second
+reader: it is one line of arithmetic and its wording.
+
+---
+
 ## 0.35.1 (2026-11-19): `[X]` in a Condition's text is the creature it is about
 
 Built from **Player's Handbook v4.25**, which did not move. Mike, of Bound's Effect ("Your

@@ -55,7 +55,8 @@ Every block the cell reads, one example each. Case never matters.
 | `[CHECK Athletics vs Guard]` | on a Maneuver's own row: the check the Maneuver rolls, and the Defense it is read against (0.34.0) | 2 |
 | `[CHECK Athletics or Acrobatics vs Evade or Guard]` | ... `or` is a choice, made by whoever it affects: left of `vs` the one using the Maneuver, right of it the target | 2 |
 | `[CHECK relevant]`, `[CHECK Crafting vs 15]` | ... any Constellation, picked when it is rolled; a Threshold the row names | 2 |
-| `[EFFECT CHECK: 1 condition, aid]` | a bonus to checks of a Constellation or Maneuver (none named: every check) | 3 |
+| `[EFFECT CHECK: 1 condition, aid]` | a bonus to checks of a Constellation or Maneuver (none named: every roll and Threshold, 0.36.0) | 3 |
+| `[EFFECT SKILL: 1 situation]` | a bonus to checks that are no attack and no Defense, and to an Initiative rolled with a Skill (0.36.0) | 3 |
 | `[EFFECT ATK: 1 condition]` | a bonus to every Strike and Cast | 3 |
 | `[EFFECT DEF: 1 situation, guard]` | a bonus to a Defense (none named: all four) | 3 |
 | `[EFFECT INIT: 1 situation]` | a bonus to Initiative | 3 |
@@ -74,18 +75,18 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]` | ... or on yourself, at once, for a time | 3 |
 | `[EFFECT APPLY: Taking Cover]` | ... or whenever the Maneuver is used, when no result is named | 3 |
 | `[EFFECT REMOVE: prone]` | on a Maneuver's own row: using it takes the Condition or the named Effect off (0.32.0) | 3 |
-| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `ATK`, `DEF` and `INIT` (0.33.0) | 11 |
+| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `SKILL`, `ATK`, `DEF` and `INIT` (0.33.0), and `IMMUNE: TRAIT(...)` (0.35.0) | 11 |
 | `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
-| `; IF: RANK(roll = untrained)` | ... while the rank the roll is made at is that (the borrowed Constellation's when a `USE` stands; on a `USE` line itself, the check's own rank before the swap) | 3 |
+| `; IF: RANK(roll = untrained)` | ... while the rank the roll is made at is that (the borrowed Constellation's when a `USE` stands; on a `USE` line itself, the check's own rank before the swap). A Defense's number is read with no roll in hand, so a line that reaches Defenses with this condition (a bare `CHECK`, a `DEF`) is never part of one: the build warns | 3 |
 | `; IF: SEEN` | ... for a recipient who can see the owner | 3 |
 | `; IF: ALLIES(>=1, 0)` | ... while that many allies stand within the range (`ENEMIES`, `ALL`) | 3 |
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
 | `; IF: RESULT(critical failure)` | ... on that degree (REROLL, GIVE, APPLY and REMOVE only) | 3 |
 | `; IF: COST(2)` | ... when the Maneuver was paid for with that many actions (APPLY and REMOVE only; 0.32.0) | 3 |
 | `; IF: EFFECT(Aid, used)` | ... once a roll of yours at your own Opportunity has used up a bonus another creature's Aid gave you (SUBORDINATE only) | 3 |
-| `; IF: EFFECT(Taking Cover)` | ... while YOU have that Condition or named Effect (CHECK, ATK, DEF, INIT and SPEED lines; 0.31.0) | 3 |
+| `; IF: EFFECT(Taking Cover)` | ... while YOU have that Condition or named Effect (CHECK, SKILL, ATK, DEF, INIT and SPEED lines; 0.31.0) | 3 |
 | `; IFT: EFFECT(prone)` | ... while the roll's OTHER PARTY has that Condition or named Effect (the same lines; 0.31.0) | 3 |
 | `; IFT: EFFECT(wrong-footed, mine)` | ... and only when YOU put it there with a Maneuver's APPLY (0.32.0) | 3 |
 | `; IFT: TRAIT(Fear)` | ... against an attack carrying the trait | 3 |
@@ -193,8 +194,8 @@ Trigger, Requirements and Effect from the row. A name that is no row fails the b
 [EFFECT TAG: <value> <type>, <descriptor>; <component>; <component> ...]
 ```
 
-The **tag** names what is modified. A **modifier tag** (`CHECK`, `ATK`, `DEF`, `INIT`, `SPEED`,
-`GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
+The **tag** names what is modified. A **modifier tag** (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`,
+`SPEED`, `GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
 book's three; FG's `[bonus]`), then at most one descriptor after a comma (`GIVE` exactly one). The
 other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`, `PERMIT`, `SUBORDINATE`, `APPLY`,
 `REMOVE`) take descriptors alone; `USE` takes exactly three, `ALTER`, `PERMIT` and `SUBORDINATE`
@@ -202,7 +203,8 @@ exactly one, `APPLY` and `REMOVE` one or two, and never a value or a type. No bo
 
 | tag | modifies | descriptor | stored kind |
 |---|---|---|---|
-| `CHECK: 2 condition, diplomacy` | checks of a Constellation or made from a Maneuver (`CHECK: 1 condition, aid`); with no descriptor every check (an Initiative rolled with a Constellation is a check in it, ruling 111) | a Constellation or a Maneuver by name; a Lore is refused | `bonus` |
+| `CHECK: 2 condition, diplomacy` | checks of a Constellation or made from a Maneuver (`CHECK: 1 condition, aid`); with no descriptor EVERY ROLL AND THRESHOLD: Skill checks, Initiative, attacks, Defenses (0.36.0, ruling 366; through 0.35.1 it meant what `SKILL` means). With `IF: RANK(roll ...)` a bare `CHECK` reaches checks, attacks and an Initiative rolled with a Skill, and no Defense (the build warns): for checks alone write `SKILL` | a Constellation or a Maneuver by name; a Lore is refused | `bonus` |
+| `SKILL: 1 situation` | every check that is no attack and no Defense, an Initiative rolled with a Constellation among them (ruling 111). Never a check or an Initiative rolled with a Defense's Constellation, so not the default Initiative (it rolls Awareness) and not an adversary's. The narrow word, and what a bare `CHECK` meant through 0.35.1 (0.36.0, ruling 368) | none: to name a Constellation or a Maneuver write it after `CHECK` | `bonus` |
 | `ATK: 1 condition` | every Strike and Cast | none | `bonus` |
 | `DEF: 1 situation, guard` | a Defense's roll and Threshold; with no descriptor all four | `evade`, `guard`, `endure`, `awareness` | `bonus` |
 | `INIT: 1 situation` | Initiative | none | `bonus` |
@@ -261,7 +263,7 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again), `GIVE` (the degree that gives the result) and `APPLY` and `REMOVE` (the degree that puts the Effect on, or takes it off) read it | `IF:` |
 | `COST(2)` | the number of actions the Maneuver was paid with (0.32.0; ruling 318), for a row that prints a table of results for each cost (Trip, Grapple, Demoralize). 0 to 12. Only `APPLY` and `REMOVE` read it. Where nothing is paid (outside an encounter, or with action tracking off) a row with one cost reads that cost, and a row with a range asks which version this use is | `IF:` |
 | `EFFECT(Aid, used)` | a used Effect (0.25.0): a roll of yours, made at your own Opportunity that is still running, has used up the Effect of that name, and it was a bonus another creature gave you. The name is the Maneuver whose result it was. Only `SUBORDINATE` reads it, and only after `IF:` | `IF:` |
-| `EFFECT(Taking Cover)`, `EFFECT(prone)` | a creature HAS it now (0.31.0): a Condition by its name, or a named Effect, anything on the creature that is no Condition (the Effects list, below). **The prefix says whose: `IF:` is the creature rolling, `IFT:` the roll's other party.** A line may hold one of each. Only the `bonus` lines read it (CHECK, ATK, DEF, INIT, SPEED), and not beside a `FOR` that reaches others, an aura's ring included. After `IFT:` it is refused on an INIT or a SPEED line (neither has another party) and beside `IF: CLAIM(...)` (a claim is asked before the other party is known) | `IF:` or `IFT:` |
+| `EFFECT(Taking Cover)`, `EFFECT(prone)` | a creature HAS it now (0.31.0): a Condition by its name, or a named Effect, anything on the creature that is no Condition (the Effects list, below). **The prefix says whose: `IF:` is the creature rolling, `IFT:` the roll's other party.** A line may hold one of each. Only the `bonus` lines read it (CHECK, SKILL, ATK, DEF, INIT, SPEED), and not beside a `FOR` that reaches others, an aura's ring included. After `IFT:` it is refused on an INIT or a SPEED line (neither has another party) and beside `IF: CLAIM(...)` (a claim is asked before the other party is known) | `IF:` or `IFT:` |
 | `EFFECT(wrong-footed, mine)` | the same, narrowed to an Effect that the creature rolling put there with a Maneuver's `APPLY` (0.32.0; ruling 319): "Wrong-Footed to you". An Effect put on by any other means (a GM's hand, a Critical Hit, another creature's Maneuver) is not yours. Read after either prefix, by the same lines | `IFT:` |
 | `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171) | `IFT:` |
 | `MARKED` | the other party is the creature this Talent's or Maneuver's `MARK` named (FG's `IFT: CUSTOM(Hunt Prey)`) | `IFT:` |
@@ -392,7 +394,7 @@ each with the blocks that make it.
 
 ### `bonus`
 A typed bonus or penalty to a roll, and to the Threshold that roll's Constellation presents. Made by
-`[EFFECT CHECK: ...]`, `ATK`, `DEF`, `INIT` and `SPEED`. Every component applies.
+`[EFFECT CHECK: ...]`, `SKILL`, `ATK`, `DEF`, `INIT` and `SPEED`. Every component applies.
 
 ### `prevent`
 An effect does not land: a Condition, or an Expose. Made by `[EFFECT IMMUNE: ...]`. Takes every
@@ -1198,7 +1200,7 @@ Quick Study         [POINT Skill]
 Stubborn Footing    [EFFECT IMMUNE: prone; LIMIT: encounter]
 Close Ranks         [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]
 Versatile Human     [POINT Opening]
-Jack of All Trades  [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]
+Jack of All Trades  [EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]
 Torchbearer Human   [AURA 15 allies; DEF: 1 situation; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]
 Steady the Line     [MANEUVER Steady the Line]          Effect: @Maneuver[Steady the Line]
 ```
@@ -1217,7 +1219,7 @@ owner a +1 against an attack carrying Fear, once a round per ally.
 Serrovanian         [LANGUAGE Common, Serrovine]
                     [EFFECT CHECK: 1 condition, diplomacy; IF: CLAIM(toward someone who shares your Culture)]
 Oathbound           [MANEUVER Oathbound]                 Effect: @Maneuver[Oathbound]
-Contract Literate   [EFFECT CHECK: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]
+Contract Literate   [EFFECT SKILL: 2 condition; IF: CLAIM(noticing hidden clauses, traps or altered terms in an agreement)]
 Iron Etiquette      [EFFECT DEF: 1 condition; IFT: CHECK(intimidation)]
                     [EFFECT DEF: 1 condition; IF: CLAIM(against a social manipulation other than Intimidation)]
 Reacher             [LANGUAGE Common, Reachspeak]
@@ -1403,14 +1405,14 @@ it), and a degree raised by an Exposed Zone (Trip's Special).
 
 The rows of `data/conditions.xlsx` that carry lines or count as another Condition, as the
 workbook was first filled (section 11 says how a row is read). Every other row is `N/A`.
+Frightened is shown as the one line it can be since 0.36.0; the three lines it was filled with
+(`DEF`, `CHECK`, `ATK`) give the same numbers.
 
 ```
   Condition      Takes  Includes               Automation
   Off-Guard                                    [EFFECT DEF: -2 situation, evade]
                                                [EFFECT DEF: -2 situation, guard]
-  Frightened     N                             [EFFECT DEF: -N condition]
-                                               [EFFECT CHECK: -N condition]
-                                               [EFFECT ATK: -N condition]
+  Frightened     N                             [EFFECT CHECK: -N condition]
   Fatigued       N                             [EFFECT DEF: -N condition]
                                                [EFFECT ATK: -N condition]
   Prone                 Off-Guard              [EFFECT ATK: -2 situation]
@@ -1590,9 +1592,33 @@ written on the Maneuver's row.
   priced with the +1 gone, and the check as it was with the +1 in.
 - **A bonus to a Maneuver follows the Maneuver onto a Defense's check** (ruling 222). A check
   rolled with a Defense Constellation from that Maneuver's Item (an Aid made with Awareness)
-  carries a bonus to the Maneuver (Humanity's +1 to Aid), which it lost through 0.20.1. Whether a
-  bonus to every check reaches a Defense rolled as a check (Wind, Recovery, a Search) is untouched
-  and is an open decision.
+  carries a bonus to the Maneuver (Humanity's +1 to Aid), which it lost through 0.20.1. Since
+  0.36.0 a bonus to EVERY ROLL (a bare `CHECK`) reaches a Defense rolled as a check (Wind,
+  Recovery, a Search), once, through the Defense's own number, which settles the wide half of
+  that question. A `SKILL` line and a bonus to a Maneuver made without its Item still stay out
+  of it.
+- **One Talent or Condition counts once on a roll** (0.36.0; ruling 367). Of its lines that
+  reach a roll, the strongest bonus and the strongest penalty count, and the rest are set
+  aside. `CHECK: -1` beside `DEF: -2` gives Defenses -2 and every other roll -1. Through 0.35.1
+  two lines to different targets that reached one roll both counted. Two Talents, or two
+  Conditions, still add. A line that is set aside still uses up what it carries: its `LIMIT` is
+  counted as used, and a ticked claim weaker than a standing line of the same Talent is spent for
+  nothing. An attack's card lists the lines that counted.
+- **An every-roll line that asks about the roll's own rank reaches no Defense** (0.36.0).
+  `[EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]` counts on checks, attacks and an
+  Initiative rolled with a Skill. A Defense's number is read with no roll in hand, so the line is
+  never part of one: not on a Defense roll, a Defense rolled as a check (the Wind roll), or the
+  default Initiative. The build warns. Not built: reading a Defense's own rank for it.
+- **A line keeps the meaning it was read with** (0.36.0; ruling 369). A rule stored before
+  0.36.0 from a bare `CHECK` is the narrow scope still, and says "to Skill checks" on its sheet.
+  It becomes an every-roll line when its cell is parsed again: at a content build (a Talent's or
+  a Maneuver's cell), at the Conditions build (a Condition's row), when the text in a world
+  Item's Automation box is changed (saving another field of the Item does not), or when a custom
+  effect row's text or its label is changed. Sync content never parses a cell: it writes the
+  rules the build parsed. To keep the narrow meaning, write `SKILL` before that.
+- **A claim on a bare `CHECK` is offered on every roll** (ruling 371): attacks and Defense rolls
+  too, and an armed one is applied to, and spent by, the next roll or Threshold read, a foe's
+  attack included. Write `SKILL`, or name a target, for a claim about one kind of check.
 - **What a substitution does not read yet** (0.21.0). Not built: a Constellation as the check a
   `USE` names (it brings the Initiative question of ruling 111 with the first Talent that wants
   it); offers on plain checks, made without the Maneuver's Item; `IF: UNSUBSTITUTED`; a flat
@@ -1712,12 +1738,15 @@ written on the Maneuver's row.
 
 | message | what to do |
 |---|---|
-| `unknown rule kind "<word>" (an effect begins with a tag: CHECK, ATK, ..., in brackets as [EFFECT ...]; a feature is a bracketed block: TRAIT, SIZE, ...)` | the word before the colon is neither a tag nor a keyword; check the spelling, or the line is prose that belongs in the Effect column |
+| `unknown rule kind "<word>" (an effect begins with a tag: CHECK, SKILL, ATK, ..., in brackets as [EFFECT ...]; a feature is a bracketed block: TRAIT, SIZE, ...)` | the word before the colon is neither a tag nor a keyword; check the spelling, or the line is prose that belongs in the Effect column |
 | `the 0.13.0 form ("bonus: +1, Condition, Aid, IF(...)") is retired since 0.17.0; AUTOMATION_GRAMMAR.md section 9 maps each operator to its component` | an old cell; rewrite it by section 9 |
 | `an effect line in a cell is written in brackets: write "[EFFECT <line>]"` | wrap the line (the bare form is the custom effects field's alone) |
 | `the ring is the FOR: an effect inside [AURA ...] reaches whom the ring is about, within its range; drop the FOR` | a `FOR:` inside an AURA block |
 | `after the ring, an AURA block carries one effect, \`[AURA <N> <who>; <tag>: ...]\`` | what follows the ring's semicolon is no effect line |
-| `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: CHECK, ATK, ...` | the word after EFFECT is no tag |
+| `EFFECT wraps an effect line, \`[EFFECT <tag>: ...]\`: CHECK, SKILL, ATK, ...` | the word after EFFECT is no tag |
+| `"<TAG>" is an effect tag, and an effect goes in an EFFECT block with a colon after the tag: write \`[EFFECT <TAG>: ...]\`` | a tag in a block of its own, `[SKILL 1 situation]`, `[IMMUNE prone]` (0.36.0) |
+| `<TAG> is an effect tag and takes a colon: write \`[EFFECT <TAG>: ...]\`` | a tag inside EFFECT with its colon lost, `[EFFECT SKILL 1 situation]` (0.36.0; any tag, where through 0.35.1 only `CHECK` was told so) |
+| `<TAG>: a comma with nothing after it; name the target after the comma, or take the comma out` | `[EFFECT CHECK: 1 situation, ]`: a target was deleted and its comma left. Refused, since with no target the line would mean every roll (0.36.0) |
 | `EFFECT is written \`[EFFECT <tag>: ...]\`, as in \`[EFFECT IMMUNE: prone; LIMIT: encounter]\`` | an empty `[EFFECT]` |
 | `"<word>" is not a feature keyword: write TRAIT, SIZE, SPEED, REACH, VIGOR, SENSES, LANGUAGE, POINT, MANEUVER, TALENT, CHOICE, AURA, REQUIRES, CHECK, EFFECT, or [<Constellation> trained]` | the block's first word |
 | `REQUIRES is a block of its own, not an effect: write \`[REQUIRES prone]\`` | a feature keyword wrapped in `[EFFECT ...]` (0.28.0); every keyword is told the same in its own word |
@@ -1812,7 +1841,7 @@ written on the Maneuver's row.
 | `GIVE names what the bonus is to after a comma: chosen (named when the result is given) or a Constellation, as in \`GIVE: 1 situation, chosen; IF: RESULT(success)\`` | a `GIVE` with no descriptor |
 | `GIVE takes one descriptor, chosen or a Constellation, not <N>` | two descriptors or more |
 | `"<name>" is not a Constellation: GIVE names one, or chosen for one named when the result is given` / `"<name>" is a Maneuver: GIVE names the Constellation the recipient rolls, or chosen ...` | the descriptor of `GIVE` |
-| `"<word>" is a scope word; GIVE names one Constellation, or chosen for one named when the result is given` | `checks`, `defenses`, `attacks`, `initiative` or `speed` as the descriptor |
+| `"<word>" is a scope word; GIVE names one Constellation, or chosen for one named when the result is given` | `rolls`, `checks`, `defenses`, `attacks`, `initiative` or `speed` as the descriptor |
 | `"<name>" is a group and its Talents roll the parent; write <parent> instead` | a group as the descriptor of `GIVE` |
 | `a Lore is the character's own; write chosen, and the Lore is named when the result is given` | a Lore as the descriptor of `GIVE` |
 | `GIVE does not take FOR` / `GIVE does not take LIMIT` / `GIVE does not take IF: SEEN` / `GIVE does not take IF: CLAIM(...)` / `GIVE does not take IFT: TRAIT(...)` | a component `GIVE` has no use for: it takes `IF: RESULT(...)`, `IF: RANK(...)` and `UNTIL:` alone |
@@ -1861,7 +1890,7 @@ written on the Maneuver's row.
 | `"<name>" is a group and has no rank of its own; borrow <parent> instead` | a group as the second descriptor (`USE: Presence, Archery, aid`): write the parent |
 | `a Lore is the character's own; a substitution cannot borrow it` / `a Lore is the character's own; a substitution cannot name it` | a Lore as the second or the third descriptor |
 | `same keeps one of the first two terms; the third descriptor names the Maneuver whose check is swapped, as in \`USE: Presence, Origin, aid\`` | `same` as the third descriptor |
-| `"<word>" is a scope word, and USE never means every check: name the Maneuver whose check is swapped, as in \`USE: Presence, Origin, aid\`` | `checks`, `defenses`, `attacks`, `initiative` or `speed` as the third descriptor |
+| `"<word>" is a scope word, and USE never means every check: name the Maneuver whose check is swapped, as in \`USE: Presence, Origin, aid\`` | `rolls`, `checks`, `defenses`, `attacks`, `initiative` or `speed` as the third descriptor |
 | `"<word>" is a Defense: its Threshold and its roll against an attack are never substituted; name the Maneuver that rolls it` | a Defense as the third descriptor |
 | `"<name>" is a Constellation: USE reads a Maneuver's check in this version, as in \`USE: Presence, Origin, aid\`; a Constellation's own checks are not read yet` | a Constellation as the third descriptor: not built, section 7 |
 | `USE does not take FOR` / `USE does not take IF: SEEN` / `USE does not take IF: ALLIES(...)` / `USE does not take IFT: <Threat>` / `USE does not take IFT: MARKED` / `USE does not take IF: CLAIM(...)` / `USE does not take IFT: TRAIT(...)` | a component `USE` has no use for: it takes `IF: RANK(...)` and `LIMIT:` alone. `IFT: CHECK(...)` is told `IFT: <Threat>`, and an `IF: RESULT(...)` gets the reroll message above |
@@ -1877,7 +1906,10 @@ written on the Maneuver's row.
 | `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
 | `"N" is a Condition's own value and is written on that Condition's row of the Conditions workbook, as in \`DEF: -N condition\` on Frightened; here write a whole number` | `-N` on a Talent, a Maneuver or a custom effect (0.33.0) |
 | `\`-N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number` | `-N` on a row of the Conditions workbook whose Takes is not N |
-| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, ATK, DEF, INIT, IMMUNE` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, ATK, DEF, INIT, IMMUNE); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, SKILL, ATK, DEF, INIT, IMMUNE); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `SKILL takes no descriptor: to name a Constellation or a Maneuver write \`CHECK: 1 situation, stealth\`` | a target after `SKILL` (0.36.0) |
+| `for checks that are no attack and no Defense write the tag: \`SKILL: 1 situation\`` | `skill` or `skill checks` written as the target of a `CHECK` |
+| `"<word>" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every roll and Threshold (SKILL, ATK, DEF and INIT are the narrower tags)` | `rolls`, `checks`, `attacks`, `defenses` or `initiative` as the target of a `CHECK` |
 | `... / Conditions: sheet needs Condition and Effect columns. Since 0.35.0 Effect is the rules text ... and Description is its one line of flavor: head the rules column Effect` | the Conditions sheet has no Effect column: the build stops, and does not guess which text a lone Description holds |
 | `WARNING: ... / Conditions / <Name>: no Effect; players will read nothing for this Condition` | not a failure: a row with an empty Effect cell (an empty Description, the flavor line, is never said) |
 | `WARNING: the roster's conditions block and assets/conditions.json disagree; run the Conditions build ...` | the two are written together, and one is from an older build: run `node assets/build_all.mjs --conditions` |
@@ -1887,7 +1919,8 @@ written on the Maneuver's row.
 | `... / Conditions / <Name>: Includes says "against X", and this Condition's Takes is not X: there is no creature for X to be` | set Takes to X, or drop `against X` |
 | `"<Name>" would be read as the Condition "<Other>" wherever a cell names it: the two names differ only by a mark; rename the row` | a row whose name is another Condition's but for an apostrophe or the like |
 | `"<Name>" includes "<Other>", which is no Condition` / `"<Name>" includes itself` / `two rows describe the Condition "<Name>"` / `"<Name>" cannot name a Condition: the word already means something else where a Condition is read` / `"<Name>" is marked System, and the system knows no Condition of that name` | a row the registry cannot take; nothing is written |
-| `WARNING: ... / Conditions / <Name>: a CHECK line and an INIT line: an Initiative is a check, so it takes both` / `... a DEF line for every Defense and a DEF line for one of them: that Defense takes both` | not a failure: two lines of one row both reach one roll, and both count |
+| `WARNING: ... / Conditions / <Name>: lines 1 and 2 both reach Defenses; lines 2 and 3 both reach attacks. A Condition counts once on a roll, so only the stronger of two such lines applies there; a bare CHECK reaches every roll and Threshold, so a line of the same size beside it can go` | not a failure: two lines of one row, of one sign, reach one roll. Since 0.36.0 only the stronger counts there (through 0.35.1 both did, and the warning said so). The last clause is printed only when one of the lines is a bare `CHECK`: two narrower lines each still count where the other does not reach (a `SKILL` line does not reach the default Initiative, so an `INIT` line beside it is not spare) |
+| `WARNING: CHECK with IF: RANK(roll ...) is not read on a Defense yet: ... For checks alone write SKILL` / `WARNING: DEF with IF: RANK(roll ...) is not read on a Defense yet: ...` | not a failure: a line that reaches Defenses asks about the roll's own rank, and a Defense's number is read with no roll in hand. The line counts on checks, attacks and an Initiative rolled with a Skill (a `DEF` line never counts). Write `SKILL` if the bonus is for checks (0.36.0) |
 | `CONDITION ERRORS (nothing written)` / `CONDITION ERRORS (a warning in content mode)` | the Conditions workbook did not read: `assets/conditions.json` and the roster's `conditions` block are left as they were |
 | `WARNING: TRAIT(<Trait>): no shipping weapon, Maneuver, attack or Talent carries the trait "<trait>" yet (asked by ...); the rule holds once one is authored` | not a failure: a trait named after `IFT:` or in `IMMUNE: TRAIT(...)` that nothing carries. Often a slip of the pen (`TRAIT(Visaul)`); else the rule waits for something authored with that trait |
 | `WARNING: <workbook>: the _Tree Index columns <list> are retired; the Root's feature lines are the authoring now` | move the facts into the Root's cell as section 2 says, then drop the columns |
@@ -2105,6 +2138,11 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   "Auditory or Visual" needs both (357). The system says it and goes on (354). On the sheet, the
   rules text is the **Effect** column and **Description** is one line of flavor, as on every
   other sheet (350).
+- **0.36.0** (2026-11-19): a bare `CHECK` reaches every roll and Threshold, and `SKILL` is the
+  narrow word (rulings 366 to 371; Mike: "Can't CHECK include ALL rolls/thresholds, but ATK and
+  DEF just mean attack checks and defense checks respectively?"). One tag is new, `SKILL`, for
+  the `bonus` kind; no kind and no hook point is. One Talent or Condition counts once on a roll
+  (367). A stored rule keeps the meaning it was read with (369).
 - **0.35.1** (2026-11-19): `[X]` in a Condition's Effect or Description is the creature the
   Condition is about (rulings 361 to 365; Mike: "since we use brackets for automation, how about
   [X]"). It is text, not grammar: no kind, tag or word is new, and the Automation cell is
@@ -2131,13 +2169,14 @@ follows. One sheet, `Conditions`, one row for each Condition:
 | Notes | yours: what the code still does for the row, or does not do yet. The system never reads it |
 
 **A row's lines act for whoever has the Condition**, a character or an adversary. So a row reads
-the four modifier tags, and `IMMUNE: TRAIT(...)` (0.35.0), and nothing that asks about an owner:
+the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), and `IMMUNE: TRAIT(...)`
+(0.35.0), and nothing that asks about an owner:
 
 ```
 [EFFECT DEF: -2 situation, evade]              Off-Guard
-[EFFECT DEF: -N condition]                     Frightened: all four Defenses, at its value
-[EFFECT CHECK: -N condition]                   ... every check, and an Initiative rolled as one
-[EFFECT ATK: -N condition]                     ... every Strike and Cast
+[EFFECT CHECK: -N condition]                   Frightened: every roll and Threshold, at its value
+[EFFECT DEF: -N condition]                     Fatigued: all four Defenses
+[EFFECT ATK: -N condition]                     ... and every Strike and Cast, but no Skill check
 [EFFECT DEF: 2 situation, evade; IFT: RANGED]  Prone: +2 Evade against a ranged Attack
 [EFFECT IMMUNE: TRAIT(Visual)]                 Blinded: immune to anything with the Visual trait
 ```
@@ -2156,7 +2195,13 @@ the four modifier tags, and `IMMUNE: TRAIT(...)` (0.35.0), and nothing that asks
   with nothing after it (section 4, `prevent`); `IMMUNE: <Condition>` is not read on a row yet.
   What a Condition forbids (movement, Reactions, a Defense) and how it fades have no word yet.
 - **One Condition is one circumstance.** A creature that is Off-Guard three ways (the status,
-  Prone, a Torso Wound) takes Off-Guard's -2 once.
+  Prone, a Torso Wound) takes Off-Guard's -2 once. And since 0.36.0 (ruling 367) a row's own
+  lines count once on a roll: where two of them reach it, the strongest penalty and the
+  strongest bonus stand. The build says which lines of a row meet, and where.
+- **A bare `CHECK` is every roll** (0.36.0). Frightened can be one line, `[EFFECT CHECK: -N
+  condition]`. A row that keeps `DEF` or `ATK` lines of the same size beside a `CHECK` (as
+  Frightened was first filled) gives the same numbers, and the build tells it the narrower lines
+  can go. Fatigued, which spares Skill checks, keeps `DEF` and `ATK`.
 - **A Condition's lines have no On / Skip / Off.** The Condition is the switch: take it off and
   its lines go. The Effects tab lists them under the Condition's row, read-only.
 

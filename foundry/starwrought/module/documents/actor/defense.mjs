@@ -267,7 +267,7 @@ export const DefenseMixin = Base => class extends Base {
       });
       momentMods = moment.applied;
       marks = moment.marks;
-      // A Condition's lines carry the Condition's own source (`rule:condition:<id>:<target>`), so
+      // A Condition's lines carry the Condition's own source (`rule:condition:<id>`), so
       // they resolve apart from every other modifier and their total is theirs alone.
       const own = [...def.modifiers, ...momentMods].filter(isConditionLine);
       conditionTotal = given ? conditionShift : (own.length ? SW.resolveModifiers(own).total : 0);

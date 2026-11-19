@@ -6,7 +6,7 @@
  * Endure Threshold falls short; at an Opportunity the Prepared Maneuver's finish-or-abandon card;
  * and a note when someone Passes while Preparing. This module decides what each card SAYS and what
  * its buttons do: Roll Recovery, Endure against the Wind Threshold and the Fatigued it raises, the
- * ten minutes' rest that ends Fatigued (ruling 81), the Persistent roll and the Endure that ends
+ * ten minutes' rest that lowers Fatigued by 1 (rulings 81 and 372), the Persistent roll and the Endure that ends
  * it, Finish and Abandon. Every handler is registered in `cardActions` (helpers/cards.mjs) by
  * `registerRoundCards`, which `registerCombatTracking` calls, and every button acts for its
  * actor's owner only (`requireOwner`). `persistentDamageOf`, what is still hurting an actor, is
@@ -224,9 +224,9 @@ async function onRollRecovery({ actor }) {
 
 /**
  * Wind (PHB v4.13, Load and Load Strain): Endure against 10 + Load Strain, read live at the click,
- * and on a failure Fatigued raised by 1 to a maximum of 3: -N Condition to Evade, Guard and attack
- * rolls until ten minutes of rest. The card names the new value and carries the "Ten minutes'
- * rest" button that ends the condition (onWindRest, ruling 81).
+ * and on a failure Fatigued raised by 1 to a maximum of 3: -N Condition to every Defense and to
+ * attack rolls. The card names the new value and carries the "Ten minutes' rest" button, which
+ * lowers it by 1 for each press (onWindRest; rulings 81 and 372).
  */
 async function onWindCheck({ actor }) {
   if (!requireOwner(actor)) return;
@@ -267,32 +267,21 @@ async function onWindCheck({ actor }) {
 }
 
 /**
- * Ten minutes' rest (PHB v4.21, Conditions: Fatigued "ends after ten minutes of rest"; ruling 81).
- * The system has no clock for ten minutes, and the end of the Combat is not one either (through
- * 0.6.1 it cleared Fatigued there, ruling 70, now superseded), so whether the ten minutes have
- * passed is the table's call: the Fatigued card carries this button for the actor's owner or the
- * GM (`requireOwner`; a GM owns everything). Since 0.11.0 the ten minutes are the character's own
- * short rest (SwActor#restTenMinutes: Fatigued off and level x Presence Vigor back, PHB v4.21),
- * so a character goes through that and its card; an adversary, which has no short rest, keeps
- * the old path: Fatigued comes off whole, whatever its value, and a one-line card tells the same
- * table the Fatigued card went to. A night's rest clears it too (SwActor#restForTheNight).
- * Clicked for an actor no longer Fatigued, it says so quietly and writes nothing.
+ * Ten minutes' rest (the Fatigued row of data/conditions.xlsx: "Reduce by 1 after every ten
+ * minutes of uninterrupted rest"; rulings 81 and 372). The system has no clock for ten minutes,
+ * and the end of the Combat is not one either (through 0.6.1 it cleared Fatigued there, ruling
+ * 70, now superseded), so whether the ten minutes have passed is the table's call: the Fatigued
+ * card carries this button for the actor's owner or the GM (`requireOwner`; a GM owns
+ * everything). The ten minutes are the actor's own short rest (SwActor#restTenMinutes, since
+ * 0.11.0: level x Presence Vigor back, and since 0.36.0 Fatigued lowered by 1), so the button
+ * can be pressed again for the next ten minutes. A night's rest ends Fatigued whole
+ * (SwActor#restForTheNight). Every Actor has the method since the documents were split (0.10.1),
+ * an adversary included, so the branch that took Fatigued off an actor without it could not be
+ * reached and is gone (0.36.0).
  */
 async function onWindRest({ actor }) {
   if (!requireOwner(actor)) return;
-  if (typeof actor.restTenMinutes === "function") return actor.restTenMinutes();
-  const current = Number(actor.conditionValue?.("fatigued")) || 0;
-  if (!current) {
-    ui.notifications.info(format("STARWROUGHT.Notify.notFatigued", { name: actor.name }));
-    return;
-  }
-  await actor.setCondition?.("fatigued", false);
-  return postCard(actor, cardHtml({
-    root: "sw-round-card sw-wind-card sw-wind-rest-card",
-    actorUuid: actor.uuid,
-    title: localize("STARWROUGHT.Combat.windRest"),
-    lines: [format("STARWROUGHT.Combat.windRested", { name: escapeHTML(actor.name), value: current })]
-  }), { whisper: tableFor(actor) });
+  return actor.restTenMinutes();
 }
 
 /**

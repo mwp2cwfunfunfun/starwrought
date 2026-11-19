@@ -10,12 +10,13 @@
  *   [EFFECT <TAG>: <±N> <type>, <descriptor>; <component>; ...]
  *
  *   [EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]                              Humanity
- *   [EFFECT CHECK: 1 situation; IF: RANK(roll = untrained)]                                    Jack of Trades
+ *   [EFFECT SKILL: 1 situation; IF: RANK(roll = untrained)]                                    Jack of Trades
  *   [EFFECT DEF: 1 situation, guard; IFT: BLOW; FOR: self+allies 0; IF: ALLIES(>=1, 0)]        Close Ranks
  *   [EFFECT DEF: 1 situation; FOR: allies 15; IF: SEEN; IFT: TRAIT(Fear); LIMIT: round]        Torchbearer Human
  *
- * The tag names the target's kind (CHECK a Constellation or a Maneuver, or every check; DEF one
- * Defense or all four; ATK, INIT, SPEED), the value is a signed integer (`0` refused), the type is
+ * The tag names the target's kind (CHECK a Constellation or a Maneuver, or with none EVERY ROLL AND
+ * THRESHOLD since 0.36.0; SKILL the checks that are no attack and no Defense; DEF one Defense or
+ * all four; ATK, INIT, SPEED), the value is a signed integer (`0` refused), the type is
  * situation, condition or gear (the retired words refused by name, `untyped` refused), and the
  * components are the effect reader's (../effects.mjs). The 0.13.0 operator form and the 0.10.0
  * prose form are refused by the grammar.
@@ -47,8 +48,18 @@
  * target: a Constellation applies on its slug; a scope word on the roll's kind; a Maneuver when the
  * roll carries that Maneuver's Item, and is OFFERED unticked on a check made without one (ruling
  * 122), never on an attack, a Defense or an Initiative. The label is the carrier's plain name (with
- * the owner's name when it is someone else's Talent), and one Talent's lines on one target share a
- * `source`, so they are one circumstance under PHB v4.21's stacking.
+ * the owner's name when it is someone else's Talent), and ALL OF ONE CARRIER'S LINES SHARE A
+ * `source` (0.36.0; ruling 367), so one Talent or one Condition is one circumstance under PHB
+ * v4.21's stacking: of its lines that reach a roll, the strongest bonus and the strongest penalty
+ * count. Through 0.35.1 the source was the carrier AND the target, so two lines to different
+ * targets that reached one roll both counted.
+ *
+ * EVERY ROLL, AND THE NARROW WORD (0.36.0; rulings 366 to 371). Mike: "Can't CHECK include ALL
+ * rolls/thresholds, but ATK and DEF just mean attack checks and defense checks respectively?" A
+ * bare `CHECK:` is read as the scope `rolls` (checks, Initiative, attacks, Defenses), and the new
+ * bare tag `SKILL:` as the scope `checks`, which is what a bare CHECK was read as through 0.35.1
+ * and reaches what it always reached. So A STORED RULE KEEPS THE MEANING IT WAS READ WITH: nothing
+ * changes for a rule until its cell is read again.
  *
  * KEEP THIS MODULE FREE OF FOUNDRY GLOBALS AT MODULE SCOPE. It imports ../syntax.mjs and
  * ../operators.mjs (both pure) and the config, never the grammar or the registry (no circle).
@@ -68,12 +79,24 @@ const EXAMPLE = "CHECK: 1 condition, aid; IF: RANK(Origin >= trained)";
  * Move, asked by the movement tracker and the ruler with `kind: "move"`.
  */
 export const SCOPES = Object.freeze({
+  // Every roll and Threshold (0.36.0): what a bare CHECK is read as.
+  rolls: { name: "every roll and Threshold", kinds: ["check", "initiative", "attack", "defense"] },
   defenses: { name: "Defenses", kinds: ["defense"] },
-  checks: { name: "Checks", kinds: ["check", "initiative"] },
+  // What SKILL is read as (0.36.0), and what a bare CHECK was read as through 0.35.1: every check
+  // that is no attack and no Defense, an Initiative rolled with a Constellation among them.
+  checks: { name: "Skill checks", kinds: ["check", "initiative"] },
   attacks: { name: "Attacks", kinds: ["attack"] },
   initiative: { name: "Initiative", kinds: ["initiative"] },
   speed: { name: "Speed", kinds: ["move"] }
 });
+
+/** Does a scope reach a kind of roll (`check`, `initiative`, `attack`, `defense`, `move`)? */
+export function scopeReaches(slug, kind) {
+  return !!SCOPES[slug]?.kinds.includes(kind);
+}
+
+/** The words an author might write after CHECK for the narrow scope: each is told the tag. */
+const SKILL_WORDS = Object.freeze(["skill", "skills", "skill-check", "skill-checks"]);
 
 /** The flag path of an armed claim on an owner (0.15.0; module/rules/claims.mjs writes it). */
 export const ARMED_FLAG = "rules.armed";
@@ -121,17 +144,31 @@ export default {
       const e = context.effect;
       const TAG = e.tag.toUpperCase();
       const type = readType(e.type ?? "untyped");
+      // The value AS WRITTEN, for a message that says what to write: `-N` on a Condition's row is
+      // stored as its sign, and a message that printed `-1` would turn Frightened 2's -2 into -1
+      // for an author who followed it (the review of 0.36.0).
+      const written = e.scale ? `${e.value < 0 ? "-" : ""}${e.scale}` : String(e.value);
       let to;
       if (e.tag === "check") {
-        if (e.descriptors.length > 1) throw new RuleSyntaxError(`CHECK takes one descriptor, a Constellation or a Maneuver, not ${e.descriptors.length}: \`CHECK: ${e.value} ${type}, diplomacy\``);
+        if (e.descriptors.length > 1) throw new RuleSyntaxError(`CHECK takes one descriptor, a Constellation or a Maneuver, not ${e.descriptors.length}: \`CHECK: ${written} ${type}, diplomacy\``);
         if (e.descriptors.length) {
+          if (SKILL_WORDS.includes(slugify(e.descriptors[0]))) {
+            throw new RuleSyntaxError(`for checks that are no attack and no Defense write the tag: \`SKILL: ${written} ${type}\``);
+          }
           to = readTarget(e.descriptors[0], context.resolve);
-          if (to.type === "scope") throw new RuleSyntaxError(`"${e.descriptors[0]}" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every check`);
+          if (to.type === "scope") throw new RuleSyntaxError(`"${e.descriptors[0]}" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every roll and Threshold (SKILL, ATK, DEF and INIT are the narrower tags)`);
         } else {
-          to = { name: SCOPES.checks.name, slug: "checks", type: "scope" };
+          // Every roll and Threshold (0.36.0; ruling 366). Through 0.35.1 this was `checks`.
+          to = { name: SCOPES.rolls.name, slug: "rolls", type: "scope" };
         }
+      } else if (e.tag === "skill") {
+        // The narrow word (0.36.0; ruling 368): what a bare CHECK was read as through 0.35.1.
+        if (e.descriptors.length) {
+          throw new RuleSyntaxError(`SKILL takes no descriptor: to name a Constellation or a Maneuver write \`CHECK: ${written} ${type}, ${e.descriptors[0]}\``);
+        }
+        to = { name: SCOPES.checks.name, slug: "checks", type: "scope" };
       } else if (e.tag === "def") {
-        if (e.descriptors.length > 1) throw new RuleSyntaxError(`DEF takes one descriptor, a Defense, not ${e.descriptors.length}: \`DEF: ${e.value} ${type}, guard\``);
+        if (e.descriptors.length > 1) throw new RuleSyntaxError(`DEF takes one descriptor, a Defense, not ${e.descriptors.length}: \`DEF: ${written} ${type}, guard\``);
         if (e.descriptors.length) {
           const slug = slugify(e.descriptors[0]);
           if (!Object.values(DEFENSES).some(d => d.slug === slug)) throw new RuleSyntaxError(`"${e.descriptors[0]}" is not a Defense: DEF takes evade, guard, endure or awareness, or none for all four`);
@@ -141,11 +178,21 @@ export default {
           to = { name: SCOPES.defenses.name, slug: "defenses", type: "scope" };
         }
       } else {
-        if (e.descriptors.length) throw new RuleSyntaxError(`${TAG} takes no descriptor: \`${TAG}: ${e.value} ${type}\``);
+        if (e.descriptors.length) throw new RuleSyntaxError(`${TAG} takes no descriptor: \`${TAG}: ${written} ${type}\``);
         const slug = { atk: "attacks", init: "initiative", speed: "speed" }[e.tag];
         to = { name: SCOPES[slug].name, slug, type: "scope" };
       }
       refuseOutcome(e.ops);
+      // A line that reaches Defenses and asks about THE ROLL'S OWN RANK (0.36.0): the sheet's
+      // Defense pass reads a Defense's number with no roll in hand, so such a line is never folded
+      // into it and never reaches a Defense roll, a Defense rolled as a check or the default
+      // Initiative. It reads, and the author is told what it reaches.
+      const rollRank = (Array.isArray(e.ops.when) ? e.ops.when : (e.ops.when ? [e.ops.when] : [])).some(w => w?.roll);
+      if (rollRank && ((e.tag === "def") || ((to.type === "scope") && scopeReaches(to.slug, "defense")))) {
+        context.warn?.((e.tag === "check")
+          ? "CHECK with IF: RANK(roll ...) is not read on a Defense yet: the line reaches checks, attacks and an Initiative rolled with a Skill, and no Defense's number (so not a Defense roll, a Defense rolled as a check or the default Initiative). For checks alone write SKILL"
+          : `${TAG} with IF: RANK(roll ...) is not read on a Defense yet: a Defense's number is read with no roll's rank in hand, so the line never applies`);
+      }
       // 0.25.0: this kind reads its ops without a refusal list, so the one condition it has no
       // reading for is refused here by name rather than dropped in silence.
       if (e.ops.used) {
@@ -218,7 +265,10 @@ export default {
     const tail = summarizeOperators(rule);
     // A scaled line says its letter: "-N Condition penalty to Defenses" (0.33.0).
     const shown = (rule?.scale === "N") ? `${value < 0 ? "-" : "+"}N` : signed(value);
-    return `${shown} ${titled(rule?.type)} ${word} to ${rule?.to?.name ?? ""}${tail ? `, ${tail}` : ""}`;
+    // A scope is named as it is known NOW, whatever name the rule was stored with: a line read
+    // before 0.36.0 says "to Skill checks", which is what it does (it was stored "Checks").
+    const target = ((rule?.to?.type === "scope") ? SCOPES[rule.to.slug]?.name : null) ?? rule?.to?.name ?? "";
+    return `${shown} ${titled(rule?.type)} ${word} to ${target}${tail ? `, ${tail}` : ""}`;
   },
 
   hooks: {
@@ -372,7 +422,10 @@ export default {
         const target = rule.to;
         const label = ownRoll ? plainName(carrier?.name ?? "") : `${plainName(carrier?.name ?? "")} (${owner?.name ?? ""})`;
         const carrierKey = ruleCarrierKey(carrier);
-        const source = `rule:${carrierKey}:${target.slug}`;
+        // ONE CARRIER IS ONE CIRCUMSTANCE (0.36.0; ruling 367): the source names the Talent or the
+        // Condition alone, so of its lines that reach this roll `resolveModifiers` keeps the
+        // strongest bonus and the strongest penalty. Through 0.35.1 it named the target too.
+        const source = `rule:${carrierKey}`;
         // `-N` (0.33.0): the Condition's own value, so Frightened 2 is -2. Read off the carrier, so
         // a line written with `N` anywhere else (the parse refuses one) counts once.
         const scaled = (rule.scale === "N") ? rule.value * Math.max(1, Number(held?.value) || 1) : rule.value;
@@ -383,7 +436,7 @@ export default {
         let matched = false;
         let maneuverOffer = false;
         if (target.type === "scope") {
-          matched = !!SCOPES[target.slug]?.kinds.includes(rollKind);
+          matched = scopeReaches(target.slug, rollKind);
         } else {
           const asConstellation = (target.type === "constellation") || (target.type == null);
           const asManeuver = (target.type === "action") || (target.type == null);

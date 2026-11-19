@@ -59,10 +59,10 @@ const BUILT_INS = Object.freeze({
   /**
    * Fatigued N (PHB v4.21, Conditions): -N Condition (maximum of 3, FATIGUED_MAX) to all four
    * Defenses and attack rolls (Evade and Guard only through v4.15), and no Exploration Mode
-   * Activity but Travel; ends after ten minutes of rest, which is the short rest, the rest card (a
-   * night is longer than ten minutes) or the Fatigued card's own button, the table's word that the
-   * ten minutes have passed (ruling 81). The end of the Combat clears nothing. Raised by 1 on a
-   * failed Wind check and by 2 on a critical failure.
+   * Activity but Travel; lowered by 1 by every ten minutes of uninterrupted rest (0.36.0, ruling
+   * 372: the short rest, from the sheet's button or the Fatigued card's own, the table's word that
+   * the ten minutes have passed) and ended by a night's rest (ruling 373). The end of the Combat
+   * clears nothing (ruling 81). Raised by 1 on a failed Wind check and by 2 on a critical failure.
    */
   fatigued: { id: "fatigued", name: "STARWROUGHT.Condition.fatigued", img: "icons/svg/unconscious.svg", numeric: true },
   blinded: { id: "blinded", name: "STARWROUGHT.Condition.blinded", img: "icons/svg/blind.svg", aliases: ["blind"] },
