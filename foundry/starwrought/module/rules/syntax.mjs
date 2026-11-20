@@ -45,9 +45,10 @@ export const CONDITION_ROW = "condition";
 /**
  * The effect tags a Condition's row may carry in this version. `immune` since 0.35.0, and there in
  * its `TRAIT(...)` form alone (Blinded: `[EFFECT IMMUNE: TRAIT(Visual)]`; the kind refuses the
- * rest, ./kinds/prevent.mjs).
+ * rest, ./kinds/prevent.mjs). `cost` since 0.37.0, which is read on a Condition's row and nowhere
+ * else yet (Heedless: `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`; ./kinds/cost.mjs).
  */
-export const CONDITION_ROW_TAGS = Object.freeze(["check", "skill", "atk", "def", "init", "immune"]);
+export const CONDITION_ROW_TAGS = Object.freeze(["check", "skill", "atk", "def", "init", "immune", "cost"]);
 
 /* -------------------------------------------- */
 /*  "No automation"                             */

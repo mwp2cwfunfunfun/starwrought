@@ -14,6 +14,8 @@
   {{/if}}{{/if}}
   <img src="{{img}}" alt="{{name}}">
   <span class="sw-action-glyph" data-tooltip="{{costLabel}}" aria-label="{{costLabel}}">{{swCostPips glyph}}</span>
+  {{!-- A Condition raises the cost (0.37.0; Heedless: Concentrate takes 1 extra action). --}}
+  {{#if raise}}<span class="sw-cost-raise" data-tooltip="{{raiseTip}}" aria-label="{{raiseTip}}">+{{raise}}</span>{{/if}}
   <a class="sw-item-name" data-action="{{#if isBasic}}basicUse{{else}}itemUse{{/if}}"{{#if isBasic}} data-tooltip="{{hint}}"{{/if}}>{{swPlainName name}}</a>
   {{#if tag}}<span class="sw-item-tag"{{#if tagTip}} data-tooltip="{{tagTip}}"{{/if}}>{{tag}}</span>{{/if}}
   {{#each traits as |trait|}}<span class="sw-trait">{{trait}}</span>{{/each}}

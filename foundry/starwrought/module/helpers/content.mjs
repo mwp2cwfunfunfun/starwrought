@@ -351,6 +351,32 @@ export function invalidateBasicActions() {
   basicActions = null;
 }
 
+/**
+ * The Maneuver of this name for this actor (0.25.0; in documents/item.mjs through 0.36.0): the
+ * actor's own copy (one a Talent granted, or a GM's), else the Basic Maneuver every character has
+ * (the Actions pack's, with a world Item of the same name standing in for the printed one), else
+ * any world Maneuver, else the pack's document by its index. Read by a Maneuver that performs
+ * another (`SwItem##performSubordinate`) and, since 0.37.0, by Recenter, whose own code reads its
+ * row's traits to know whether a Condition raises its cost (`SwActor#recenterCost`).
+ * @param {Actor|null} actor
+ * @param {string} slug  `slugify(plainName(name))`.
+ * @returns {Promise<Item|null>}
+ */
+export async function findManeuver(actor, slug) {
+  const slugOf = name => SW.slugify(SW.plainName(name ?? ""));
+  const is = item => (item?.type === "action") && (slugOf(item.name) === slug);
+  const owned = actor?.items?.find(is);
+  if (owned) return owned;
+  const basic = (await loadBasicActions()).find(is);
+  if (basic) return basic;
+  const world = game.items?.find(is);
+  if (world) return world;
+  const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
+  if (!pack) return null;
+  const entry = (await pack.getIndex()).find(e => slugOf(e.name) === slug);
+  return entry ? pack.getDocument(entry._id) : null;
+}
+
 /* -------------------------------------------- */
 
 /** The name the Equipment compendium prints for the weapon every character has (0.29.0). */

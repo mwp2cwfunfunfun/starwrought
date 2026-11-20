@@ -1,5 +1,5 @@
 {
-  "build": "2fc129fe282214ef",
+  "build": "de7db31197d738bd",
   "source": [
     "conditions.xlsx"
   ],
@@ -174,27 +174,6 @@
           "value": -1,
           "type": "condition",
           "to": {
-            "name": "Defenses",
-            "slug": "defenses",
-            "type": "scope"
-          },
-          "when": null,
-          "for": null,
-          "while": null,
-          "against": null,
-          "seen": false,
-          "limit": null,
-          "claim": null,
-          "marked": false,
-          "scale": "N",
-          "kind": "bonus",
-          "line": 1,
-          "text": "[EFFECT DEF: -N condition]"
-        },
-        {
-          "value": -1,
-          "type": "condition",
-          "to": {
             "name": "every roll and Threshold",
             "slug": "rolls",
             "type": "scope"
@@ -209,29 +188,8 @@
           "marked": false,
           "scale": "N",
           "kind": "bonus",
-          "line": 2,
+          "line": 1,
           "text": "[EFFECT CHECK: -N condition]"
-        },
-        {
-          "value": -1,
-          "type": "condition",
-          "to": {
-            "name": "Attacks",
-            "slug": "attacks",
-            "type": "scope"
-          },
-          "when": null,
-          "for": null,
-          "while": null,
-          "against": null,
-          "seen": false,
-          "limit": null,
-          "claim": null,
-          "marked": false,
-          "scale": "N",
-          "kind": "bonus",
-          "line": 3,
-          "text": "[EFFECT ATK: -N condition]"
         }
       ],
       "system": false,
@@ -241,7 +199,7 @@
     {
       "name": "Grabbed",
       "takes": "",
-      "effect": "Off-Guard and can't Move or Step; Escape ❶ to break free.",
+      "effect": "You are Off-Guard and can't Move or Step. You must successfully Escape ❶ to break free.",
       "description": "A firm grip holds you in place, leaving you to struggle for room to move.",
       "includes": [
         {

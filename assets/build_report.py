@@ -90,7 +90,10 @@ RULES = [
      "Delete the duplicate row; the row on '{1}' is the one that ships."),
     (r"also on sheet '([^']+)', whose row is not enabled", "Fix", "Data",
      "Two rows for one action: delete the disabled one on '{1}', or decide which should ship."),
-    (r'the cell says "no automation" \(N/A\) and also carries rules', "Fix", "Automation cell",
+    # Filed under "Automation", not "Automation cell" (the review of 0.37.0): a WARNING of the
+    # parse_rules or build_foundry step under "Automation cell" is taken out of the report in favour
+    # of the Red cells analysis, which lists failures only, so a warning filed there was never shown.
+    (r'the cell says "no automation" \(N/A\) and also carries rules', "Fix", "Automation",
      "The cell is marked N/A and has automation as well; the automation is what the build uses. Delete the N/A line, "
      "or delete the rules if the row really needs none."),
     (r"Effect says 'within (\d+) feet' but no ring is set", "Fix", "Automation cell",
@@ -184,12 +187,13 @@ RULES = [
     (r"the Exposed row describes the four Zones", "Fix", "Automation cell",
      "Set the Exposed row's Automation cell to N/A: an Exposed Zone is read off the Zone, and the row only holds the text."),
     # 0.36.0: one Condition counts once on a roll; a bare CHECK reaches every roll.
-    (r"A Condition counts once on a roll", "Fix", "Automation cell",
+    # Both are warnings, so "Automation" (see the N/A row above for why).
+    (r"A Condition counts once on a roll", "Fix", "Automation",
      "Two lines of this row reach the same roll, and only the stronger counts there. Where one of them is a bare CHECK, which reaches "
      "every roll and Threshold, a DEF, ATK or INIT line of the same size beside it can be deleted (Frightened is one line: "
      "[EFFECT CHECK: -N condition]). Otherwise leave both: each still counts on the rolls the other does not reach (a SKILL line "
      "does not reach the default Initiative, so an INIT line beside it is not covered)."),
-    (r"is not read on a Defense yet", "Fix", "Automation cell",
+    (r"is not read on a Defense yet", "Fix", "Automation",
      "A line that asks about the roll's own rank (IF: RANK(roll ...)) never reaches a Defense's number. If the bonus is for checks, "
      "write SKILL in place of CHECK; if it should reach Defenses too, say so and Claude will plan it."),
     # 0.35.0: the sheet's two texts. Effect is the rules text; Description is the flavor line.
@@ -209,6 +213,29 @@ RULES = [
     (r"the text writes \[X\], and this Condition's Takes is not X", "Fix", "Data",
      "Either set the row's Takes cell to X (the Condition is about one other creature) or take the [X] out of its text: "
      "with no creature to name, it prints as typed everywhere."),
+    # 0.37.0: a cost raised by a Condition. Before the immunity rows, whose patterns would also
+    # match a COST line's message about a trait's name.
+    (r"`COST:` raises what a thing costs and is read on a Condition's row for now", "Fix", "Automation cell",
+     "A cost raised by a trait is read on a row of data/conditions.xlsx alone for now (Heedless: [EFFECT COST: 1; IF: TRAIT(Concentrate)]). "
+     "If a Talent or a Maneuver should change a cost, say which, and the word comes with it; mark the cell N/A meanwhile."),
+    (r"COST names the trait of what costs more|COST names one trait to a line|COST takes one condition|COST takes one number|COST: a comma with nothing beside it|COST is written `COST: <n>|a cost made cheaper is not read yet|a cost raised by 0 does nothing|COST raises a cost by 1 to|is not a trait's name: .*EFFECT COST|COST does not take (?!IF: COST)", "Fix", "Automation cell",
+     "Write the line as [EFFECT COST: 1; IF: TRAIT(Concentrate)]: a whole number of extra actions, then the one trait of what costs "
+     "more, named by one word. A second trait is a second line. A cost made cheaper, a cost raised for everything and a Maneuver named "
+     "as the target have no word yet: say what is wanted and Claude will propose it."),
+    (r"after a semicolon the cost is a condition", "Fix", "Automation cell",
+     "On an APPLY or REMOVE line the cost is a condition: write IF: COST(2), the version of the Maneuver that was used. "
+     "COST: at the start of a line is a different thing (a Condition raising what a thing costs)."),
+    # A warning of the build, so "Automation" (see the N/A row above for why).
+    (r"COST with TRAIT\(.+\): (?:no shipping Maneuver carries the trait|only Maneuvers that cost no actions carry the trait)", "Fix", "Automation",
+     "No shipping Maneuver that costs actions carries that trait written alone, so the line raises nothing. Check the spelling "
+     "against the Traits column of the Maneuvers (Concentrate), or leave it: it holds once such a Maneuver ships."),
+    (r"COST with TRAIT\(.+\) does not reach", "Decision", "Automation",
+     "The raise is read where a Maneuver is paid from its own row, and by Recenter. The things named are paid for in the system's "
+     "own code (a Strike, a Cast, a Reaction, a built-in) and cost what they always cost. Say if one of them should be raised too, "
+     "and Claude will plan it; otherwise nothing to do."),
+    (r"the traits kept for when its row cannot be read", "Fix", "Build",
+     "Claude: bring BUILT_IN_TRAITS in foundry/starwrought/module/documents/maneuvers.mjs level with the row's Traits cell. "
+     "Nothing for Mike to do: the row is what the system reads, and the kept list only stands in when the row cannot be read."),
     # 0.35.0: immunity to a trait.
     (r"`IMMUNE: TRAIT\(\.\.\.\)` is read on a Condition's row for now", "Fix", "Automation cell",
      "Immunity to a trait is read on a row of data/conditions.xlsx alone for now (Blinded: [EFFECT IMMUNE: TRAIT(Visual)]). "
@@ -220,7 +247,7 @@ RULES = [
      "Write the line alone, as [EFFECT IMMUNE: TRAIT(Visual)]: it acts for whoever has the Condition. If the immunity should be "
      "limited or conditional, say how and Claude will propose the word."),
     (r"is not read on a Condition's row yet|on a Condition's row does not take|on a Condition's row yet|a Condition's row takes", "Fix", "Automation cell",
-     "A Condition's row reads CHECK, SKILL, ATK, DEF and INIT lines, and IMMUNE: TRAIT(...) written alone, all of which act for whoever has "
+     "A Condition's row reads CHECK, SKILL, ATK, DEF and INIT lines, IMMUNE: TRAIT(...) written alone, and COST: <n>; IF: TRAIT(...), all of which act for whoever has "
      "the Condition. What this line asks for has no word there yet: say what the Condition should do and Claude will propose it, and "
      "mark the cell N/A meanwhile."),
     (r"is a Condition's own value|this Condition takes none", "Fix", "Automation cell",

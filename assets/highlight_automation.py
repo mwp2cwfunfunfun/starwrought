@@ -462,6 +462,21 @@ def why(message, text, data, vocab, item_name=""):
         return "no kind yet", "this asks for something no tag or keyword of the grammar does; a kind would have to be written for it"
     if "is not a trait word" in low:
         return "mis-typed", "a trait is letters, digits, spaces, apostrophes and hyphens"
+    # A cost raised by a Condition (0.37.0), read on a row of data/conditions.xlsx alone. Before the
+    # immunity hints, whose wording a COST line's messages share.
+    if low.startswith("`cost:` raises what a thing costs"):
+        return "not yet readable", "a cost raised by a trait is read on a row of data/conditions.xlsx alone for now; mark this cell N/A until a Talent's is built"
+    if "after a semicolon the cost is a condition" in low:
+        return "mis-typed", "the cost after a semicolon is a condition: write `IF: COST(2)`"
+    # The TAG's own messages, each by its opening words: `COST(<n>)` after IF: is an older word with
+    # messages of its own ("COST is written `COST(<n>)`", "COST is given twice"), which a test for
+    # "cost " alone took for the tag's (the review of 0.37.0).
+    cost_tag = (low.startswith("cost is written `cost: <n>") or low.startswith("cost takes one") or low.startswith("cost: a comma")
+                or low.startswith("cost names") or low.startswith("cost raises a cost") or low.startswith("cost does not take")
+                or low.startswith("a cost made cheaper") or low.startswith("a cost raised by 0")
+                or ("is not a trait's name" in low and "effect cost" in low))
+    if cost_tag:
+        return "wrong shape", "write `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`: a whole number of extra actions, then one trait named by one word"
     # Immunity to a trait (0.35.0), read on a row of data/conditions.xlsx alone.
     if "is read on a condition's row for now" in low:
         return "not yet readable", "immunity to a trait is read on a row of data/conditions.xlsx alone for now; mark this cell N/A until a Talent's is built"

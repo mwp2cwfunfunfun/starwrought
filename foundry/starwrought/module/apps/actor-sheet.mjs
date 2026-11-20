@@ -13,7 +13,7 @@ import { SwChargen } from "./chargen.mjs";
 import { askToNameLore } from "./lore-name.mjs";
 import { loadBasicActions, enabledConstellations } from "../helpers/content.mjs";
 // The header's live state and the tooltips, shared with the adversary and party sheets (0.10.1).
-import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip, weaponNumbers } from "../helpers/actor-context.mjs";
+import { actionsContext, bindContext, rulesPageOf, vigorContext, zoneWounds, lockedTips, traitChips, windTip, weaponNumbers, recenterButton } from "../helpers/actor-context.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // THE GLANCE (0.19.0): the panel a LIMITED user's sheet shows alone.
 import { glanceData } from "../canvas/glance.mjs";
@@ -467,6 +467,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
 
     // The action economy, shown only when it means something: in an encounter.
     context.actions = actionsContext(actor);
+    // What Recenter costs now (0.37.0): ❷ while a Condition raises it (Heedless), for its button.
+    context.recenter = await recenterButton(actor);
 
     // AURAS (0.5.1): the ring toggle beside each Talent or Maneuver row that carries an aura,
     // looked up by Item id in the templates, and the body's own ranges for the Ranges line.
@@ -1104,7 +1106,7 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     const useHint = game.i18n.localize("STARWROUGHT.Sheet.basicUseHint");
     const row = (item, source, extra = {}) => {
       const sys = item.system;
-      const status = statusOf(item, situation);
+      const status = statusOf(item, situation, { owned: source !== "basic" });
       const flavour = String(sys.description ?? "").replace(/<[^>]+>/g, "").trim();
       const owned = source !== "basic";
       return {
@@ -1121,6 +1123,9 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
         img: item.img,
         glyph: sys.glyph,
         costLabel: sys.costLabel,
+        // A Condition raises this row's cost (0.37.0; Heedless): "+1" beside the pips, why on hover.
+        raise: status.raise?.n ?? 0,
+        raiseTip: status.raise?.tip ?? "",
         traits: sys.traits ?? [],
         requirements: sys.requirements ?? "",
         hint: flavour || useHint,
@@ -1163,7 +1168,8 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
    * The watch below compares a fresh one with it and redraws the tab only when they differ.
    */
   static #maneuverSignature(rows) {
-    return rows.map(r => `${r.slug}|${r.applicable ? 1 : 0}|${r.reasonTip}`).join("\n");
+    // The raise is part of what is drawn (0.37.0), so a row whose cost mark changes redraws.
+    return rows.map(r => `${r.slug}|${r.applicable ? 1 : 0}|${r.reasonTip}|${r.raise ?? 0}`).join("\n");
   }
 
   /**

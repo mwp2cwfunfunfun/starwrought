@@ -100,7 +100,12 @@ import { CONDITION_ROW, CONDITION_ROW_TAGS, splitAlternatives } from "../foundry
 // 0.34.0: the check a Maneuver rolls, declared (the `check` kind and its plan).
 import { readCheck, checkWords, checkSummary, planOf, storedCheck, userPicks, targetPicks, defenseKeyOf, defenseNames, RELEVANT, BONUS_FORM, isBonusShape } from "../foundry/starwrought/module/rules/check.mjs";
 import { CHECK_REQUEST, CHECK_ANSWER, REQUEST_MODES, usableDefenses, validRequest, validAnswer, standingAnswer, requestState, userDegree, adversaryCheck } from "../foundry/starwrought/module/rules/check-request.mjs";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+// 0.37.0: a cost raised by a Condition.
+import { COST_RAISE_MAX } from "../foundry/starwrought/module/rules/kinds/cost.mjs";
+import { costRaise, carriesTrait, raiseWords, raiseReason, costRoad, rowRaise, raisedCosts, costCensus, builtInTraitNotes, paidElsewhere } from "../foundry/starwrought/module/rules/cost.mjs";
+import { BUILT_IN_TRAITS, RAISED_BUILT_INS } from "../foundry/starwrought/module/documents/maneuvers.mjs";
 import { fileURLToPath } from "node:url";
 import { closeConditions, conditionSetOf, holdsCondition, heldIds, heldIdsFor } from "../foundry/starwrought/module/rules/condition-set.mjs";
 import { conditionCarriers, conditionModifiers, isConditionCarrier, CONDITION_CARRIER_TYPE } from "../foundry/starwrought/module/rules/engine.mjs";
@@ -122,7 +127,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "check", "choice", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "check", "choice", "cost", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -772,7 +777,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, COST$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -2472,7 +2477,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, COST", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   // A tag with its colon lost is told the colon (0.36.0, the review), not the list of tags.
@@ -4503,7 +4508,7 @@ check("apply: every accepted form on a Maneuver's row, stored whole, and its sum
   must(summarize(over) === "puts Off-Guard on you until your next Opportunity, on a Critical Failure", `the summary: "${summarize(over)}"`);
   const fright = applyRule("[EFFECT APPLY: frightened 2, target; IF: RESULT(critical success); IF: COST(1)]");
   same([fright.effect, fright.cost], [{ name: "Frightened", slug: "frightened", condition: "frightened", value: 2 }, 1], "a Condition with a value, and the cost it waits on");
-  must(summarize(fright) === "puts Frightened 2 on the target, on a Critical Success, when 1 action is paid", `the summary: "${summarize(fright)}"`);
+  must(summarize(fright) === "puts Frightened 2 on the target, on a Critical Success, when the 1-action version is used", `the summary: "${summarize(fright)}"`);
   same(applyRule("[EFFECT APPLY: frightened]").effect.value, 1, "a Condition that carries a value is 1 when none is written");
   const cover = applyRule("[EFFECT APPLY: Taking Cover]");
   same([cover.effect, cover.who, cover.when, cover.until], [{ name: "Taking Cover", slug: "taking-cover", condition: null }, "self", null, null], "a named Effect, on use, until removed");
@@ -4893,7 +4898,7 @@ check("conditions: a row the registry cannot take is refused in words, and nothi
 });
 
 check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` for its own value (ruling 326)", () => {
-  same(CONDITION_ROW_TAGS, ["check", "skill", "atk", "def", "init", "immune"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone; SKILL since 0.36.0)");
+  same(CONDITION_ROW_TAGS, ["check", "skill", "atk", "def", "init", "immune", "cost"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone; SKILL since 0.36.0; COST since 0.37.0)");
   const frightened = conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]\n[EFFECT INIT: N situation]");
   same(frightened.map(r => [r.kind, r.value, r.scale, r.type, r.to.slug]), [["bonus", -1, "N", "condition", "defenses"], ["bonus", -1, "N", "condition", "rolls"], ["bonus", -1, "N", "condition", "attacks"], ["bonus", 1, "N", "situation", "initiative"]], "N is stored as a sign and a scale");
   same(frightened.map(summarize), ["-N Condition penalty to Defenses", "-N Condition penalty to every roll and Threshold", "-N Condition penalty to Attacks", "+N Situation bonus to Initiative"], "and said as N");
@@ -4916,7 +4921,7 @@ check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` f
     const message = conditionRowError(cell);
     must(/on a Condition's row does not take/.test(message) && message.includes(what), `${what} is refused on a Condition's row: ${message}`);
   }
-  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
+  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
   // IMMUNE on a Condition's row (0.35.0): a trait, alone.
   const immune = conditionCell("Blinded", "", "[EFFECT IMMUNE: TRAIT(Visual)]");
   same(immune, [{ effect: "trait", trait: "visual", name: "Visual", kind: "prevent", line: 1, text: "[EFFECT IMMUNE: TRAIT(Visual)]" }], "the stored rule: the trait's key and its name as written");
@@ -5825,6 +5830,195 @@ check("0.36.0: ten minutes of uninterrupted rest lower Fatigued by 1, and never 
   same(steps, [2, 1, 0], "Fatigued 3 takes three stretches to end");
   // What a hand may have left in the value: read as a whole number, and never raised by rest.
   same([fatiguedAfterRest(undefined), fatiguedAfterRest(null), fatiguedAfterRest("2"), fatiguedAfterRest(2.9), fatiguedAfterRest(-1), fatiguedAfterRest(2, -1), fatiguedAfterRest(2, "x")], [0, 0, 1, 1, 0, 2, 2], "odd values are read safely");
+});
+
+/* -------------------------------------------- */
+/*  A cost raised by a Condition (0.37.0)       */
+/* -------------------------------------------- */
+
+console.log("\nA cost raised by a Condition (0.37.0)");
+
+const HEEDLESS_CELL = "[EFFECT COST: 1; IF: TRAIT(Concentrate)]";
+/** The workbook's rows with Heedless's line, and any others a check adds. */
+const heedlessRows = (extra = []) => [...seedRows(), { name: "Heedless", rules: conditionCell("Heedless", "", HEEDLESS_CELL) }, ...extra];
+/** A Maneuver row as the charge, the tab and the build read one. */
+const maneuverData = (name, system = {}) => ({ name, type: "action", system: { cost: "1", traits: [], rules: [], ...system } });
+
+check("cost: the kind is registered with no hook and read on a Condition's row (rulings 375 and 379)", () => {
+  const kind = KINDS.get("cost");
+  must(!!kind && (Object.keys(kind.hooks ?? {}).length === 0), "registered, with no hook: the places that settle a cost ask `costRaise`");
+  same([EFFECT_TAGS.cost, CONDITION_ROW_TAGS.includes("cost"), COST_RAISE_MAX], ["cost", true, 6], "the tag, on a Condition's row, to six actions");
+  const rule = conditionCell("Heedless", "", HEEDLESS_CELL)[0];
+  same([rule.kind, rule.value, rule.trait, rule.name], ["cost", 1, "concentrate", "Concentrate"], "Heedless's line, stored flat");
+  same(summarize(rule), "things with the Concentrate trait cost 1 more action", "As read");
+  same(summarize(conditionCell("Dazed", "", "[EFFECT COST: 2; IF: TRAIT(Manipulate)]")[0]), "things with the Manipulate trait cost 2 more actions", "and for two");
+  // The effect reader does not tell IF from IFT for a trait; on a COST line either is the thing used.
+  const after = conditionCell("Heedless", "", "[EFFECT COST: +1; IFT: TRAIT(concentrate)]")[0];
+  same([after.value, after.trait, after.name], [1, "concentrate", "Concentrate"], "a sign, the other prefix and a small letter read the same");
+});
+
+check("cost: every slip is told what to write", () => {
+  const row = cell => conditionRowError(cell);
+  must(/^COST names the trait of what costs more, as in `\[EFFECT COST: 1; IF: TRAIT\(Concentrate\)\]`; a cost raised for everything is not read yet$/.test(row("[EFFECT COST: 1]")), "no trait");
+  must(/^COST names one trait to a line/.test(row("[EFFECT COST: 1; IF: TRAIT(Concentrate); IF: TRAIT(Manipulate)]")), "two traits");
+  must(/^"Reach 5" is not a trait's name: one word/.test(row("[EFFECT COST: 1; IF: TRAIT(Reach 5)]")), "a trait of two words");
+  same(row("[EFFECT COST: 0; IF: TRAIT(Concentrate)]"), "a cost raised by 0 does nothing", "zero");
+  must(/^a cost made cheaper is not read yet/.test(row("[EFFECT COST: -1; IF: TRAIT(Concentrate)]")), "a negative");
+  must(/^COST raises a cost by 1 to 6 actions/.test(row("[EFFECT COST: 7; IF: TRAIT(Concentrate)]")), "more than a round");
+  must(/a whole number of extra actions first, not "one"$/.test(row("[EFFECT COST: one; IF: TRAIT(Concentrate)]")), "a word for the number");
+  must(/the number of extra actions comes first$/.test(row("[EFFECT COST: ; IF: TRAIT(Concentrate)]")), "no number");
+  must(/a Maneuver named as the target is not read yet/.test(row("[EFFECT COST: 1, seek; IF: TRAIT(Concentrate)]")), "a Maneuver after a comma");
+  must(/^COST takes one condition, the trait of what costs more/.test(row("[EFFECT COST: 1; IF: RANK(Origin >= trained)]")), "a rank");
+  same([row("[EFFECT COST: 1; IF: TRAIT(Concentrate); LIMIT: round]"), row("[EFFECT COST: 1; IF: TRAIT(Concentrate); FOR: allies 10]")], ["COST does not take LIMIT", "COST does not take FOR"], "another component");
+  // Anywhere but a Condition's row.
+  for (const itemType of ["talent", "action"]) {
+    must(/^`COST:` raises what a thing costs and is read on a Condition's row for now/.test(bonusError(HEEDLESS_CELL, { resolve, itemType })), `on a ${itemType}'s cell`);
+  }
+  must(/is read on a Condition's row for now/.test(bonusError("COST: 1; IF: TRAIT(Concentrate)", { resolve, itemType: "effect" })), "as a custom effect");
+  // The tag and the condition share a word: each slip toward the other is told the right one.
+  must(/^after a semicolon the cost is a condition: write `IF: COST\(2\)`/.test(bonusError("[EFFECT APPLY: prone; COST: 2]", { resolve, itemType: "action" })), "`COST:` after a semicolon is told the condition");
+  must(/^COST is written `COST\(<n>\)`, the version of the Maneuver used by its listed cost/.test(bonusError("[EFFECT APPLY: prone; IF: COST(x)]", { resolve, itemType: "action" })), "the condition is the version used");
+  must(/^COST is an effect tag and takes a colon/.test(bonusError("[EFFECT COST 1; IF: TRAIT(Concentrate)]", onConditionRow("Heedless"))), "the tag with its colon lost");
+  // The review of 0.37.0. The ceiling itself reads; the Condition's own value is no number here.
+  same(conditionCell("Dazed", "", "[EFFECT COST: 6; IF: TRAIT(Concentrate)]")[0].value, 6, "six, the ceiling, reads");
+  must(/a whole number of extra actions first, not "N"$/.test(conditionRowError("[EFFECT COST: N; IF: TRAIT(Concentrate)]", "n")), "N is not read as the value");
+  // Two traits in one pair of parentheses, by `or` and by a comma.
+  must(/^COST names one trait to a line/.test(row("[EFFECT COST: 1; IF: TRAIT(Auditory or Visual)]")), "two traits joined by or");
+  must(/^TRAIT names one trait, as in `TRAIT\(Fear\)`, not "Concentrate, Manipulate": write a line for each trait$/.test(row("[EFFECT COST: 1; IF: TRAIT(Concentrate, Manipulate)]")), "two traits joined by a comma");
+  must(/^"Concentrate-" is not a trait's name/.test(row("[EFFECT COST: 1; IF: TRAIT(Concentrate-)]")), "a name that ends in a hyphen");
+  // A comma with nothing beside it is no descriptor to drop in silence.
+  for (const cell of ["[EFFECT COST: 1, ; IF: TRAIT(Concentrate)]", "[EFFECT COST: , 1; IF: TRAIT(Concentrate)]", "[EFFECT COST: 1,; IF: TRAIT(Concentrate)]"]) {
+    must(/^COST: a comma with nothing beside it/.test(row(cell)), `"${cell}" is refused`);
+  }
+  // `; COST:` is told the condition only after the two tags that read it.
+  must(/^after a semicolon the cost is a condition/.test(bonusError("[EFFECT REMOVE: prone; COST: 2]", { resolve, itemType: "action" })), "after REMOVE too");
+  for (const cell of ["[EFFECT GIVE: 1 situation, chosen; COST: 2; IF: RESULT(success)]", "[EFFECT CHECK: 1 situation; COST: 2]"]) {
+    must(/^"COST" is a tag and begins its own line/.test(bonusError(cell, { resolve, itemType: "action" })), `"${cell}": after another tag COST is a tag`);
+  }
+  // Inside an aura's block the line is refused as it is anywhere but a Condition's row.
+  must(parseAutomation("[AURA 10 allies; COST: 1; IF: TRAIT(Concentrate)]", { resolve, itemName: "Ring", itemType: "talent" }).errors.length === 1, "an aura cannot carry it");
+});
+
+check("cost: the kind's file and the reader's may each be the first module imported (the review of 0.37.0)", () => {
+  // Each in a fresh process, so nothing this file imported has run first. Through the first build
+  // of 0.37.0 the kind's file imported the engine, and importing it first threw "Cannot access
+  // 'cost' before initialization".
+  const url = path => new URL(`../foundry/starwrought/module/rules/${path}`, import.meta.url).href;
+  for (const path of ["kinds/cost.mjs", "cost.mjs"]) {
+    const run = spawnSync(process.execPath, ["--input-type=module", "-e", `const m = await import(${JSON.stringify(url(path))}); console.log(Object.keys(m).sort().join(","));`], { encoding: "utf8" });
+    must(run.status === 0, `rules/${path} imported first: ${String(run.stderr ?? "").trim().split("\n").find(line => /Error/.test(line)) ?? "exit " + run.status}`);
+  }
+  const names = path => spawnSync(process.execPath, ["--input-type=module", "-e", `const m = await import(${JSON.stringify(url(path))}); console.log(Object.keys(m).sort().join(","));`], { encoding: "utf8" }).stdout.trim().split(",");
+  same(names("kinds/cost.mjs"), ["COST_RAISE_MAX", "default"], "the kind's file exports the kind and its ceiling, and reads no actor");
+  must(["carriesTrait", "costRaise", "raiseReason", "raiseWords", "rowRaise"].every(name => names("cost.mjs").includes(name)), "the reader and its words are the other module's");
+});
+
+check("cost: one Condition counts once, two add, and a trait must be carried outright (rulings 381 and 384)", () => {
+  same([carriesTrait(["Concentrate", "Manipulate"], "concentrate"), carriesTrait(["Auditory or Concentrate"], "concentrate"), carriesTrait(["Reach 5"], "reach"), carriesTrait([], "concentrate"), carriesTrait(null, "concentrate"), carriesTrait(["Concentrate"], "")],
+    [true, false, true, false, false, false], "a trait written alone counts; \"A or B\" is neither");
+  seeded(() => {
+    const calm = creature({});
+    const heedless = creature({ statuses: ["heedless"] });
+    same(costRaise(calm, ["Concentrate"]), { extra: 0, by: [] }, "no Condition, no raise");
+    same(costRaise(heedless, ["Concentrate"]), { extra: 1, by: [{ id: "heedless", name: "Heedless", value: 1, trait: "concentrate", traitName: "Concentrate" }] }, "Heedless and a Concentrate Maneuver");
+    same([costRaise(heedless, ["Manipulate"]).extra, costRaise(heedless, ["concentrate", "Motion"]).extra, costRaise(heedless, ["Auditory or Concentrate"]).extra, costRaise(heedless, []).extra, costRaise(heedless, null).extra, costRaise(null, ["Concentrate"]).extra],
+      [0, 1, 0, 0, 0, 0], "another trait, a small letter, an alternative, no traits, nobody");
+    same([raiseWords(costRaise(heedless, ["Concentrate"])), raiseReason(costRaise(heedless, ["Concentrate"])), raiseWords(costRaise(calm, ["Concentrate"])), raiseReason(null)],
+      ["Heedless +1", "Heedless: Concentrate takes 1 extra action", "", ""], "the few words for a label, the reason for a card");
+  }, heedlessRows());
+  // Two Conditions add; one Condition's two lines count once, the larger.
+  seeded(() => {
+    const both = costRaise(creature({ statuses: ["heedless", "dazed"] }), ["Concentrate"]);
+    same([both.extra, both.by.map(b => `${b.name} +${b.value}`).sort()], [3, ["Dazed +2", "Heedless +1"]], "two Conditions add");
+    same(raiseReason(costRaise(creature({ statuses: ["dazed"] }), ["Concentrate"])), "Dazed: Concentrate takes 2 extra actions", "and the plural");
+    // Two Conditions in the words a label and a card print, in the order the creature holds them.
+    same([raiseWords(both).split(", ").sort().join(", "), raiseReason(both).split("; ").sort().join("; ")],
+      ["Dazed +2, Heedless +1", "Dazed: Concentrate takes 2 extra actions; Heedless: Concentrate takes 1 extra action"], "two Conditions, joined by a comma for a label and a semicolon for a card");
+  }, heedlessRows([{ name: "Dazed", rules: conditionCell("Dazed", "", "[EFFECT COST: 2; IF: TRAIT(Concentrate)]") }]));
+  seeded(() => {
+    const twice = costRaise(creature({ statuses: ["heedless"] }), ["Concentrate", "Manipulate"]);
+    same([twice.extra, twice.by.length, twice.by[0].value], [2, 1, 2], "one Condition's lines count once, the largest that matches");
+    same(costRaise(creature({ statuses: ["heedless"] }), ["Motion"]).extra, 0, "and none of them for another trait");
+  }, [...seedRows(), { name: "Heedless", rules: conditionCell("Heedless", "", `${HEEDLESS_CELL}\n[EFFECT COST: 2; IF: TRAIT(Manipulate)]`) }]);
+  // Held through another Condition, held both ways, and held only against one creature.
+  seeded(() => {
+    const through = costRaise(creature({ statuses: ["enraged"] }), ["Concentrate"]);
+    same([through.extra, through.by.length], [1, 1], "a Condition that counts as Heedless raises as Heedless does");
+    same(costRaise(creature({ statuses: ["enraged", "heedless"] }), ["Concentrate"]).extra, 1, "held directly and through another: once");
+    same(costRaise(creature({ statuses: ["rattled"], appliedBy: { rattled: "Actor.x" } }), ["Concentrate"]).extra, 0, "held only against one creature: a cost has no other party");
+  }, heedlessRows([{ name: "Enraged", includes: ["Heedless"] }, { name: "Rattled [X]", takes: "X", includes: ["Heedless against X"] }]));
+  // A `cost` rule on anything but a Condition's carrier is not this version's to apply.
+  const stray = rulesActor([{ type: "talent", name: "Stray", id: "s1", system: { rules: [{ kind: "cost", line: 1, text: HEEDLESS_CELL, value: 1, trait: "concentrate", name: "Concentrate" }] } }]);
+  same(costRaise(stray, ["Concentrate"]).extra, 0, "a stored rule on a Talent raises nothing");
+  // A stored value the parse would refuse (a file edited by hand) counts as the ceiling, or as nothing.
+  const stored = value => [...seedRows(), { name: "Heedless", rules: [{ kind: "cost", line: 1, text: "by hand", value, trait: "concentrate", name: "Concentrate" }] }];
+  for (const [value, extra] of [[9, COST_RAISE_MAX], [6, 6], [0, 0], [-2, 0], ["x", 0], [2.9, 2]]) {
+    seeded(() => same(costRaise(creature({ statuses: ["heedless"] }), ["Concentrate"]).extra, extra, `a stored value of ${JSON.stringify(value)} raises by ${extra}`), stored(value));
+  }
+});
+
+check("cost: one function says which rows a raise reaches, for the charge, the tab and the build", () => {
+  const road = (item, options) => costRoad(item, options).road;
+  same([
+    road(maneuverData("Seek ❶", { traits: ["Concentrate"] })), road(maneuverData("Recenter ❶")), road(maneuverData("Raise a Shield ❶")), road(maneuverData("Gain Control ❶")),
+    road(maneuverData("Reload", { cost: "0", costMax: "6" })), road(maneuverData("Reload", { cost: "0", costMax: "6" }), { actorType: "npc" }),
+    road(maneuverData("Cast")), road(maneuverData("Move")), road(maneuverData("Lunge", { attack: { enabled: true } })),
+    road(maneuverData("Flinch", { reaction: true })), road(maneuverData("Search", { cost: "passive" })), road({ name: "Rage ❶", type: "talent", system: { cost: "1" } }), road(null)
+  ], ["row", "recenter", "builtin", "builtin", "builtin", "row", "elsewhere", "elsewhere", "elsewhere", "reaction", "passive", "none", "none"], "the roads, in the order a use takes them");
+  // A rule that acts when the row is used takes the use only on an owned row; one that acts from a card pays there.
+  const marked = maneuverData("Oathbound ❶", { rules: [{ kind: "mark" }] });
+  same([road(marked, { owned: true }), road(marked, { owned: false }), road(maneuverData("Quick Tongue ❶", { rules: [{ kind: "reroll" }] }), { owned: true })], ["use", "row", "elsewhere"], "a use rule, owned and not; a card rule");
+  same([...RAISED_BUILT_INS], ["recenter"], "the one built-in whose own code asks");
+  same([paidElsewhere(maneuverData("Cast")), paidElsewhere(maneuverData("Seek")), paidElsewhere(maneuverData("Lunge", { attack: { enabled: true } }))], ["STARWROUGHT.Cost.paidBySpell", null, "STARWROUGHT.Cost.paidByAttack"], "`paidElsewhere`, now this module's");
+  seeded(() => {
+    const heedless = creature({ statuses: ["heedless"] });
+    const raise = (name, system, options) => rowRaise(heedless, maneuverData(name, { traits: ["Concentrate"], ...system }), options);
+    same([raise("Seek").extra, raise("Recenter").extra, raise("Raise a Shield").extra, raise("Flinch", { reaction: true }).extra, raise("Search", { cost: "passive" }).extra, raise("Oathbound", { rules: [{ kind: "mark" }] }, { owned: true }).extra, raise("Feint", { traits: ["Mental"] }).extra],
+      [1, 1, 0, 0, 0, 0, 0], "raised: a row and Recenter; not: another built-in, a Reaction, a passive row, a use rule, another trait");
+    same([rowRaise(null, maneuverData("Seek", { traits: ["Concentrate"] })).extra, rowRaise(creature({}), maneuverData("Seek", { traits: ["Concentrate"] })).extra], [0, 0], "nobody, and a creature with no Condition");
+  }, heedlessRows());
+  same([raisedCosts([1, 2], 1), raisedCosts([0], 1), raisedCosts([], 1), raisedCosts([2], 0), raisedCosts([2], -3)], [[2, 3], [1], [], [2], [2]], "the costs the tab compares, each with the raise on it");
+  // The tab's test stays pure: it is handed the raised costs.
+  const fight = { encounter: true, isTurn: true, tracking: true };
+  const cannot = maneuverStatus({ costs: raisedCosts([1], 1) }, { ...fight, actionsLeft: 1 });
+  same([cannot.applicable, cannot.reasons], [false, [{ code: "cost", cost: 2, left: 1 }]], "one action left and a Seek raised to two: it cannot be paid");
+  same([maneuverStatus({ costs: raisedCosts([1], 1) }, { ...fight, actionsLeft: 2 }).applicable, maneuverStatus({ costs: raisedCosts([0], 1) }, { ...fight, actionsLeft: 0 }).applicable, maneuverStatus({ costs: raisedCosts([], 1) }, { ...fight, actionsLeft: 0 }).applicable],
+    [true, false, true], "two left pays it; a free Maneuver raised to one needs one; a passive row is never short");
+});
+
+check("cost: the build says what a COST line cannot reach, and holds Recenter's kept traits to its row", () => {
+  const asked = [{ trait: "concentrate", name: "Concentrate", source: "Conditions / Heedless" }];
+  const seek = maneuverData("Seek ❶", { traits: ["Concentrate"] });
+  same(costCensus({ asked, rows: [seek, maneuverData("Recenter ❶", { traits: ["Concentrate"] }), maneuverData("Search", { cost: "passive", traits: ["Concentrate"] })] }), [], "rows the raise reaches, and a passive one: nothing to say");
+  same(costCensus({ asked: [{ trait: "concentrat", name: "Concentrat", source: "Conditions / Heedless" }], rows: [seek] }),
+    ['COST with TRAIT(Concentrat): no shipping Maneuver carries the trait "concentrat" outright, so nothing costs more yet (asked by Conditions / Heedless)'], "a misspelt trait");
+  same(costCensus({
+    asked,
+    rows: [seek, maneuverData("Raise a Shield ❶", { traits: ["Concentrate"] }), maneuverData("Flinch ❶↺", { reaction: true, traits: ["Concentrate"] }), maneuverData("Oathbound ❶", { rules: [{ kind: "mark" }], traits: ["Concentrate"] }), maneuverData("Cast", { traits: ["Concentrate"] })],
+    others: [{ name: "Bolt ❷", what: "a Talent", traits: ["Concentrate"] }, { name: "Dagger", what: "a weapon", traits: ["Agile"] }]
+  }), ["COST with TRAIT(Concentrate) does not reach Raise a Shield (the system pays for it in its own code), Flinch (it is a Reaction), Oathbound (its rule acts when it is used), Cast (it is paid for elsewhere), Bolt (a Talent): a COST line raises a Maneuver paid from its own row, and Recenter (asked by Conditions / Heedless)"],
+  "what the raise does not reach, each with why");
+  same(costCensus({ asked: [], rows: [seek] }), [], "no COST line, nothing to say");
+  // The review of 0.37.0. A BASIC row with a use rule is used from the compendium and charged as a
+  // row, so it is reached; the same row granted by a Talent (owned when used) is not.
+  const oath = system => maneuverData("Oathbound ❶", { rules: [{ kind: "mark" }], traits: ["Concentrate"], ...system });
+  same([costCensus({ asked, rows: [oath({ basic: true })] }), costCensus({ asked, rows: [oath({ basic: false })] }).length], [[], 1], "a basic row with a use rule is reached; a granted one is named");
+  same(costCensus({ asked, rows: [maneuverData("Search", { cost: "passive", traits: ["Concentrate"] })] }),
+    ['COST with TRAIT(Concentrate): only Maneuvers that cost no actions carry the trait "concentrate" (Search), so nothing costs more yet (asked by Conditions / Heedless)'], "a trait only passive rows carry");
+  same(costCensus({ asked, others: [{ name: "Bolt ❷", what: "a Talent", traits: ["Concentrate"] }] }),
+    ["COST with TRAIT(Concentrate) does not reach Bolt (a Talent): a COST line raises a Maneuver paid from its own row, and Recenter (asked by Conditions / Heedless)"], "a trait only a Talent carries is named once, not called a misspelling");
+  must(/does not reach Reload \(for a character, the system pays for it in its own code; an adversary's is raised\)/.test(costCensus({ asked, rows: [maneuverData("Reload", { cost: "0", costMax: "6", traits: ["Concentrate"] })] })[0] ?? ""), "Reload is a character's built-in and an adversary's row");
+  // A Maneuver named for something every object has is no row of the tables.
+  same([paidElsewhere(maneuverData("Constructor")), costRoad(maneuverData("Constructor")).road, costRoad(maneuverData("toString")).road], [null, "row", "row"], "an inherited name is neither paid elsewhere nor a built-in");
+  // Recenter's stand-in traits and its row.
+  same([builtInTraitNotes([maneuverData("Recenter ❶", { traits: ["Concentrate"] })]), builtInTraitNotes([seek]), builtInTraitNotes([])], [[], [], []], "level with the row, or no row shipping");
+  must(/^Recenter: the traits kept for when its row cannot be read \(concentrate\) differ from the row's \(none\)/.test(builtInTraitNotes([maneuverData("Recenter ❶", { traits: [] })])[0] ?? ""), "the row's trait taken off is said");
+  // The shipping row itself, read from the pack sources.
+  const folder = fileURLToPath(new URL("../foundry/starwrought/packs/_source/actions/", import.meta.url));
+  const file = readdirSync(folder).find(name => /^recenter_[0-9a-f]+\.json$/.test(name));
+  must(!!file, "the Recenter row ships");
+  const shipped = JSON.parse(readFileSync(`${folder}${file}`, "utf8"));
+  same(builtInTraitNotes([shipped]), [], `BUILT_IN_TRAITS.recenter (${BUILT_IN_TRAITS.recenter.join(", ")}) is level with the shipped row (${(shipped.system?.traits ?? []).join(", ")})`);
 });
 
 /* -------------------------------------------- */

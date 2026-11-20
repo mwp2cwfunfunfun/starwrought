@@ -4,20 +4,70 @@
  */
 
 import * as SW from "../../config.mjs";
+// content.mjs imports the config alone at module scope, so this closes no circle.
+import { findManeuver } from "../../helpers/content.mjs";
+import { BUILT_IN_TRAITS } from "../maneuvers.mjs";
+import { costRaise, raiseWords, raiseReason } from "../../rules/cost.mjs";
+
+/** Recenter's own cost, before anything raises it (PHB v4.10). */
+const RECENTER_COST = 1;
 
 /** @param {typeof Actor} Base */
 export const PositionMixin = Base => class extends Base {
+  /**
+   * What Recenter costs this actor now (0.37.0; ruling 378; Mike: a Heedless fighter pays ❷, since
+   * Recenter carries Concentrate). Recenter pays in its own code and is reached from doors with no
+   * Item in hand (both sheets' buttons), so it finds its row to read its traits: the row handed
+   * in, else the actor's own copy, else the Basic Maneuver (helpers/content.mjs, `findManeuver`).
+   * THE ROW IS THE AUTHORITY. Only when no row can be read (the pack unreadable, the row renamed)
+   * do the traits the book gives it stand in (`BUILT_IN_TRAITS`, which the build holds to the
+   * shipped row). The sheets ask this too, for the cost their Recenter buttons show.
+   * @param {object} [options]
+   * @param {Item|null} [options.item]  The Recenter row, when the caller has it.
+   * @returns {Promise<{cost: number, listed: number, extra: number, why: string, reason: string}>}
+   *          `why` in a few words for a label ("Heedless +1"), `reason` as a card's line.
+   */
+  async recenterCost({ item = null } = {}) {
+    let row = item;
+    if (!row) {
+      try {
+        row = await findManeuver(this, "recenter");
+      } catch (error) {
+        console.error("STARWROUGHT | Recenter's row could not be read; the book's traits stand in", error);
+        row = null;
+      }
+    }
+    const traits = row ? (row.system?.traits ?? []) : BUILT_IN_TRAITS.recenter;
+    const raise = costRaise(this, [...traits]);
+    return {
+      cost: RECENTER_COST + raise.extra, listed: RECENTER_COST, extra: raise.extra,
+      why: raise.extra ? raiseWords(raise) : "",
+      reason: raise.extra ? raiseReason(raise) : ""
+    };
+  }
+
   /**
    * Recenter ❶ (PHB v4.10): gather yourself, clear every Exposed Zone on you (except one Exposed
    * by a Posture, which lasts to the end of the round) and end any Bind you are in. Since 0.26.0
    * it also ends every Zone's Critical Hit effect (PHB v4.25: each lasts "until it Recenters"),
    * the Torso's Off-Guard with them, and the card names the ones it ended.
+   *
+   * Since 0.37.0 a Condition may raise its cost (`recenterCost`). The raise goes wherever the cost
+   * goes (ruling 382): `spendActions` pays in an encounter whatever the "Track the six-action
+   * round" setting says, as Recenter always has, and nothing outside one.
+   * @param {object} [options]
+   * @param {Item|null} [options.item]  The Recenter row, when the row is the door (the built-in).
    */
-  async recenter() {
+  async recenter({ item = null } = {}) {
+    const price = await this.recenterCost({ item });
+    const name = game.i18n.localize("STARWROUGHT.Action.recenter");
+    const label = price.why ? `${name} (${price.why})` : name;
     // A Maneuver: outside this actor's Opportunity it waits for the GM (0.19.0).
-    if (!(await this.mayActNow({ label: game.i18n.localize("STARWROUGHT.Action.recenter") }))) return null;
+    if (!(await this.mayActNow({ label }))) return null;
+    // What the card prints: what was paid in an encounter, the row's own cost where nothing is.
+    const paid = this.inEncounter ? price.cost : price.listed;
     // The card below carries the actions-left line, so the spend itself posts nothing.
-    await this.spendActions(1, { label: game.i18n.localize("STARWROUGHT.Action.recenter"), announce: false });
+    await this.spendActions(price.cost, { label, announce: false });
     const updates = {};
     let kept = 0;
     const ended = [];
@@ -43,10 +93,11 @@ export const PositionMixin = Base => class extends Base {
       : "";
     await ChatMessage.create({
       speaker: ChatMessage.getSpeaker({ actor: this }),
-      content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">❶</span> ${game.i18n.localize("STARWROUGHT.Action.recenter")}</h3>
+      content: `<div class="starwrought action-card"><h3><span class="sw-spend-glyph">${SW.ACTION_GLYPHS[paid] ?? String(paid)}</span> ${name}</h3>
         <p>${game.i18n.format("STARWROUGHT.Action.recenterText", { name: this.name })}${endedLine}${
           kept ? " " + game.i18n.localize("STARWROUGHT.Action.recenterPosture") : ""}
-        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p></div>`
+        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>${
+          (price.reason && this.inEncounter) ? `<p>${foundry.utils.escapeHTML(game.i18n.format("STARWROUGHT.Cost.raised", { reason: price.reason }))}</p>` : ""}</div>`
     });
   }
 

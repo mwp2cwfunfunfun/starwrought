@@ -1,4 +1,53 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0; a bare CHECK is every roll, 0.36.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0; a bare CHECK is every roll, 0.36.0; the `cost` kind, 0.37.0)
+
+**0.37.0 (2026-11-19).** ONE NEW KIND, `cost`, WITH NO HOOK POINT (rulings 375 to 384). Mike, of
+the Heedless row ("Maneuvers with Concentrate take 1 extra action"): "how should we automate
+Heedless?" `[EFFECT COST: 1; IF: TRAIT(Concentrate)]` on a CONDITION'S ROW (and nowhere else this
+release, his choice, as `IMMUNE: TRAIT(...)` began): while a creature has the Condition, a thing
+that carries the trait outright costs that many more actions.
+
+- **The kind** (`kinds/cost.mjs`): tag `COST` in `EFFECT_TAGS`, `CONDITION_ROW_TAGS` and
+  `EFFECT_KINDS`; one descriptor (a whole number, 1 to 6) and exactly one `TRAIT(...)` condition,
+  one word; stored FLAT, `{ kind: "cost", value, trait, name }`. On a COST line `TRAIT(...)` is
+  the thing being USED (the effect reader stores a trait the same after `IF:` and `IFT:`; the
+  kind decides what it is about). **No hook, as `ignore` has none**: `costRaise(actor, traits)`
+  (in `cost.mjs`, below) reads `rulesOfKind(actor, "cost")`, Condition carriers alone, one
+  carrier once (its largest matching line), carriers added, an "against X" carrier passed over,
+  a stored value above the ceiling read as the ceiling; `carriesTrait` wants the trait written
+  alone (`traitGroups`: "A or B" is neither). **THE KIND'S FILE IMPORTS NOTHING THAT REACHES THE
+  REGISTRY** (`syntax.mjs` and `operators.mjs` alone): the reader needs the engine, the engine
+  imports the registry and the registry imports the kind, so with the reader in the kind's file
+  an import of it before the registry threw "Cannot access 'cost' before initialization" (the
+  review of 0.37.0). `cost.mjs` imports the registry first and may be imported first; the
+  self-test imports each of the two first, in a process of its own. (`kinds/ignore.mjs` has had
+  the shape the kind's file had since 0.15.0 and loads only because the engine is reached before
+  it: stated, not changed.)
+- **What a raise reaches is `cost.mjs`** (this folder), ONE ANSWER FOR THE CHARGE, THE SHEETS
+  AND THE BUILD: `costRoad(item, { actorType, owned })` names the road a Maneuver's cost takes,
+  in the order `SwItem##useManeuver` takes them (`builtin`, `recenter`, `use`, `elsewhere`,
+  `reaction`, `passive`, `row`), and `rowRaise` raises only on `row` and `recenter`.
+  `paidElsewhere` lives there too (it moved from `documents/item.mjs`), with `raiseWords` and
+  `raiseReason`. **A new road through `##useManeuver` needs its line in `costRoad`**, or the tab
+  and the charge disagree. What a SHEET shows is `shownRaise` (`helpers/situation.mjs`):
+  `rowRaise`, and nothing for a row while the `trackActions` setting is off, since the charge
+  then never asks (Recenter's stands: it pays whatever the setting says).
+- **The raise is added in `##chargePlan` alone**, at its two `picked: true` answers. The plan
+  carries `n` (what is paid), `listed` (the row's own cost for this use, the VERSION) and
+  `raise`. `##applyCost` answers `listed`: **`IF: COST(<n>)` is the version used, never a raised
+  price** (ruling 380). A Prepared Maneuver stores `listed` beside `cost` in
+  `system.actions.preparing` (free-form), and `finishPrepared` hands `listed` back as `paid`
+  and `cost` as `charged`, which only the Finish card's glyph reads.
+  `##useWithRules`, the Reaction branch and `partOf` are NOT raised. **The reason is said where
+  the spend is not**: an adversary's spend card is never posted, so its Maneuver's own card
+  carries the reason line and its check card's subtitle carries "(Heedless +1)".
+- **Recenter** pays in its own code: `SwActor#recenterCost({ item })` reads the row's traits (the
+  row handed in by the built-in, else `findManeuver` in `helpers/content.mjs`), and only when no
+  row can be read do `BUILT_IN_TRAITS` (`documents/maneuvers.mjs`) stand in; the build holds that
+  list to the shipped row (`builtInTraitNotes`). `RAISED_BUILT_INS` names the built-ins that ask.
+- **The build** (`costCensus`): a `COST` line's trait that no shipping Maneuver carries outright
+  (or that only rows costing no actions carry), and one carried by something the raise does not
+  reach (a road above, a Talent, a weapon). A basic row is read as used from the compendium
+  (`owned: false`), a granted one as owned.
 
 **0.36.0 (2026-11-19).** No new kind and no new hook point: ONE NEW TAG, `SKILL`, AND TWO RULES
 OF THE `bonus` KIND CHANGED (rulings 366 to 371). Mike: "Can't CHECK include ALL rolls/thresholds,
@@ -353,6 +402,8 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/subordinate.mjs` | The `subordinate` kind (0.25.0): using a Maneuver performs another as part of it, at the row's own cost, by the tag `SUBORDINATE` on the Maneuver's own row (`[EFFECT SUBORDINATE: <Maneuver>; IF: EFFECT(<name>, used); LIMIT: encounter]`). Two hooks: `use` (a refusal, or `perform` with the marks to file) and `card` (a `ruleUse` button on the card of the roll that used the Effect up). |
 | `kinds/requires.mjs` | The `requires` kind (0.28.0): what a Maneuver needs before it can be used, by the block `[REQUIRES <condition> or <condition>]` on the Maneuver's own row. No hook: the Maneuvers tab reads the rule. |
 | `requires.mjs` | The pure half of it (0.28.0), and of the tab: `readRequires` (the words), `requireWords` and `termWords` (the same in English), `checkCondition` (true, false, or null for "cannot tell"), `availability` (a block fails only when every alternative is known false), `requiresFor(rules, engine)` (the row's own blocks, else the engine's), `maneuverStatus(row, situation)` (the four reasons a row is left out), `freeHands` and `arrangeManeuvers` (Favorites first, no row twice). Imports `syntax.mjs` and the config. |
+| `kinds/cost.mjs` | The `cost` kind (0.37.0): what a creature uses costs more actions while it has a Condition, by the tag `COST` on a Condition's row (`[EFFECT COST: 1; IF: TRAIT(Concentrate)]`). No hook, and no import that reaches the registry: its parse, its summary and `COST_RAISE_MAX`. |
+| `cost.mjs` | The reader and the reach of it (0.37.0): `costRaise(actor, traits)` with `carriesTrait`, `raiseWords` and `raiseReason`; `costRoad(item, { actorType, owned })` (the road a Maneuver's cost takes) and `rowRaise` (the one answer the charge and the sheets share); `raisedCosts`; the build's `costCensus` and `builtInTraitNotes`; `paidElsewhere`. Imports the registry first, then the engine, `immunity.mjs`, the config and `documents/maneuvers.mjs` (which imports nothing). |
 | `kinds/check.mjs` | The `check` kind (0.34.0): the check a Maneuver rolls, by the block `[CHECK <Constellation> or <Constellation> vs <Defense> or <Defense>]` on the Maneuver's own row (`relevant` on the left for any Constellation, a number on the right for a fixed Threshold). No hook: `SwItem` reads the plan. |
 | `check.mjs` | The pure half of it (0.34.0): `readCheck`, `checkWords` and `checkSummary`, `defenseKeyOf`, `planOf(rules, stored)` (the row's rule, else the three stored fields), `storedCheck(plan)` (what the build writes back into those fields), `userPicks(plan)` and `targetPicks(plan)` (who is asked). Imports `syntax.mjs` and the config. |
 | `check-request.mjs` | The pure half of the two card flows (0.34.0): `usableDefenses(named, unavailable)`, `validAnswer(request, answer, { ownsTarget, ownsUser, isGM })`, `standingAnswer(request, answers)` (the first valid one), `requestState` (open, answered, rolled, withdrawn, lapsed), `userDegree(degree)` (a player's roll read from the adversary's side) and `adversaryCheck(typed, shift)` (an adversary's number: blank 10, plus what its Conditions move). Imports the config alone; `documents/cards/check-request.mjs` and the npc model import it. |

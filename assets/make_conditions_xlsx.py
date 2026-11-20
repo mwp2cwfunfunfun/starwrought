@@ -77,7 +77,7 @@ NOTES = {
     "Blind": "Off-Guard comes through Includes. The system reads it for sight (SEEN, who is near). Its id in the system is `blinded`; Blind and Blinded both read.",
     "Unconscious": "Counts as Prone (and so as Off-Guard) through Includes. The system reads it for who is conscious.",
     "Wrong-Footed": "Off-Guard against the creature that put it on, and nobody else. Toggled from the token it names nobody and does nothing; one a Maneuver applies (Feint) does.",
-    "Heedless": "Nothing is automated yet.",
+    "Heedless": "The extra action is this row's line. It reaches Maneuvers paid from their own row, and Recenter; Strikes, Casts, movement and Reactions cost what they always cost.",
     "Stunned": "Nothing is automated yet.",
     "Slowed": "The system takes the actions at the start of each round. It does not yet drop by 1 at the end of each round.",
     "Deafened": "Nothing is automated yet.",
@@ -118,6 +118,7 @@ ABOUT = [
     "Automation: lines in the grammar, one to a line, as on a Talent (AUTOMATION_GRAMMAR.md). A Condition's row reads CHECK (with no target: every roll and Threshold), SKILL (checks that are no attack and no Defense), ATK, DEF and INIT, "
     "and may ask about the attack answered (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...)). "
     "It also reads [EFFECT IMMUNE: TRAIT(Visual)], written alone: whoever has the Condition is immune to anything with that trait. "
+    "And [EFFECT COST: 1; IF: TRAIT(Concentrate)]: while a creature has the Condition, a Maneuver that carries the trait costs that many more actions. "
     "-N is the Condition's own value: [EFFECT DEF: -N condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.",
     "System: Yes for the Conditions the system itself puts on and takes off (Dying, Wounded, Spent, Preparing, the Bind's three, Exposed, Dead). Their rows hold the text; the system runs them.",
     "Listed?: Yes prints the row in the reference tables. Anything else keeps it in the system and out of the tables.",

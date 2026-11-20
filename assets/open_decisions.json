@@ -1,5 +1,25 @@
 [
   {
+    "id": "0.37.0-heedless-cell",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Data",
+    "where": "data/conditions.xlsx, the Heedless row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.37.0)",
+    "question": "Since 0.37.0 a Condition's row may raise what a thing costs: [EFFECT COST: 1; IF: TRAIT(Concentrate)]. Heedless's Automation cell is still N/A, so Heedless changes nothing until the line is in the sheet.",
+    "recommendation": "Type [EFFECT COST: 1; IF: TRAIT(Concentrate)] in place of the N/A, double-click sync_conditions.cmd, then run Sync content in the open world. Its Notes cell can then say that the extra action is the row's line.",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.37.0-claudes-readings",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.37.0, rulings 380 to 384",
+    "question": "Readings 0.37.0 makes that Mike did not rule on. 380: IF: COST(n) on a Maneuver's row reads the version of the Maneuver used, never a price a Condition raised (a Heedless creature paying 2 for a 1-action version gets the 1-action results). 381: one Condition counts once (its largest matching COST line) and two Conditions add. 382: the raise goes wherever the cost goes, so nothing outside an encounter, and Recenter pays it with the tracking setting off, as it pays its own action. 383: adversaries pay it. 384: a Maneuver whose trait is written 'Auditory or Visual' is neither trait for a cost.",
+    "recommendation": "Leave them. The one to know is the reach of the word: it raises Maneuvers paid from their own row, and Recenter. Strikes, Casts, movement, Reactions and the other Maneuvers the system runs itself cost what they always cost; say if one of them should be raised too.",
+    "decidedBy": ""
+  },
+  {
     "id": "0.36.0-check-cells",
     "since": "2026-11-19",
     "status": "open",
@@ -58,16 +78,6 @@
     "question": "While a creature has the Condition, 'Apply to <creature>' applies nothing however often it is pressed. The plan said deleting the small 'immune' card brings the button back; it does, but the press asks again and posts the same card (the review found this). So the only way to affect an immune creature by a GM's ruling is to take the Condition off, press Apply, and put it back. Should the GM have an 'Apply anyway'?",
     "recommendation": "Leave it unless play asks for it. If wanted: a GM-only 'Apply anyway' button on the small 'immune' card, which applies the lines once and says so. It is a small change in apply.mjs.",
     "decidedBy": ""
-  },
-  {
-    "id": "deafened-needs-its-line",
-    "since": "2026-11-19",
-    "status": "decided",
-    "category": "Data",
-    "where": "data/conditions.xlsx, the Deafened row's Automation cell",
-    "question": "Deafened's Effect says 'Immune to Auditory effects' and its Automation cell is N/A, so a Deafened creature is immune to nothing. The line is [EFFECT IMMUNE: TRAIT(Auditory)]. It reaches further than Blinded's: Demoralize, Rally, Talk Them Down, Command the Field, Anticipate, Battle Cry, Bolster and Direct Animal are all Auditory.",
-    "recommendation": "Type [EFFECT IMMUNE: TRAIT(Auditory)] in place of the N/A and double-click sync_conditions.cmd, then run Sync content in the open world.",
-    "decidedBy": "Mike, 2026-11-19: the cell reads [EFFECT IMMUNE: TRAIT(Auditory)] and the Conditions build of that day read it. He also made Deafened count as Off-Guard (its Includes cell)."
   },
   {
     "id": "conditions-about-sheet-stale",
@@ -588,16 +598,6 @@
     "where": "data/actions_maneuvers.xlsx (Talk Them Down, Anticipate, Bolster, Feint, Tumble Through); AUTOMATION_GRAMMAR.md section 5, Putting Effects on",
     "question": "APPLY puts an Effect on a creature, but a Basic Maneuver's row cannot make that Effect DO anything for everyone: 'it takes -2 to its next Attack against you' needs a line on the creature that reads the Effect, and such a line lives on a Talent or an owned Maneuver. The same gap leaves the Wrong-Footed Condition's own effect (Off-Guard against that creature only) to the table, though Feint now records who Wrong-Footed whom.",
     "recommendation": "Plan it as the next step in two parts. First the small one: treat Wrong-Footed applied by X as Off-Guard against X in the Defense read, since the record now says who. Then an Effect that carries its own lines, written on the APPLY line's row, so Talk Them Down and Anticipate can be automated from a Basic row."
-  },
-  {
-    "id": "fatigued-rest-text",
-    "since": "2026-11-19",
-    "status": "decided",
-    "category": "Rules decision",
-    "where": "data/conditions.xlsx, the Fatigued row's Effect; module/documents/actor/rest.mjs (restTenMinutes)",
-    "question": "The Fatigued row's Effect now reads 'Reduce by 1 after every ten minutes of uninterrupted rest, unless otherwise specified', where it read 'Ends after ten minutes of rest'. The system still ENDS Fatigued after ten minutes' rest (the Overview's button, the Fatigued card's button, a night's rest), by Mike's word of 2026-10-02. The sheet is the only authority for what a Condition says, so the text players read and what the button does now differ.",
-    "recommendation": "Say which is meant. If the new sentence is the rule, Claude changes ten minutes' rest to lower Fatigued by 1 (a small change, planned first); if the old rule stands, put the old sentence back in the cell.",
-    "decidedBy": "Mike, 2026-11-19: the system follows the sheet (rulings 372 and 373). Ten minutes of uninterrupted rest lower Fatigued by 1, a night's rest ends it; built into 0.36.0."
   },
   {
     "id": "0.36.0-set-aside-lines",

@@ -76,8 +76,9 @@ export function emptyOps() {
     // when the line asks for none, so a stored rule that asks for none carries nothing new.
     // Since 0.32.0 an entry may carry `mine: true` (`EFFECT(<name>, mine)`): the one asking put it there.
     has: null,
-    // 0.32.0: `IF: COST(<n>)`, the number of actions the Maneuver was paid with. Read by `apply`
-    // alone; null when the line names none.
+    // 0.32.0: `IF: COST(<n>)`, the version of the Maneuver that was used, by its listed cost (never
+    // a price a Condition raised; 0.37.0, ruling 380). Read by `apply` alone; null when the line
+    // names none.
     cost: null
   };
 }

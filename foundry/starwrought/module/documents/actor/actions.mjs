@@ -232,11 +232,16 @@ export const ActionsMixin = Base => class extends Base {
    * @param {string} [config.itemUuid]     The Maneuver's Item (0.23.0), for a Maneuver of three or
    *                                       more actions used from the sheet: Finish uses it again,
    *                                       already paid, and that is when its check is rolled.
+   * @param {number} [config.listed]       The row's own cost for this use, the version of the
+   *                                       Maneuver (0.37.0), when a Condition raised `cost` above
+   *                                       it: Finish hands it back for the row's `IF: COST(<n>)`
+   *                                       lines. `cost` stays what is paid.
+   * @param {string} [config.note]         A line for the Prepared card: why it costs more (0.37.0).
    * @returns {Promise<object|null>} what is being prepared
    */
   async prepare({
     kind = "maneuver", label = "", cost = SW.PREPARED_THRESHOLD, weaponId = "", targetTokenId = "", targetUuid = "",
-    strike = "", talentId = "", cast = "", targetUuids = [], itemUuid = ""
+    strike = "", talentId = "", cast = "", targetUuids = [], itemUuid = "", listed = null, note = ""
   } = {}) {
     if (!this.inEncounter || !this.system.actions) {
       ui.notifications.warn(game.i18n.localize("STARWROUGHT.Prepared.outsideEncounter"));
@@ -262,6 +267,10 @@ export const ActionsMixin = Base => class extends Base {
       kind, label, weaponId, targetTokenId, targetUuid, cost, strike, talentId, cast,
       targetUuids: Array.isArray(targetUuids) ? targetUuids.filter(Boolean) : [],
       itemUuid: (typeof itemUuid === "string") ? itemUuid : "",
+      // `listed` (0.37.0) rides only when it was given: the field is free-form. A Maneuver the
+      // sheet charges always gives it (equal to `cost` when nothing raised the price); a Prepared
+      // Strike or Cast gives none and is stored exactly as before.
+      ...((Number.isInteger(listed) && (listed >= 0)) ? { listed } : {}),
       ready: false
     };
     await this.update({
@@ -279,7 +288,8 @@ export const ActionsMixin = Base => class extends Base {
       content: `<div class="starwrought action-card sw-prepared-card" data-actor-uuid="${this.uuid}">
         <h3><i class="fa-solid fa-hourglass-half"></i> ${game.i18n.localize("STARWROUGHT.Prepared.title")}</h3>
         <p>${game.i18n.format("STARWROUGHT.Prepared.begun", { name: this.name, what: label, spent: spend, reserved: reserve })}
-        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>
+        <strong class="sw-actions-left">${this.actionsLeftLine()}</strong></p>${
+          note ? `<p>${foundry.utils.escapeHTML(String(note))}</p>` : ""}
         <p class="sw-card-note">${game.i18n.localize("STARWROUGHT.Prepared.finishLater")}</p>
         <div class="sw-card-buttons">
           <button type="button" data-sw-action="abandonPrepared" data-actor-uuid="${this.uuid}" data-owner-uuid="${this.uuid}">
@@ -350,8 +360,11 @@ export const ActionsMixin = Base => class extends Base {
         // second Finish while the dialog is open is refused by `use` itself (one use at a time).
         const done = await item.use({
           actor: this, prepared: true,
-          // The cost it was Prepared at (0.32.0): the row's `IF: COST(<n>)` lines read it.
-          paid: Number.isInteger(Number(prep.cost)) ? Number(prep.cost) : null,
+          // The version it was Prepared at (0.32.0): the row's `IF: COST(<n>)` lines read it.
+          // `listed` when a Condition raised the price (0.37.0, ruling 380), else the cost.
+          paid: Number.isInteger(prep.listed) ? prep.listed : (Number.isInteger(Number(prep.cost)) ? Number(prep.cost) : null),
+          // What it was paid at, for the card's glyph when that is more than the version.
+          charged: Number.isInteger(Number(prep.cost)) ? Number(prep.cost) : null,
           beforeRoll: () => this.system.actions?.preparing?.itemUuid === prep.itemUuid
         });
         if ((done === null) || (done === undefined)) return null;

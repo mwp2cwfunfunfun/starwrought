@@ -950,6 +950,85 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.37.0 (Mike, 2026-11-19; rulings 375 to 384): a Condition may raise what a thing costs, the
+`COST` word, for Heedless.** Mike, of the Heedless row ("Maneuvers with Concentrate take 1 extra
+action"): "how should we automate Heedless?", then "Yes, plan it". Planned first
+(`dazzling-floating-simon.md`; his decisions by question: a raised cost that reaches three is
+Prepared, by the book; a free Maneuver costs ❶; Recenter, which carries Concentrate, costs ❷; a
+Condition's row only). **The `cost` kind, the twenty-sixth, has NO HOOK POINT, as `ignore` has
+none** (`module/rules/kinds/cost.mjs`; `cost` in `EFFECT_TAGS`, `CONDITION_ROW_TAGS` and
+`EFFECT_KINDS`): `[EFFECT COST: <n>; IF: TRAIT(<Trait>)]`, read ON A CONDITION'S ROW ALONE, a
+whole number 1 to 6 (`COST_RAISE_MAX`), exactly one `TRAIT(...)` named by one word, every other
+component refused; stored FLAT, `{ kind: "cost", value, trait, name }`. **On a COST line
+`TRAIT(...)` is the thing being USED** (the effect reader stores a trait the same after `IF:` and
+`IFT:`; the kind decides what it is about). **THE KIND'S FILE IMPORTS NOTHING THAT REACHES THE
+REGISTRY** (`syntax.mjs` and `operators.mjs` alone), and **the reader is `module/rules/cost.mjs`'s**:
+`costRaise(actor, traits)` reads the actor's rule index, which is the engine's, the engine imports
+the registry and the registry imports the kind, so with the reader in the kind's file an import of
+it before the registry threw "Cannot access 'cost' before initialization" (the review; both
+readers; the self-test imports each of the two files first, in a process of its own;
+`kinds/ignore.mjs` has had that shape since 0.15.0 and loads only because the engine is reached
+before it: stated, not changed). `costRaise`: Condition carriers alone, one carrier once (its
+largest matching line), carriers added (ruling 381), an "against X" carrier passed over, a stored
+value above the ceiling read as the ceiling; `carriesTrait` wants the trait written ALONE
+(`traitGroups`: a trait written "A or B" is neither, ruling 384); `raiseWords` ("Heedless +1") is
+for a spend's label and `raiseReason` ("Heedless: Concentrate takes 1 extra action") for a card's
+line. **WHAT A RAISE REACHES IS THE SAME MODULE**, asked by the charge, the sheets and the build so
+they cannot disagree: `costRoad(item, { actorType, owned })` names the road a Maneuver's cost
+takes, in the order `SwItem##useManeuver` takes them (`builtin`, `recenter`, `use`, `elsewhere`,
+`reaction`, `passive`, `row`), and `rowRaise` raises on `row` and `recenter` alone; `raisedCosts`;
+the build's `costCensus` and `builtInTraitNotes`; `paidElsewhere`, which MOVED there from
+`documents/item.mjs`. **A new road through `##useManeuver` needs its line in `costRoad`.** **The
+raise is added in `##chargePlan` alone**, at its two `picked: true` answers, so a row that method
+never charges is never raised by construction (a passive row, a Reaction, one paid elsewhere); the
+plan carries `n` (what is paid), `listed` (the row's own cost for this use, the VERSION) and
+`raise`. **`IF: COST(<n>)` READS THE VERSION, NEVER A RAISED PRICE** (ruling 380): `##applyCost`
+answers `listed`, `actor.prepare({ listed, note })` stores `listed` beside `cost` in
+`system.actions.preparing` (free-form, no migration) and `finishPrepared` hands `listed` back as
+`paid` and `cost` as `charged`, which only the Finish card's glyph reads; an APPLY line's As read
+says "when the 1-action version is used" (`ruleWords` in `rules/applied.mjs`). NOT raised, on
+purpose: `##useWithRules` (a row with a use rule; it has no Prepared branch), the Reaction branch,
+a `partOf` use, Strikes, Casts, movement, the built-ins but Recenter. **The price is settled at
+the click**: a request waiting on its target and a Prepared Maneuver keep the price they began
+at. **Recenter** pays in its own code: `SwActor#recenterCost({ item })` reads the row's traits
+(the row the built-in hands in, `BUILT_IN_MANEUVERS.recenter: (actor, item) => actor.recenter({
+item })`, else `findManeuver(actor, "recenter")` in `helpers/content.mjs`, which MOVED from
+`item.mjs`), and only when no row can be read do `BUILT_IN_TRAITS` (`documents/maneuvers.mjs`)
+stand in, which the build holds to the shipped row; `RAISED_BUILT_INS` names the built-ins that
+ask. **The raise goes wherever the cost goes** (ruling 382): `##chargePlan` pays nothing outside
+an encounter or with `trackActions` off, and Recenter's `spendActions` pays in an encounter
+whatever the setting, raise included. **Saying why**: the reason is folded into the spend's LABEL
+where the plan is settled ("Seek ❷ (Heedless +1)"), so it reaches the GM's leave card, the spend
+and overspend cards and a check's `request.label`; the Maneuver's own card (the no-check path),
+the Prepared card (`note`) and Recenter's card carry `STARWROUGHT.Cost.raised`; a check card's
+subtitle and a request card's head (`glyph`) show what is paid; **an actor whose spends are not
+announced (a GM's adversary) has no spend card, so its Maneuver's own card carries the reason
+line whatever `announcesSpends` says and its check card's subtitle carries "(Heedless +1)"**.
+**The cost picker** (`apps/cost-picker.mjs`, `pickCost({ extra, why })`) shows each version with
+its price ("❶ for ❷"), says Prepare by the price, and ANSWERS THE VERSION. **The sheets**
+(`helpers/situation.mjs`): **`shownRaise(actor, item, { owned, tracking })` is what a sheet
+shows, `rowRaise` and nothing for a `row` while `trackActions` is off** (the charge then never
+asks; Recenter's stands), asked by `situationOf(actor).raiseOf` and by the adversary sheet's
+`raiseByItem`; `statusOf(item, situation, { owned })` answers `raise`, `maneuverRow(item,
+{ extra })` hands the raised costs to the pure `maneuverStatus`, `raiseMark` is the "+1" and its
+tooltip; `#maneuverSignature` carries the raise; `recenterButton` (`helpers/actor-context.mjs`)
+is both sheets' Recenter button. **Messages**: `APPLY: prone; COST: 2` is told to write `IF:
+COST(2)`, after `APPLY` and `REMOVE` alone, the two tags that read the condition
+(`readComponent`); `TRAIT(A, B)` on any line is told one trait; `COST: 1,` is refused; `COST(<n>)`
+is said everywhere to be the version used. **The build**: the COST census in
+`assets/build_foundry.mjs` (a trait no shipping Maneuver carries outright, or only rows that cost
+no actions; a trait carried by something the raise does not reach; a basic row read as used from
+the compendium), its rows in `RULES` BEFORE the immunity rows (whose patterns a COST message would
+match), and the red-cell tool's hints told apart by the tag's own opening words. **A WARNING of
+the `parse_rules` or `build_foundry` step must not be filed under "Automation cell" in `RULES`**:
+the report puts the Red cells analysis in the place of those steps' "Automation cell" findings,
+and that analysis lists failures only (the review: three older warnings were never on the Issues
+sheet; they are "Automation" now). **The release carries the kind alone**: Heedless's cell is
+`N/A` in the sheet and is printed in the 0.37.0 changelog entry for Mike to paste. **The
+Conditions sheet was built as he saved it at 16:58 on 2026-11-19**: 26 Conditions, 11 rules on 7
+rows, Frightened the one line, Grabbed reworded. His four workbooks in progress were not
+converted, built, staged or written.
+
 **0.36.0 (Mike, 2026-11-19; rulings 366 to 374; 372 to 374 are the rest change folded into it,
 under Load Strain above): a bare `CHECK` reaches every roll, and `SKILL`
 is the narrow word.** Mike, of Frightened's three lines: "is this redundance ... Since Defense
@@ -2483,8 +2562,9 @@ content build writes them again.
   Condition the system has MAKES one (the build prints `NEW CONDITION`); a row the system needs
   may not be deleted (the build refuses). A Condition's row reads `CHECK` (with no target every
   roll and Threshold, 0.36.0), `SKILL` (0.36.0), `ATK`, `DEF` and
-  `INIT`, with `-N` for its own value, and since 0.35.0 `IMMUNE` for a trait (`[EFFECT IMMUNE:
-  TRAIT(Visual)]`); a row's lines count once on a roll, the stronger (0.36.0); Includes is how
+  `INIT`, with `-N` for its own value, since 0.35.0 `IMMUNE` for a trait (`[EFFECT IMMUNE:
+  TRAIT(Visual)]`), and since 0.37.0 `COST` for a cost raised by a trait (`[EFFECT COST: 1; IF:
+  TRAIT(Concentrate)]`); a row's lines count once on a roll, the stronger (0.36.0); Includes is how
   one Condition counts as another, with
   `against X` (`AUTOMATION_GRAMMAR.md`, section 11). **`node assets/build_all.mjs --conditions`
   (`sync_conditions.cmd`) builds this workbook alone.** The handbook still prints its Conditions
@@ -2675,11 +2755,11 @@ content build writes them again.
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
   (0.31.0 added no kind: it gave the grammar a condition, `EFFECT(<name>)`, and `requires` three
-  words.) Twenty-five kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  words.) Twenty-six kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
   0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0, `reach` since 0.30.0,
-  `apply` since 0.32.0, `check` since 0.34.0): the effect
+  `apply` since 0.32.0, `check` since 0.34.0, `cost` since 0.37.0): the effect
   kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`,
-  `subordinate`, `apply`, the creation kinds `grant` and `aura`,
+  `subordinate`, `apply`, `cost`, the creation kinds `grant` and `aura`,
   the feature kinds `trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`,
   `talent`, `choice`, and `requires` and `check`, the blocks on a Maneuver's own row that the
   Maneuvers tab and the use read; the
@@ -2820,6 +2900,32 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.37.0 leaves to the table or to Mike** (a Condition raises a cost): **Heedless's cell waits
+  for him to paste** into `data/conditions.xlsx` in place of the `N/A` (the 0.37.0 changelog
+  entry: `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`), then `build_all.mjs --conditions` and Sync
+  content; until then Heedless changes nothing. Rulings 380 to 384 are Claude's readings and his
+  to overrule (`assets/open_decisions.json`); the one to know is the word's reach: a Maneuver
+  paid from its own row, and Recenter. Not reached, and the build warns when a `COST` line names
+  a trait one carries: Strikes, Casts, movement, Reactions (rows and Talents), Raise a Shield,
+  the visor, a character's Reload, Gain Control, Pass, a row whose rule acts when it is used or
+  from a card's button, a Maneuver performed as part of another. Not built: `COST` on a Talent, a
+  Maneuver or a custom effect; a cost made cheaper; a Maneuver named as the target; a refund when
+  the Condition goes while a Maneuver is Prepared or waits on its target (the price is settled at
+  the click). Getting Heedless onto a creature is by hand, except where a Maneuver's row applies
+  it (Demoralize's ❸ Critical Success: `[EFFECT APPLY: Heedless, target; UNTIL: giver
+  opportunity; IF: RESULT(critical success); IF: COST(3)]`); Rage is a Talent, and a Talent
+  cannot apply an Effect yet. Stated by the review and not changed: `kinds/ignore.mjs`'s import
+  shape; the first draw of an adversary's sheet in a session reads the whole Actions pack to
+  find Recenter's row; a build warning that names a Maneuver may take an earlier `RULES` row's
+  advice. Not driven live: a request card for a raised Maneuver answered by its target, two
+  Conditions raising one cost, a table with no GM. The test world was driven on 0.37.0 with a GM
+  tab and a player tab, the Heedless line given to the registry IN MEMORY (no file written), and
+  left as found but for one "Content synced" card (439 messages): its content and Conditions are
+  level with these sources (Heedless still `N/A` there), Mike's Combat with testpc8 is the active
+  one at round 4, the Bandit is Prone as found, the fixtures of earlier releases are untouched,
+  and Foundry is running on 0.37.0 with the GM joined. To try 0.37.0 there once the cell is in
+  the sheet and synced: toggle Heedless on Tess's token, start a Combat with her in it, and use
+  Seek, Pick Lock and Recenter from her sheet.
 - **0.36.0 leaves to the table or to Mike** (a bare `CHECK` is every roll): **two cells wait
   for him to change** (the 0.36.0 changelog entry): Contract Literate to `[EFFECT SKILL: 2
   condition; IF: CLAIM(...)]` in `data/talents_cultures.xlsx`, and Jack of All Trades to
@@ -2827,9 +2933,8 @@ content build writes them again.
   written. **Both must be changed BEFORE the next content build**: a cell that still says
   `CHECK` then becomes an every-roll line, and Contract Literate's claim would be offered on
   attack and Defense rolls and could be spent by a foe's attack (Sync content does not change
-  them). Frightened's one line, `[EFFECT CHECK: -N condition]`, is optional: its three lines
-  were built on 2026-11-19 and give the same numbers, with the build's warning that the `DEF`
-  and `ATK` lines can go. **Ten minutes' rest lowers Fatigued by 1 since this release** (Mike:
+  them). Frightened is the one line `[EFFECT CHECK: -N condition]` since his save of 16:58 on
+  2026-11-19 (built with 0.37.0). **Ten minutes' rest lowers Fatigued by 1 since this release** (Mike:
   "Yes, plan it"; a night's rest still ends it; folded into 0.36.0, rulings 372 to 374), as his
   reworded Fatigued row says; the row's Notes cell still says "the rests that end it" (a
   sentence to paste is in the changelog); "unless otherwise specified" (Rage's "catch your
@@ -2934,8 +3039,9 @@ content build writes them again.
   ...]` block; now after Gain Control's grammar, one word at a time with him, with the
   named Effects sheet he set aside): Supine does not stop movement and its -2 has no exception
   for melee Attacks against adjacent creatures; "cannot Move or Step" and "no action other than
-  Escape" are by hand; Frightened and Slowed do not drop by 1 at a round's end; Stunned,
-  Heedless and Deafened do nothing; Evade unavailable while Grabbed is still code
+  Escape" are by hand; Frightened and Slowed do not drop by 1 at a round's end; Stunned
+  does nothing (Heedless has its word since 0.37.0, `COST`, and Deafened its line since
+  2026-11-19); Evade unavailable while Grabbed is still code
   (`unavailableEvade`), as are Slowed's lost actions, Blinded's sight, Hidden and Undetected, and
   Fatigued's maximum, Wind check and rests. **Five things wait in `assets/open_decisions.json`**:
   Claude's readings (rulings 325, 327 to 329, 331, 332, 334, 335), of which 329 is the one to
@@ -3267,6 +3373,32 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (a Condition raises a cost, system 0.37.0; rulings 375 to 384 in the 0.37.0
+changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: Prepared
+at three by the book, a free Maneuver costs ❶, Recenter costs ❷, a Condition's row only):
+Heedless's "Maneuvers with Concentrate take 1 extra action", prose nothing read, now
+`[EFFECT COST: 1; IF: TRAIT(Concentrate)]` on its row (the `cost` kind, the twenty-sixth, with
+no hook point): a Maneuver paid from its own row costs one more, a cost raised to three is
+Prepared, Recenter costs ❷ from every door, the picker shows each version with its price, and
+the card and the sheets say why; a Maneuver's results by cost, which a raise would have
+misread, now reading the version used (`listed` beside `n`); `COST(<n>)` described as the
+actions paid, now as the version; "is this row's cost raised" answered in three places, now one
+module for the charge, the sheets and the build. Mended beside it, older than the release and
+found by the review: three warnings of the build that the report never showed. Checked by 265
+self-test checks, `node --check` on every module, `build_all.mjs --check`, the style check (one
+failure, the em-dash in Dwarf Lore B13), the smoke test on the rebuilt app, the Conditions build
+on the sheet as saved, an independent review by two readers (no wrong payment and no raised price
+reaching an `IF: COST` line; fourteen findings, all low, all mended but three stated: the kind's
+file imported the engine and so could not be imported first; a GM's adversary never said why; the
+"+1" promised a cost the tracking setting had switched off) and live in the test world with a GM
+tab and a player tab, before the review and again for its mends (the 0.37.0 changelog entry lists
+what, and what was not driven). Not built, and said so: Strikes,
+Casts, movement, Reactions and the other Maneuvers the system runs itself; `COST` on a Talent; a
+cost made cheaper. The release carries the kind alone: Heedless's cell is his to paste. The
+Conditions sheet was built as he saved it at 16:58 (Frightened one line, Grabbed reworded); his
+four workbooks in progress were not converted, built, staged or written. No handbook moved and
+`data/SYNC.json` is untouched. Not committed: commit and push are his word.
 
 Cleared 2026-11-19 (ten minutes' rest lowers Fatigued by 1, folded into system 0.36.0; rulings
 372 to 374 in the 0.36.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's

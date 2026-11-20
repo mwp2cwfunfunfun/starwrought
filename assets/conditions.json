@@ -201,29 +201,8 @@
    "description": "Fear tightens its grip, making every danger loom larger and every decision harder.",
    "effect": "You suffer a -N penalty to all checks.\n\nReduce by 1 at the end of each round.",
    "includes": [],
-   "automation": "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]",
+   "automation": "[EFFECT CHECK: -N condition]",
    "rules": [
-    {
-     "value": -1,
-     "type": "condition",
-     "to": {
-      "name": "Defenses",
-      "slug": "defenses",
-      "type": "scope"
-     },
-     "when": null,
-     "for": null,
-     "while": null,
-     "against": null,
-     "seen": false,
-     "limit": null,
-     "claim": null,
-     "marked": false,
-     "scale": "N",
-     "kind": "bonus",
-     "line": 1,
-     "text": "[EFFECT DEF: -N condition]"
-    },
     {
      "value": -1,
      "type": "condition",
@@ -242,29 +221,8 @@
      "marked": false,
      "scale": "N",
      "kind": "bonus",
-     "line": 2,
+     "line": 1,
      "text": "[EFFECT CHECK: -N condition]"
-    },
-    {
-     "value": -1,
-     "type": "condition",
-     "to": {
-      "name": "Attacks",
-      "slug": "attacks",
-      "type": "scope"
-     },
-     "when": null,
-     "for": null,
-     "while": null,
-     "against": null,
-     "seen": false,
-     "limit": null,
-     "claim": null,
-     "marked": false,
-     "scale": "N",
-     "kind": "bonus",
-     "line": 3,
-     "text": "[EFFECT ATK: -N condition]"
     }
    ],
    "system": false,
@@ -278,7 +236,7 @@
    "name": "Grabbed",
    "takes": "",
    "description": "A firm grip holds you in place, leaving you to struggle for room to move.",
-   "effect": "Off-Guard and can't Move or Step; Escape ❶ to break free.",
+   "effect": "You are Off-Guard and can't Move or Step. You must successfully Escape ❶ to break free.",
    "includes": [
     {
      "name": "Off-Guard",

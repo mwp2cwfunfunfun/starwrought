@@ -56,7 +56,8 @@ export const APPLIED_ICON = "icons/svg/aura.svg";
 
 /**
  * The lines that stand for one use: every line of no degree, and the lines of the degree rolled;
- * each only when the cost it names, if it names one, is the cost that was paid. With no degree
+ * each only when the cost it names, if it names one, is the VERSION of the Maneuver that was used
+ * (its listed cost; never a price a Condition raised, 0.37.0, ruling 380). With no degree
  * (a check against no Threshold, a Maneuver with no check) only the lines of no degree stand.
  * @param {object[]} lines
  * @param {{degree?: string|null, cost?: number|null}} [use]
@@ -73,7 +74,7 @@ export function linesFor(lines, { degree = null, cost = null } = {}) {
   });
 }
 
-/** Does any line wait on the cost paid? Then a use with a range of costs must know which. */
+/** Does any line wait on the version used (`IF: COST(<n>)`)? Then a use with a range of costs must know which. */
 export function needsCost(lines) {
   return (lines ?? []).some(line => (line?.cost !== null) && (line?.cost !== undefined));
 }
@@ -303,8 +304,10 @@ export function wordsToSay(done) {
 
 /**
  * A rule in a sentence, for the sheet's As read list: "puts Prone on the target, on a Success",
- * "puts Off-Guard on you until your next Opportunity, on a Critical Failure, when 2 actions are
- * paid", "takes Prone off you".
+ * "puts Off-Guard on you until your next Opportunity, on a Critical Failure, when the 2-action
+ * version is used", "takes Prone off you". The cost is the VERSION of the Maneuver, its listed
+ * cost: through 0.36.0 the words were "when 2 actions are paid", which a Condition that raises
+ * the price (0.37.0) would have made untrue.
  * @param {object} rule  The stored rule.
  * @returns {string}
  */
@@ -319,7 +322,7 @@ export function ruleWords(rule) {
   const outcome = whens.find(w => w?.outcome);
   if (outcome) bits.push(`on a ${outcome.name ?? DEGREE_NAMES[outcome.outcome] ?? outcome.outcome}`);
   if ((rule?.cost !== null) && (rule?.cost !== undefined)) {
-    bits.push(`when ${rule.cost} ${Number(rule.cost) === 1 ? "action is" : "actions are"} paid`);
+    bits.push(Number(rule.cost) === 0 ? "when the free version is used" : `when the ${rule.cost}-action version is used`);
   }
   return bits.join(", ");
 }

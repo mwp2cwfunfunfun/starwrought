@@ -17,7 +17,7 @@
  * A MODIFIER tag (CHECK, ATK, DEF, INIT, SPEED, GIVE) is `TAG: <value> <type>, <descriptor>`: a
  * signed whole number, the bonus type (situation, condition or gear; FG's `[bonus]`), then
  * descriptors by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE, ALTER, PERMIT,
- * SUBORDINATE) take descriptors alone. The components:
+ * SUBORDINATE, COST) take descriptors alone. The components:
  * `IF: <condition>` (the owner, or the roll) and `IFT: <condition>` (the other party, or the
  * attack), `FOR: <who> [<N>]` (the recipients), `LIMIT: round | encounter`, and (0.22.0) `UNTIL:
  * <window>` after GIVE and `VALUE: <value>` after ALTER. The conditions:
@@ -64,7 +64,11 @@ export const EFFECT_TAGS = Object.freeze({
   // `REMOVE: <Effect>[, self | target]` on a Maneuver's own row: using it puts a Condition or a
   // named Effect on a creature, or takes one off. Two tags, one kind, as CHECK, ATK and DEF share
   // `bonus` (Mike's choice of words, 2026-11-17).
-  apply: "apply", remove: "apply"
+  apply: "apply", remove: "apply",
+  // 0.37.0: `COST: <n>; IF: TRAIT(<Trait>)` on a Condition's row: what a creature uses costs more
+  // actions while it has the Condition (Heedless). Not the CONDITION word `COST(<n>)`, which is
+  // read inside IF: and asks which version of a Maneuver was used.
+  cost: "cost"
 });
 
 /** The modifier tags: a value and a bonus type come first. */
@@ -238,6 +242,13 @@ function readComponent(component, ops, context, tag = "") {
       return;
     }
     default:
+      // `APPLY: prone; COST: 2` (0.37.0): since COST is also a tag, the general message below
+      // would say it begins its own line, when the author meant the condition. Told only after
+      // APPLY and REMOVE, the two tags that read `IF: COST(<n>)`: after any other the advice would
+      // send the author to a condition that tag then refuses (the review of 0.37.0).
+      if ((word === "COST") && ((tag === "apply") || (tag === "remove"))) {
+        throw new RuleSyntaxError(`after a semicolon the cost is a condition: write \`IF: COST(${inside || "2"})\`, the version of the Maneuver that was used. \`COST:\` at the start of a line is another thing: it raises what a thing costs, on a Condition's row`);
+      }
       if (Object.hasOwn(EFFECT_TAGS, word.toLowerCase())) {
         throw new RuleSyntaxError(`"${word}" is a tag and begins its own line; one effect per line, its conditions after it as IF:, IFT:, FOR: and LIMIT:`);
       }
@@ -315,6 +326,9 @@ function readCondition(inside, ops, context, prefix) {
     case "TRAIT": {
       if (arg == null) throw new RuleSyntaxError("TRAIT is written `TRAIT(<trait>)`, as in `TRAIT(Fear)`");
       const name = arg.replace(/\s+/g, " ").trim();
+      // Two traits in one pair of parentheses (the review of 0.37.0): told so, where the general
+      // message below would call the pair "not a trait word".
+      if (name.includes(",")) throw new RuleSyntaxError(`TRAIT names one trait, as in \`TRAIT(Fear)\`, not "${name}": write a line for each trait`);
       if (!/^[A-Za-z][A-Za-z0-9 '-]*$/.test(name)) throw new RuleSyntaxError(`"${arg}" is not a trait word (letters, as the Traits columns print it)`);
       (ops.when ??= []).push({ trait: traitKey(name), name });
       return;
@@ -389,13 +403,15 @@ function readCondition(inside, ops, context, prefix) {
       return;
     }
     case "COST": {
-      // 0.32.0 (ruling 318): the number of actions the Maneuver was paid with. Trip, Grapple,
-      // Demoralize and others print a table of results for each cost, so a line may wait on it.
+      // 0.32.0 (ruling 318): WHICH VERSION of the Maneuver was used, by its listed cost. Trip,
+      // Grapple, Demoralize and others print a table of results for each cost, so a line may wait
+      // on it. Never a raised price (0.37.0, ruling 380): a Heedless creature that pays one more
+      // for a Concentrate Maneuver still gets the results of the version it chose.
       // Read by `apply` alone; every other kind refuses it by name.
       if ((ops.cost !== null) && (ops.cost !== undefined)) throw new RuleSyntaxError("COST is given twice");
       const written = String(arg ?? "").trim();
       if (!/^\d{1,2}$/.test(written) || (Number(written) > 12)) {
-        throw new RuleSyntaxError("COST is written `COST(<n>)`, the number of actions the Maneuver was paid with, as in `IF: COST(2)`");
+        throw new RuleSyntaxError("COST is written `COST(<n>)`, the version of the Maneuver used by its listed cost, as in `IF: COST(2)`");
       }
       ops.cost = Number(written);
       return;

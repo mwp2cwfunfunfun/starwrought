@@ -15,7 +15,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-sheet: "0.36.0"; }
+:root { --sw-css-version-sheet: "0.37.0"; }
 
 /* --------------------------------------------------------------------------
    Frame
@@ -352,6 +352,19 @@
 }
 .starwrought .sw-action-glyph .sw-cost-join { font-size: 0.48em; }
 .starwrought .sw-cost-react { font-size: 0.8em; text-shadow: none; }
+/* A Condition raises the cost (0.37.0; Heedless): "+1" beside a row's pips, the reason on hover. */
+.starwrought .sw-cost-raise {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.6rem;
+  color: var(--sw-gold);
+  border: 1px solid currentColor;
+  cursor: help;
+  white-space: nowrap;
+}
 .starwrought .sw-action-glyph .sw-cost-react { font-size: 0.62em; }
 
 .starwrought .sw-trait {

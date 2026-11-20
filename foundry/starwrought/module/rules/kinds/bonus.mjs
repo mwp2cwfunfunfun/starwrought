@@ -204,10 +204,10 @@ export default {
       if (e.ops.has && e.ops.for && (e.ops.for.who !== "self")) {
         throw new RuleSyntaxError(`${TAG} does not read EFFECT(...) beside a FOR that reaches others (an aura's ring is one): it is not read yet whether the Effect would be the owner's or the recipient's`);
       }
-      // 0.32.0: the cost a Maneuver was paid with is read by APPLY and REMOVE alone. Refused here
-      // by name, since this kind reads its ops with no refusal list.
+      // 0.32.0: the version of a Maneuver that was used (its listed cost) is read by APPLY and
+      // REMOVE alone. Refused here by name, since this kind reads its ops with no refusal list.
       if ((e.ops.cost !== null) && (e.ops.cost !== undefined)) {
-        throw new RuleSyntaxError(`${TAG} does not take IF: COST(<n>): the cost a Maneuver was paid with is read by APPLY and REMOVE`);
+        throw new RuleSyntaxError(`${TAG} does not take IF: COST(<n>): the version of a Maneuver that was used is read by APPLY and REMOVE`);
       }
       // Two places an `IFT: EFFECT(...)` could never hold are refused rather than stored (the
       // review of 0.31.0): an Initiative and a Move have no other party; and a claim is asked at

@@ -9,11 +9,11 @@ the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 t
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
 297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321, the 0.33.0 entry 322
 to 336, the 0.34.0 entry 337 to 349, the 0.35.0 entry 350 to 360, the 0.35.1 entry 361 to
-365 and the 0.36.0 entry 366 to 374). Since
+365, the 0.36.0 entry 366 to 374 and the 0.37.0 entry 375 to 384). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
 their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
-too (section 5). System version **0.36.0**.
+too (section 5). System version **0.37.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -2493,19 +2493,19 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-five kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-six kinds
 
 **What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
 the eighteenth and nineteenth, 0.24.0 for the twentieth, 0.25.0 for the twenty-first, 0.28.0
-for the twenty-second, 0.30.0 for the twenty-third, 0.32.0 for the twenty-fourth and 0.34.0 for
-the twenty-fifth; rulings 118
-to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289, 301, 311 to 321, 337 to 349). Since
+for the twenty-second, 0.30.0 for the twenty-third, 0.32.0 for the twenty-fourth, 0.34.0 for
+the twenty-fifth and 0.37.0 for the twenty-sixth; rulings 118
+to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289, 301, 311 to 321, 337 to 349, 375 to 384). Since
 0.9.0 every
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Twenty-five kinds read it: eleven effect kinds that act in play (`bonus`, `prevent`, `mark`,
-`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, `apply`), two creation kinds
+sheet. Twenty-six kinds read it: twelve effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, `apply`, `cost`), two creation kinds
 (`grant`, `aura`), ten feature kinds
 (`trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character, and `requires` (0.28.0), a block on a Maneuver's own
@@ -2948,6 +2948,25 @@ narrow meaning meanwhile.
   every Item the sync wrote, which under a changed grammar would have changed one character's
   copy and not the next). A line read before 0.36.0 says "to Skill checks" on its sheet, which is
   what it does.
+- **A Condition may raise what a thing costs** (0.37.0; rulings 375 to 384; Mike, of the Heedless
+  row: "how should we automate Heedless?"). The `cost` kind, on a Condition's row alone:
+  `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`. While a creature has the Condition, a Maneuver that
+  carries the trait costs that many more actions: ⓿ becomes ❶, ❶ becomes ❷, and a cost that
+  reaches three is Prepared, by the book (Mike's choices). Recenter, which carries Concentrate,
+  costs ❷ from its button, its row and the Macro. A row with a range asks which version, each
+  button saying the version and its price ("❶ for ❷"); a row's results by cost (`IF: COST(n)`)
+  read the version, never the raised price. The spend says why ("Seek ❷ (Heedless +1)"), as do
+  a Maneuver's own card, the Prepared card and Recenter's; an adversary's spending is never
+  announced, so its reason is on its Maneuver's card, or beside the cost on its check's card.
+  On the Maneuvers tab and on an
+  adversary's sheet a raised row wears "+1" beside its cost, with the reason and the price on
+  hover, and a row that can no longer be paid for is left out or dimmed; both sheets' Recenter
+  buttons show the raised cost. One Condition counts once; two add. Nothing is paid outside an
+  encounter; with the tracking setting off the tab's rows pay nothing and wear no mark, and
+  Recenter still pays its raise. Not reached, and the build warns when a `COST` line names a trait one carries:
+  Strikes, Casts, movement, Reactions, the other Maneuvers the system runs itself (Raise a
+  Shield, the visor, Reload, Gain Control, Pass), a row whose rule acts when it is used or from
+  a card's button, and a Maneuver performed as part of another.
 - **Each roll takes an every-roll line once.** It is folded into each Defense's number on the
   sheet, so a Defense roll, a Defense rolled as a check (the Wind roll, a Recovery) and an
   Initiative rolled with Awareness carry it through that number and never again. This settles
@@ -3474,8 +3493,9 @@ before; the sources and the index are.
   it FADES have no word yet, so Supine does not stop movement, its -2 to attacks has no
   exception for melee Attacks against adjacent creatures, Grabbed's and Restrained's "cannot
   Move or Step" and "no action other than Escape" are by hand, Frightened and Slowed do not drop
-  by 1 at a round's end, Stunned takes no actions, Heedless adds no action to a Concentrate
-  Maneuver, and Blinded and Deafened stop no perception beyond what the system already read. Roll
+  by 1 at a round's end, Stunned takes no actions, and Blinded and Deafened stop no perception
+  beyond what the system already read. (Heedless has its word since 0.37.0, `COST`; its row
+  carries the line once Mike pastes it.) Roll
   Over has no row yet, and a rule that names Prone still means Prone and not Supine. Wrong-Footed
   is to one creature at a time, the one that last applied it, by its own identity (a Feint
   rolled from an adversary's sheet in the sidebar and not from its token names another body). A
@@ -3486,6 +3506,13 @@ before; the sources and the index are.
   Condition's row reads CHECK, SKILL, ATK, DEF and INIT and nothing that asks about an owner. An
   adversary's own Talents stay unread. Fatigued's maximum of 3 is kept only where the system
   raises it.
+- **What `COST` leaves to the table** (0.37.0): a Strike, a Cast, a drag, a Reaction and the
+  Maneuvers the system runs itself (but Recenter) cost what they always cost, whatever their
+  traits; the price is settled at the click, so a Maneuver already Prepared, or waiting on its
+  target's answer, is not charged again when the Condition comes on, and nothing is returned
+  when it goes; getting Heedless onto a creature is by hand, except where
+  a Maneuver's row applies it (Rage is a Talent, and a Talent cannot apply an Effect yet); a
+  cost made cheaper and a `COST` line on a Talent have no word yet.
 - **What an every-roll `CHECK` leaves to the table** (0.36.0): a line that asks about the roll's
   own rank (`IF: RANK(roll = untrained)`) reaches no Defense's number when written with a bare
   `CHECK` or a `DEF`: not a Defense roll, a Defense rolled as a check (the Wind roll), or the

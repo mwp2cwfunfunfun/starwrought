@@ -416,3 +416,28 @@ export function windTip(actor) {
   return `<p>${esc(L("STARWROUGHT.Field.loadStrainHint"))}</p>`
     + `<p><span class="sw-tip-title">${esc(L("STARWROUGHT.Combat.wind"))}</span>${esc(F(key, { endure, threshold }))}</p>`;
 }
+
+/**
+ * The Recenter button of a sheet (0.37.0; ruling 378): what Recenter costs this actor now, and its
+ * tooltip. ❶, or more while a Condition raises it (Heedless: Recenter carries Concentrate), read
+ * from the actor's own `recenterCost`, which is what `recenter` itself pays by.
+ * @param {Actor} actor
+ * @returns {Promise<{cost: number, raised: boolean, tip: string}>}
+ */
+export async function recenterButton(actor) {
+  const hint = game.i18n.localize("STARWROUGHT.Action.recenterHint");
+  let price = { cost: 1, extra: 0, reason: "" };
+  try {
+    if (typeof actor?.recenterCost === "function") price = await actor.recenterCost();
+  } catch (error) {
+    console.error("STARWROUGHT | what Recenter costs could not be read", error);
+  }
+  const raised = (Number(price.extra) || 0) > 0;
+  return {
+    cost: price.cost,
+    raised,
+    tip: raised
+      ? `${hint} ${game.i18n.format("STARWROUGHT.Cost.raisedTip", { reason: price.reason, pays: SW.ACTION_GLYPHS[price.cost] ?? String(price.cost) })}`
+      : hint
+  };
+}

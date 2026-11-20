@@ -34,8 +34,12 @@
 
 /** @type {Readonly<Record<string, BuiltInManeuver>>} */
 export const BUILT_IN_MANEUVERS = Object.freeze({
-  /** Recenter ❶ (PHB v4.10): the actor's own method, which spends the action and posts the card. */
-  recenter: actor => actor.recenter(),
+  /**
+   * Recenter ❶ (PHB v4.10): the actor's own method, which spends the action and posts the card.
+   * The row is handed on (0.37.0): its traits say whether a Condition raises the cost (Heedless:
+   * Recenter carries Concentrate).
+   */
+  recenter: (actor, item) => actor.recenter({ item }),
 
   /**
    * Pass ⓿ (0.23.1; Mike, 2026-11-14, of the row that only showed its card: "plan it"): the
@@ -104,6 +108,26 @@ export const BUILT_IN_MANEUVERS = Object.freeze({
   "raise-the-visor": async actor => visorOf(actor)?.toggleVisor(false) ?? null,
   "lower-visor": async actor => visorOf(actor)?.toggleVisor(true) ?? null,
   "raise-visor": async actor => visorOf(actor)?.toggleVisor(false) ?? null
+});
+
+/**
+ * The built-ins whose own code asks whether a Condition raises their cost (0.37.0; ruling 378),
+ * by slug. Recenter is the one built-in that carries Concentrate, and Mike's word is that a
+ * Heedless fighter pays ❷ for it; the rest pay their fixed cost and the build warns if a `COST`
+ * line ever names a trait one of them carries (rules/cost.mjs, `costRoad`).
+ * @type {ReadonlySet<string>}
+ */
+export const RAISED_BUILT_INS = Object.freeze(new Set(["recenter"]));
+
+/**
+ * The traits the book gives a raised built-in, by slug: what stands in when its row cannot be
+ * read (the Actions pack unreadable, the row renamed). THE ROW IS THE AUTHORITY: the actor's own
+ * copy, else the Basic Maneuver, is read first (`SwActor#recenterCost`), and the build warns when
+ * this list and the shipped row disagree, so it cannot drift unseen.
+ * @type {Readonly<Record<string, readonly string[]>>}
+ */
+export const BUILT_IN_TRAITS = Object.freeze({
+  recenter: Object.freeze(["Concentrate"])
 });
 
 /**

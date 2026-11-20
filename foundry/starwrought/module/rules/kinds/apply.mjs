@@ -21,8 +21,9 @@
  * default: the creature using the Maneuver) or `target` (the one creature it is used on).
  *
  * WHEN. With `IF: RESULT(<degree>)`, on that degree of the Maneuver's check, one line for each
- * degree; with none, whenever the Maneuver is used. `IF: COST(<n>)` narrows a line to the use
- * paid for with that many actions (Trip, Grapple and Demoralize print a table for each cost). `IF:
+ * degree; with none, whenever the Maneuver is used. `IF: COST(<n>)` narrows a line to the
+ * version of the Maneuver listed at that many actions (Trip, Grapple and Demoralize print a table
+ * for each cost), whatever was paid for it (0.37.0, ruling 380: a Condition may raise the price). `IF:
  * RANK(...)` is the owner's rank, `RANK(roll ...)` the rank rolled. A line about a TARGET needs a
  * degree: it lands by a button on the check's card (Mike's choice), and a Maneuver with no check
  * has no such card.

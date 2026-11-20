@@ -75,7 +75,8 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]` | ... or on yourself, at once, for a time | 3 |
 | `[EFFECT APPLY: Taking Cover]` | ... or whenever the Maneuver is used, when no result is named | 3 |
 | `[EFFECT REMOVE: prone]` | on a Maneuver's own row: using it takes the Condition or the named Effect off (0.32.0) | 3 |
-| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `SKILL`, `ATK`, `DEF` and `INIT` (0.33.0), and `IMMUNE: TRAIT(...)` (0.35.0) | 11 |
+| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `SKILL`, `ATK`, `DEF` and `INIT` (0.33.0), `IMMUNE: TRAIT(...)` (0.35.0) and `COST` (0.37.0) | 11 |
+| `[EFFECT COST: 1; IF: TRAIT(Concentrate)]` | on a **Condition's own row**: while a creature has the Condition, what it uses that carries the trait costs that many more actions (Heedless; 0.37.0) | 3 |
 | `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
@@ -84,7 +85,7 @@ Every block the cell reads, one example each. Case never matters.
 | `; IF: ALLIES(>=1, 0)` | ... while that many allies stand within the range (`ENEMIES`, `ALL`) | 3 |
 | `; IF: CLAIM(when trading)` | ... when the player says so (a checkbox in the roll dialog, or Apply to next roll) | 3 |
 | `; IF: RESULT(critical failure)` | ... on that degree (REROLL, GIVE, APPLY and REMOVE only) | 3 |
-| `; IF: COST(2)` | ... when the Maneuver was paid for with that many actions (APPLY and REMOVE only; 0.32.0) | 3 |
+| `; IF: COST(2)` | ... when the version of the Maneuver listed at that many actions is the one used, whatever was paid for it (APPLY and REMOVE only; 0.32.0) | 3 |
 | `; IF: EFFECT(Aid, used)` | ... once a roll of yours at your own Opportunity has used up a bonus another creature's Aid gave you (SUBORDINATE only) | 3 |
 | `; IF: EFFECT(Taking Cover)` | ... while YOU have that Condition or named Effect (CHECK, SKILL, ATK, DEF, INIT and SPEED lines; 0.31.0) | 3 |
 | `; IFT: EFFECT(prone)` | ... while the roll's OTHER PARTY has that Condition or named Effect (the same lines; 0.31.0) | 3 |
@@ -198,8 +199,9 @@ The **tag** names what is modified. A **modifier tag** (`CHECK`, `SKILL`, `ATK`,
 `SPEED`, `GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
 book's three; FG's `[bonus]`), then at most one descriptor after a comma (`GIVE` exactly one). The
 other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`, `PERMIT`, `SUBORDINATE`, `APPLY`,
-`REMOVE`) take descriptors alone; `USE` takes exactly three, `ALTER`, `PERMIT` and `SUBORDINATE`
-exactly one, `APPLY` and `REMOVE` one or two, and never a value or a type. No bonus is untyped.
+`REMOVE`, `COST`) take descriptors alone; `USE` takes exactly three, `ALTER`, `PERMIT`, `SUBORDINATE`
+and `COST` exactly one (`COST`'s is its number of extra actions), `APPLY` and `REMOVE` one or two,
+and never a value or a type. No bonus is untyped.
 
 | tag | modifies | descriptor | stored kind |
 |---|---|---|---|
@@ -220,6 +222,7 @@ exactly one, `APPLY` and `REMOVE` one or two, and never a value or a type. No bo
 | `SUBORDINATE: Aid` | using this Maneuver performs the named Maneuver as part of it. The named Maneuver keeps its own check, results and requirements; its own cost is never charged, and the cost printed on THIS row is the only one paid (the Subordinate Maneuver rule, below). Written on the Maneuver's own row, with `IF: EFFECT(<name>, used)` its trigger when it has one and `LIMIT:` its Frequency (0.25.0) | exactly one: the Maneuver performed, by name | `subordinate` |
 | `APPLY: prone, target` | using this Maneuver puts a Condition or a named Effect on a creature: `APPLY: <Effect>[, self \| target]`. With `IF: RESULT(<degree>)` on that result of its check, with none whenever it is used; `UNTIL:` says how long. On yourself it lands at once; on a target by a button on the card. Written on the Maneuver's own row (0.32.0) | the Effect (a Condition, `frightened 2` for one with a value, or a name of your own), then `self` (the default) or `target` | `apply` |
 | `REMOVE: prone` | using this Maneuver takes a Condition or a named Effect off a creature: `REMOVE: <Effect>[, self \| target]`, with the same `IF:` components and no `UNTIL:`. Written on the Maneuver's own row (0.32.0) | the Effect, then `self` (the default) or `target` | `apply` |
+| `COST: 1` | while a creature has this Condition, what it uses costs that many MORE actions: `COST: <n>; IF: TRAIT(<Trait>)`. A whole number from 1 to 6, and the one condition it takes, the trait of the thing being used. Written on a Condition's own row and nowhere else yet (0.37.0; Heedless). Not the condition `COST(<n>)` below, which asks which version of a Maneuver was used | the number of extra actions | `cost` |
 
 **The Subordinate Maneuver rule** (Mike, 2026-11-15; ruling 245). When a Maneuver says to perform
 another Maneuver as part of it, the other is done at the first Maneuver's listed cost: it costs no
@@ -261,11 +264,11 @@ one in the table. Several `IF:`/`IFT:` components on one line must all hold.
 | `ALL(>=3, 5)` | how many creatures of either side stand within the range | `IF:` |
 | `CLAIM(when trading)` | the player decides: the bonus is a checkbox in the roll dialog with these words as its hint, unticked; the Effects tab's "Apply to next roll" and the pin on the Talent's row arm it for the next roll (ruling 174) | `IF:` |
 | `RESULT(critical failure)` | the roll's degree: `critical success`, `success`, `failure`, `critical failure`. Only `REROLL` (the degree that offers the die again), `GIVE` (the degree that gives the result) and `APPLY` and `REMOVE` (the degree that puts the Effect on, or takes it off) read it | `IF:` |
-| `COST(2)` | the number of actions the Maneuver was paid with (0.32.0; ruling 318), for a row that prints a table of results for each cost (Trip, Grapple, Demoralize). 0 to 12. Only `APPLY` and `REMOVE` read it. Where nothing is paid (outside an encounter, or with action tracking off) a row with one cost reads that cost, and a row with a range asks which version this use is | `IF:` |
+| `COST(2)` | which version of the Maneuver was used, by its listed cost (0.32.0; ruling 318), for a row that prints a table of results for each cost (Trip, Grapple, Demoralize). Never a price a Condition raised (0.37.0, ruling 380): a Heedless creature that pays ❷ for a ❶ Maneuver gets the ❶ results. 0 to 12. Only `APPLY` and `REMOVE` read it. Where nothing is paid (outside an encounter, or with action tracking off) a row with one cost reads that cost, and a row with a range asks which version this use is | `IF:` |
 | `EFFECT(Aid, used)` | a used Effect (0.25.0): a roll of yours, made at your own Opportunity that is still running, has used up the Effect of that name, and it was a bonus another creature gave you. The name is the Maneuver whose result it was. Only `SUBORDINATE` reads it, and only after `IF:` | `IF:` |
 | `EFFECT(Taking Cover)`, `EFFECT(prone)` | a creature HAS it now (0.31.0): a Condition by its name, or a named Effect, anything on the creature that is no Condition (the Effects list, below). **The prefix says whose: `IF:` is the creature rolling, `IFT:` the roll's other party.** A line may hold one of each. Only the `bonus` lines read it (CHECK, SKILL, ATK, DEF, INIT, SPEED), and not beside a `FOR` that reaches others, an aura's ring included. After `IFT:` it is refused on an INIT or a SPEED line (neither has another party) and beside `IF: CLAIM(...)` (a claim is asked before the other party is known) | `IF:` or `IFT:` |
 | `EFFECT(wrong-footed, mine)` | the same, narrowed to an Effect that the creature rolling put there with a Maneuver's `APPLY` (0.32.0; ruling 319): "Wrong-Footed to you". An Effect put on by any other means (a GM's hand, a Critical Hit, another creature's Maneuver) is not yours. Read after either prefix, by the same lines | `IFT:` |
-| `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171) | `IFT:` |
+| `TRAIT(Fear)` | the attack answered carries the trait (a weapon's, an adversary attack's or a spell Talent's), matched on its first word; the build warns when nothing shipping carries it (ruling 171). On a `COST` line it is the trait of the thing being USED, written `IF: TRAIT(Concentrate)`, one word, and only a trait the thing carries outright counts (0.37.0) | `IFT:` |
 | `MARKED` | the other party is the creature this Talent's or Maneuver's `MARK` named (FG's `IFT: CUSTOM(Hunt Prey)`) | `IFT:` |
 | `BLOW` | the Threat answered is a Blow (a weapon's Strike, an adversary's attack row) | `IFT:` |
 | `BLAST` | the Threat answered is a Blast | `IFT:` |
@@ -850,7 +853,8 @@ another creature is a button on the card).
 - **`IF: RESULT(<degree>)`**: on that result of the Maneuver's check, one line for each degree. A
   row may hold several lines for one degree. With none, the line stands whenever the Maneuver is
   used.
-- **`IF: COST(<n>)`**: only when the Maneuver was paid for with that many actions.
+- **`IF: COST(<n>)`**: only when that version of the Maneuver was used, by its listed cost (a
+  price a Condition raised is never the version: the `cost` kind, below).
 - **`UNTIL:`** on an APPLY line: how long (section 3, Window). With none, until something takes
   it off.
 - **`IF: RANK(...)`** reads the owner's rank, and `RANK(roll ...)` the rank rolled.
@@ -870,7 +874,7 @@ Written on a Maneuver's own row and nowhere else, as `GIVE` is. Refused, each by
 
 **As read:** `puts Prone on the target, on a Success`; `puts Off-Guard on you until your next
 Opportunity, on a Critical Failure`; `puts Frightened 2 on the target, on a Critical Success, when
-1 action is paid`; `takes Prone off you`.
+the 1-action version is used`; `takes Prone off you`.
 
 In play:
 
@@ -924,12 +928,14 @@ In play:
   lands; what it put on another creature stays, for the GM to take off.
 - **A check with no Threshold has no result**, so its lines that wait on one apply nothing, and
   the card says so.
-- **The cost** (ruling 318) is what the use was paid at. Where nothing is paid (outside an
-  encounter, or with action tracking off) a row with one cost reads that cost, and a row with a
-  range of costs whose lines wait on the cost asks which version this use is. A Prepared Maneuver
-  applies at Finish, with the cost it was Prepared at. A Reaction reads the cost of its Reaction
-  half where the row prints one, and a Maneuver performed as part of another reads its parent's
-  cost, as it is paid at.
+- **The cost** (ruling 318) is the VERSION of the Maneuver that was used, by its listed cost: the
+  row's one cost, or the one picked from a range. It is never a price a Condition raised (0.37.0,
+  ruling 380: a Heedless creature that pays ❷ for the ❶ version reads the `COST(1)` lines). Where
+  nothing is paid (outside an encounter, or with action tracking off) a row with one cost reads
+  that cost, and a row with a range of costs whose lines wait on the cost asks which version this
+  use is. A Prepared Maneuver applies at Finish, with the version it was Prepared as. A Reaction
+  reads the cost of its Reaction half where the row prints one, and a Maneuver performed as part
+  of another reads its parent's listed cost.
 - **Applied Effects are public** (ruling 320): the hover card lists one for everyone, as it lists
   a Condition. On the Effects tab an applied Effect wears an **Applied** tag whose tooltip says
   who put it there, with which Maneuver, and until when.
@@ -1124,6 +1130,66 @@ Stealth, Anticipate against Guile); a Threshold worked out from the target (Stab
 + Wounds); a check compared against each of several creatures (Hide, Sneak, Captivate); a choice
 kept secret from the other side; an `ALTER` of a Maneuver's check; a Maneuver performed as part
 of another whose check asks its target to choose, which is refused with the reason.
+
+### `cost`
+
+A cost raised by a Condition (0.37.0; rulings 375 to 384). Mike, of the Heedless row ("Maneuvers
+with Concentrate take 1 extra action"): "how should we automate Heedless?"
+
+```
+[EFFECT COST: <n>; IF: TRAIT(<Trait>)]
+
+[EFFECT COST: 1; IF: TRAIT(Concentrate)]                                       Heedless
+```
+
+- **`<n>`** is a whole number of EXTRA actions, 1 to 6.
+- **`IF: TRAIT(<Trait>)`** is the trait of the thing being used: one trait to a line, named by one
+  word (Reach, not Reach 5). It is the one condition a `COST` line takes, and it is required.
+- **Read on a Condition's row alone** (ruling 379), as `IMMUNE: TRAIT(...)` began. The line acts
+  for whoever has the Condition, a character or an adversary. On a Talent, a Maneuver or a custom
+  effect it is refused and told so.
+- **Not read yet**, each refused by name: a cost made cheaper (`COST: -1`), a cost raised for
+  everything (no trait), a Maneuver named after a comma.
+
+Stored `{ kind: "cost", value, trait, name }`. As read: `things with the Concentrate trait cost 1
+more action`. No hook point: the places that settle a cost ask one reader (`costRaise`, in
+`module/rules/cost.mjs`), as the terrain asks the `ignore` kind's.
+
+**What it does.**
+
+- **The cost is the cost** (ruling 376). ⓿ becomes ❶ (377). ❶ becomes ❷. ❷ becomes ❸, and three
+  or more is Prepared, by the book: two actions now, finished at the next Opportunity.
+- **A row with a range** (Recall Knowledge ❶ to ❷) asks which version, and each button says the
+  version and what it will cost ("❶ for ❷").
+- **`IF: COST(<n>)` reads the version used, never the raised price** (ruling 380). A Prepared
+  Maneuver remembers both numbers.
+- **One Condition counts once, its largest line that matches; two Conditions add** (381).
+- **A trait must be carried outright** (384): a Maneuver whose trait is written "Auditory or
+  Visual" is neither for a cost.
+- **The raise goes wherever the cost goes** (382). Outside an encounter nothing is paid. With
+  "Track the six-action round" off, rows paid from the tab pay nothing and wear no mark, and
+  Recenter, which pays either way, still pays its raise.
+- **The price is settled at the click.** A request waiting on its target, and a Prepared
+  Maneuver, keep the price they began at, whether the Condition has ended or begun since.
+- **The card says why**: the spend reads "Seek ❷ (Heedless +1)", and a Maneuver's own card, a
+  Prepared card and Recenter's card carry "Heedless: Concentrate takes 1 extra action, so this
+  costs more than its row prints." An adversary's spending is never announced, so its reason is
+  on its Maneuver's card, or beside the cost on the card of its check.
+- **The sheets show it**: "+1" beside a row's cost on the Maneuvers tab and on an adversary's
+  sheet, with the reason on hover; a row that can no longer be paid for is left out, or dimmed;
+  the Recenter button shows what Recenter costs.
+
+**What it reaches.** A Maneuver paid from its own row on the Maneuvers tab, and Recenter (ruling
+378), whose own code reads its row's traits. It does NOT reach these, which the system pays for
+in its own code, and the build warns when a `COST` line names a trait one of them carries:
+
+- Strikes and Casts, and a row with an attack of its own;
+- movement by dragging a token;
+- a Reaction, on a row or among the Reaction Talents of the Combat window;
+- Raise a Shield, the visor, a character's Reload, Gain Control and Pass (an adversary's Reload
+  is a plain row of its sheet, and is raised);
+- a row whose rule acts when it is used or from a card's button (`MARK`, `PERMIT`,
+  `SUBORDINATE`, `REROLL`, a Reaction's `IMMUNE`), and a Maneuver performed as part of another.
 
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
@@ -1424,12 +1490,13 @@ Frightened is shown as the one line it can be since 0.36.0; the three lines it w
   Deafened                                     [EFFECT IMMUNE: TRAIT(Auditory)]    (0.35.0; to type)
   Unconscious           Prone                  N/A
   Wrong-Footed   X      Off-Guard against X    N/A
+  Heedless                                     [EFFECT COST: 1; IF: TRAIT(Concentrate)]   (0.37.0; to type)
 ```
 
 What these rows say that a line cannot yet: Supine's "except melee Attacks against adjacent
 creatures" (its -2 reaches those too), "cannot Move or Step", Evade being unavailable while
 Grabbed (the system marks that itself), a value that drops by 1 each round (Frightened, Slowed),
-Stunned's and Slowed's lost actions, Heedless's extra action, what Blinded and Deafened cannot
+Stunned's and Slowed's lost actions, what Blinded and Deafened cannot
 perceive (their immunity to Visual and Auditory effects is a line since 0.35.0), and Fatigued's
 maximum, Wind check and rests, which stay the system's.
 
@@ -1728,6 +1795,12 @@ written on the Maneuver's row.
   Effect the creature rolling applied. Nothing is applied by a Maneuver the system runs another
   way (a Strike, a Rush's drag), by an adversary's roll, from a blind roll by itself, or by a
   check that had no Threshold.
+- **A Condition may raise what a thing costs** (0.37.0; the `cost` kind). Heedless: a Maneuver
+  with Concentrate takes 1 extra action. The raise is added where a Maneuver's cost is settled
+  (its row on the Maneuvers tab) and by Recenter; a cost raised to three is Prepared. Strikes,
+  Casts, movement, Reactions and the other Maneuvers the system runs itself are not raised. A
+  Maneuver already Prepared is not charged again when the Condition comes on, and nothing is
+  returned when it goes.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
   every clause with no line for it is the table's.
 - **Adversaries.** A rule on an adversary's Item is indexed but no adversary roll asks for
@@ -1800,8 +1873,20 @@ written on the Maneuver's row.
 | `APPLY takes no UNTIL beside a Condition with a value: Frightened 2 moves by its own rule` | `UNTIL:` on a numeric Condition (ruling 317) |
 | `REMOVE does not take UNTIL` | a window on a `REMOVE` |
 | `APPLY is what using a Maneuver does and cannot ride an [AURA ...] block; write it on the Maneuver's row as ...` | an `APPLY` after an aura's ring |
-| `COST is written \`COST(<n>)\`, the number of actions the Maneuver was paid with, as in \`IF: COST(2)\`` / `COST is given twice` | the contents of `COST`: a whole number from 0 to 12, once |
-| `<TAG> does not take IF: COST(<n>)` | `COST` on any line but an `APPLY` or a `REMOVE`; a bonus line adds "the cost a Maneuver was paid with is read by APPLY and REMOVE" |
+| `COST is written \`COST(<n>)\`, the version of the Maneuver used by its listed cost, as in \`IF: COST(2)\`` / `COST is given twice` | the contents of `COST`: a whole number from 0 to 12, once |
+| `after a semicolon the cost is a condition: write \`IF: COST(2)\`, the version of the Maneuver that was used. \`COST:\` at the start of a line is another thing ...` | `APPLY: prone; COST: 2`: the tag's shape where the condition was meant, after `APPLY` or `REMOVE`, the two tags that read the condition (0.37.0). After any other tag `; COST: 2` is told that COST is a tag and begins its own line |
+| `` `COST:` raises what a thing costs and is read on a Condition's row for now (the Conditions sheet, as Heedless's `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`); a Talent's or a Maneuver's own change of cost is not read yet `` | a `COST` line on a Talent, a Maneuver or a custom effect (0.37.0) |
+| `COST names the trait of what costs more, as in \`[EFFECT COST: 1; IF: TRAIT(Concentrate)]\`; a cost raised for everything is not read yet` / `COST names one trait to a line: ...` / `COST takes one condition, the trait of what costs more ...: a rank or a result is not read on it` | a `COST` with no trait, with two (two `IF: TRAIT(...)`, or `TRAIT(Auditory or Visual)`), or with another condition |
+| `"Reach 5" is not a trait's name: one word of letters, digits, hyphens and apostrophes, as in \`[EFFECT COST: 1; IF: TRAIT(Concentrate)]\` (a trait is named without its value: Reach, not Reach 5)` | a `COST` whose trait is more than one word, or ends in a hyphen |
+| `TRAIT names one trait, as in \`TRAIT(Fear)\`, not "Concentrate, Manipulate": write a line for each trait` | two traits and a comma inside one `TRAIT(...)`, on any line (0.37.0) |
+| `COST: a comma with nothing beside it; COST takes one number, ..., so take the comma out` | `COST: 1,` or `COST: , 1` |
+| `COST is written \`COST: <n>; IF: TRAIT(<Trait>)\` ...: the number of extra actions comes first` / `...: a whole number of extra actions first, not "<word>"` / `a cost raised by 0 does nothing` / `a cost made cheaper is not read yet: COST takes a whole number above 0, the extra actions` / `COST raises a cost by 1 to 6 actions: a round has six` | the number of a `COST` |
+| `COST takes one number and nothing after a comma yet: a Maneuver named as the target is not read yet. ...` / `COST does not take <component>` | a descriptor after a comma, or `FOR:`, `LIMIT:` and the like, on a `COST` |
+| `WARNING: COST with TRAIT(<Trait>): no shipping Maneuver carries the trait "<trait>" outright, so nothing costs more yet (asked by ...)` | not a failure: the line reads and raises nothing. A misspelt trait, or a trait no Maneuver carries written alone |
+| `WARNING: COST with TRAIT(<Trait>): only Maneuvers that cost no actions carry the trait "<trait>" (<names>), so nothing costs more yet (asked by ...)` | not a failure: only Activities or Endeavors carry the trait, and they cost no actions |
+| `WARNING: COST with TRAIT(<Trait>) does not reach <Name> (<why>), ...: a COST line raises a Maneuver paid from its own row, and Recenter (asked by ...)` | not a failure: the things named carry the trait and are paid for in the system's own code, so they cost what they always cost |
+| `WARNING: Recenter: the traits kept for when its row cannot be read (...) differ from the row's (...); update BUILT_IN_TRAITS ...` | not a failure, and Claude's to mend: the row's traits are what the system reads; the kept list only stands in when the row cannot be read |
+| `<TAG> does not take IF: COST(<n>)` | `COST` on any line but an `APPLY` or a `REMOVE`; a bonus line adds "the version of a Maneuver that was used is read by APPLY and REMOVE" |
 | `"end": a window's edge is written after APPLY alone; here a giver's window ends as that Opportunity begins and a recipient's as it ends` | `end`, `start` or `begin` in a `GIVE` window or an `ALTER` of a duration |
 | `"APPLY" is a tag and begins its own line; one effect per line, ...` | `APPLY:` written as a component of another line (a draft of Coordinated Footwork's did) |
 | `IFT: EFFECT(<name>, used) is not read: a used Effect is your own roll's, so it is written \`IF: EFFECT(<name>, used)\`` | the used form after `IFT:` |
@@ -1906,7 +1991,7 @@ written on the Maneuver's row.
 | `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
 | `"N" is a Condition's own value and is written on that Condition's row of the Conditions workbook, as in \`DEF: -N condition\` on Frightened; here write a whole number` | `-N` on a Talent, a Maneuver or a custom effect (0.33.0) |
 | `\`-N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number` | `-N` on a row of the Conditions workbook whose Takes is not N |
-| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, SKILL, ATK, DEF, INIT, IMMUNE); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
 | `SKILL takes no descriptor: to name a Constellation or a Maneuver write \`CHECK: 1 situation, stealth\`` | a target after `SKILL` (0.36.0) |
 | `for checks that are no attack and no Defense write the tag: \`SKILL: 1 situation\`` | `skill` or `skill checks` written as the target of a `CHECK` |
 | `"<word>" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every roll and Threshold (SKILL, ATK, DEF and INIT are the narrower tags)` | `rolls`, `checks`, `attacks`, `defenses` or `initiative` as the target of a `CHECK` |
@@ -2097,7 +2182,7 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   card. The `apply` kind, the twenty-fourth (rulings 311 to 321), on a Maneuver's own row:
   `APPLY: <Effect>[, self | target]` with `UNTIL:` for how long and `IF: RESULT(<degree>)` for
   which result, `REMOVE:` the same with no window. Two additions to the vocabulary beside it:
-  the condition `COST(<n>)`, the number of actions the Maneuver was paid with, for rows that
+  the condition `COST(<n>)`, which version of the Maneuver was used (by its listed cost), for rows that
   print a table for each cost (318); and `mine` as the second word of `EFFECT(<name>, mine)`, an
   Effect the creature rolling applied (319). A window after `APPLY` may name its edge (`giver
   opportunity end`, `recipient opportunity start`); a `GIVE` window may not, and reads as it did.
@@ -2138,15 +2223,21 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   "Auditory or Visual" needs both (357). The system says it and goes on (354). On the sheet, the
   rules text is the **Effect** column and **Description** is one line of flavor, as on every
   other sheet (350).
+- **0.35.1** (2026-11-19): `[X]` in a Condition's Effect or Description is the creature the
+  Condition is about (rulings 361 to 365; Mike: "since we use brackets for automation, how about
+  [X]"). It is text, not grammar: no kind, tag or word is new, and the Automation cell is
+  untouched. Section 11 says where it is filled in.
 - **0.36.0** (2026-11-19): a bare `CHECK` reaches every roll and Threshold, and `SKILL` is the
   narrow word (rulings 366 to 371; Mike: "Can't CHECK include ALL rolls/thresholds, but ATK and
   DEF just mean attack checks and defense checks respectively?"). One tag is new, `SKILL`, for
   the `bonus` kind; no kind and no hook point is. One Talent or Condition counts once on a roll
   (367). A stored rule keeps the meaning it was read with (369).
-- **0.35.1** (2026-11-19): `[X]` in a Condition's Effect or Description is the creature the
-  Condition is about (rulings 361 to 365; Mike: "since we use brackets for automation, how about
-  [X]"). It is text, not grammar: no kind, tag or word is new, and the Automation cell is
-  untouched. Section 11 says where it is filled in.
+- **0.37.0** (2026-11-19): a Condition may raise what a thing costs. The `cost` kind, the
+  twenty-sixth (rulings 375 to 384; Mike, of Heedless's "Maneuvers with Concentrate take 1 extra
+  action": "how should we automate Heedless?"), with the tag `COST` on a Condition's row:
+  `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`. No hook point. On a `COST` line `TRAIT(...)` is the
+  trait of the thing being used. The condition `COST(<n>)` is now said to be the version of the
+  Maneuver used, never a raised price (380).
 
 ## 11. The Conditions workbook
 
@@ -2169,8 +2260,8 @@ follows. One sheet, `Conditions`, one row for each Condition:
 | Notes | yours: what the code still does for the row, or does not do yet. The system never reads it |
 
 **A row's lines act for whoever has the Condition**, a character or an adversary. So a row reads
-the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), and `IMMUNE: TRAIT(...)`
-(0.35.0), and nothing that asks about an owner:
+the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), `IMMUNE: TRAIT(...)` (0.35.0)
+and `COST: <n>; IF: TRAIT(...)` (0.37.0), and nothing that asks about an owner:
 
 ```
 [EFFECT DEF: -2 situation, evade]              Off-Guard
@@ -2179,6 +2270,7 @@ the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), and `IMMUNE: TR
 [EFFECT ATK: -N condition]                     ... and every Strike and Cast, but no Skill check
 [EFFECT DEF: 2 situation, evade; IFT: RANGED]  Prone: +2 Evade against a ranged Attack
 [EFFECT IMMUNE: TRAIT(Visual)]                 Blinded: immune to anything with the Visual trait
+[EFFECT COST: 1; IF: TRAIT(Concentrate)]       Heedless: a Concentrate Maneuver takes 1 extra action
 ```
 
 - **`N` is the Condition's own value.** `-N` on Frightened is -2 at Frightened 2 and -3 at
@@ -2193,6 +2285,7 @@ the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), and `IMMUNE: TR
   `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED`, `EFFECT(...)`, any other tag (`SPEED`, `APPLY`)
   and every feature block are refused by name. `IMMUNE` is read in its `TRAIT(...)` form alone,
   with nothing after it (section 4, `prevent`); `IMMUNE: <Condition>` is not read on a row yet.
+  `COST` takes a whole number above 0 and one `IF: TRAIT(...)` (section 4, `cost`).
   What a Condition forbids (movement, Reactions, a Defense) and how it fades have no word yet.
 - **One Condition is one circumstance.** A creature that is Off-Guard three ways (the status,
   Prone, a Torso Wound) takes Off-Guard's -2 once. And since 0.36.0 (ruling 367) a row's own

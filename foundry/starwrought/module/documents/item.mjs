@@ -7,13 +7,14 @@ import { SwCheck } from "../dice/check.mjs";
 import { parseAutomation, ruleEntries } from "../rules/grammar.mjs";
 // content.mjs imports config.mjs alone at module scope (its other imports are dynamic), so this
 // closes no circle; a static import of this file from there would, and must not be added.
-import { resolveRuleTarget, loadBasicActions } from "../helpers/content.mjs";
-// The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield; and the ones
-// whose cost it takes somewhere other than their row (0.23.0).
-import { BUILT_IN_MANEUVERS, CHARACTER_BUILT_INS, PAID_ELSEWHERE } from "./maneuvers.mjs";
+import { resolveRuleTarget, findManeuver } from "../helpers/content.mjs";
+// The Maneuvers the system implements, by name (0.10.1): Recenter, Raise a Shield.
+import { BUILT_IN_MANEUVERS, CHARACTER_BUILT_INS } from "./maneuvers.mjs";
 import { relation as tokenRelation } from "../rules/scene.mjs";
 import { usableByRule } from "../rules/engine.mjs";
-import { kindOf } from "../rules/kinds/index.mjs";
+// Where a Maneuver's cost is settled (0.23.0, `paidElsewhere`), and what a Condition adds to it
+// (0.37.0, `rowRaise`): one module, shared with the Maneuvers tab and the build.
+import { paidElsewhere, rowRaise, raiseWords, raiseReason } from "../rules/cost.mjs";
 import { setting } from "../helpers/settings.mjs";
 // A check read against another creature's Threshold (0.15.0; shared with Gain Control since 0.27.0).
 import { readTargetThreshold } from "../helpers/threshold-read.mjs";
@@ -24,32 +25,21 @@ import { planOf } from "../rules/check.mjs";
 import { usableDefenses } from "../rules/check-request.mjs";
 import { actorFromUuid } from "../helpers/cards.mjs";
 
+// `paidElsewhere(item)`, which lived here through 0.36.0, is rules/cost.mjs's since 0.37.0: the
+// Maneuvers tab and the build ask the same question of a row.
+
 /**
- * Is this Maneuver's cost taken somewhere other than its own row (0.23.0, ruling 235)? The i18n
- * key of the line its card says, or null. By name (`PAID_ELSEWHERE`: Cast, the movement
- * rows); by an attack of its own, which `attackWith` pays for; or by a rule that acts from a
- * button on a card, asked of the registry rather than a list of kinds (a `reroll`'s button, as
- * Quick Tongue's; a `prevent`'s Reaction button): such a Maneuver pays when that button is pressed,
- * so its row must not pay as well.
- * @param {Item} item
- * @returns {string|null}
+ * Why a use costs more than its row prints (0.37.0; rulings 375 to 384), in the few words a
+ * spend's label carries: "Heedless +1". Empty when nothing is raised.
+ * @param {{raise?: object}|null} plan  `#chargePlan`'s answer.
  */
-function paidElsewhere(item) {
-  const named = PAID_ELSEWHERE[SW.slugify(SW.plainName(item.name))];
-  if (named) return named;
-  if (item.system?.attack?.enabled) return "STARWROUGHT.Cost.paidByAttack";
-  // A `prevent` pays from the Expose card's button only when its carrier is a Reaction (the kind
-  // offers no button for any other, rules/kinds/prevent.mjs), so a carrier without the trait still
-  // pays from its row; a `card` kind's button pays whatever the carrier is.
-  const fromCard = (item.system?.rules ?? []).some(rule => {
-    const hooks = kindOf(rule?.kind)?.hooks;
-    // A kind that also acts when the Item is used (0.25.0: `subordinate`, whose card button uses
-    // the Item) is paid on that one path, whichever door opened it: its button is no second place
-    // of payment, and its row must not say that it is.
-    if (hooks?.use) return false;
-    return !!(hooks?.card || (hooks?.prevent && (item.system?.reaction === true)));
-  });
-  return fromCard ? "STARWROUGHT.Cost.paidFromCard" : null;
+function raisedBy(plan) {
+  return plan?.raise?.extra ? raiseWords(plan.raise) : "";
+}
+
+/** The same, as the sentence a card's own line says: "Heedless: Concentrate takes 1 extra action, so ...". */
+function raisedLine(plan) {
+  return plan?.raise?.extra ? game.i18n.format("STARWROUGHT.Cost.raised", { reason: raiseReason(plan.raise) }) : "";
 }
 
 /**
@@ -197,12 +187,15 @@ export class SwItem extends Item {
     // the spend, sets the cost and hands over the marks to file once the use stands.
     // `paid` (0.32.0) is Finish's too: the cost the Prepared Maneuver was paid at, which the row's
     // `IF: COST(<n>)` lines read, since nothing is charged on the way back in.
-    const { prepared = false, partOf = null, paid = null, ...config } = rest;
+    // `charged` (0.37.0) is Finish's as well: what the Prepared Maneuver was PAID at, which differs
+    // from `paid` (the version) when a Condition raised the price. Only the card's glyph reads it.
+    const { prepared = false, partOf = null, paid = null, charged = null, ...config } = rest;
     const plain = SW.plainName(this.name);
     const slug = SW.slugify(SW.plainName(this.name));
     // A built-in that is a character's alone (Reload: it loads a weapon Item) is passed by for an
-    // adversary, whose row stays the plain Maneuver it was (0.29.0).
-    const builtIn = (CHARACTER_BUILT_INS.has(slug) && (actor?.type !== "character")) ? null : BUILT_IN_MANEUVERS[slug];
+    // adversary, whose row stays the plain Maneuver it was (0.29.0). An own key only: a Maneuver
+    // named "Constructor" is no built-in (the review of 0.37.0).
+    const builtIn = (!Object.hasOwn(BUILT_IN_MANEUVERS, slug) || (CHARACTER_BUILT_INS.has(slug) && (actor?.type !== "character"))) ? null : BUILT_IN_MANEUVERS[slug];
     if (builtIn && actor) {
       // A built-in pays and posts for itself, so it cannot be handed another Maneuver's cost yet
       // (`#performSubordinate` refuses it first; this is the guard for any other caller).
@@ -237,8 +230,12 @@ export class SwItem extends Item {
     }
     // The label carries the number chosen: a range row's own glyph is "❶ to ❸". A subordinate is
     // named for its parent, which is what the table is paying for.
+    // A RAISED COST SAYS WHY (0.37.0): "Seek ❷ (Heedless +1)". The label is what the GM's leave
+    // card, the spend card, the overspend card and a check's request all print, so the reason
+    // reaches each of them from here.
+    const why = raisedBy(plan);
     const label = partOf ? String(partOf.label ?? plain)
-      : `${plain} ${plan.n ? (SW.ACTION_GLYPHS[plan.n] ?? "") : (this.system.glyph ?? "")}`.trim();
+      : `${plain} ${plan.n ? (SW.ACTION_GLYPHS[plan.n] ?? "") : (this.system.glyph ?? "")}${why ? ` (${why})` : ""}`.trim();
     // The check this Maneuver rolls (0.34.0): its `[CHECK ...]` block, else the three stored
     // fields (rules/check.mjs, `planOf`; the data model derives it as `system.checkPlan`).
     const check = this.system.checkPlan ?? planOf(this.system.rules, this.system.check);
@@ -281,10 +278,15 @@ export class SwItem extends Item {
     // Three or more actions is Prepared (PHB v4.24; ruling 234): two now, the rest reserved,
     // and nothing rolls until Finish at the next Opportunity brings this Item back here. The
     // label is the plain name: the sheet and the round's card print the cost beside it.
+    // A cost a Condition raised to three is Prepared as any other (0.37.0, ruling 376; Mike: "by
+    // the book"). The preparation remembers BOTH numbers: `cost`, what is paid, and `listed`, the
+    // version of the Maneuver used, which Finish hands back for the row's `IF: COST(<n>)` lines.
     if ((plan.n >= SW.PREPARED_THRESHOLD) && !partOf) {
       return actor.prepare({
         kind: "maneuver", label: plain, cost: plan.n, itemUuid: this.uuid,
-        targetUuid: SwCheck.currentTarget()?.document?.uuid ?? ""
+        targetUuid: SwCheck.currentTarget()?.document?.uuid ?? "",
+        ...(Number.isInteger(plan.listed) ? { listed: plan.listed } : {}),
+        ...(why ? { note: raisedLine(plan) } : {})
       });
     }
     // A Maneuver that rolls: the gate is passed and the cost paid once the dialog has settled,
@@ -308,7 +310,17 @@ export class SwItem extends Item {
     }
     // What the card says of the cost: the Maneuver's own glyph and group, or (a subordinate) the
     // Maneuver it is part of, since that is who paid.
-    const subtitle = partOf?.note ? String(partOf.note) : `${this.system.glyph} ${this.system.category}`.trim();
+    // A raised cost shows what is paid (0.37.0): the row's own glyph would say ❶ beside a spend
+    // card that says ❷.
+    // At Finish nothing is charged, so the plan knows of no raise: a Maneuver Prepared at a raised
+    // price says the price it was Prepared at, as its Prepared card did (the review of 0.37.0).
+    const finishedAt = (prepared && Number.isInteger(charged) && Number.isInteger(paid) && (charged > paid)) ? charged : null;
+    const paidGlyph = why ? (SW.ACTION_GLYPHS[plan.n] ?? this.system.glyph)
+      : (finishedAt !== null) ? (SW.ACTION_GLYPHS[finishedAt] ?? this.system.glyph) : this.system.glyph;
+    // An actor whose spends are not announced (a GM's adversary) posts no spend card, which is
+    // where a character's reason is read ("Seek ❷ (Heedless +1)"): its check card says it instead.
+    const unsaid = (why && actor && !actor.announcesSpends) ? ` (${why})` : "";
+    const subtitle = partOf?.note ? String(partOf.note) : `${paidGlyph} ${this.system.category}${unsaid}`.trim();
     // What the roll hands the check engine for the row's APPLY and REMOVE lines (0.32.0): the cost
     // paid and the one creature targeted. The engine reads the lines after the die and the card
     // carries them (dice/check.mjs; documents/cards/apply.mjs).
@@ -322,6 +334,8 @@ export class SwItem extends Item {
       return this.#startCheck(actor, {
         check, config, subtitle, note: partOf?.note ? String(partOf.note) : "", applies,
         cost: plan.n, label, prepared, paid, partOf,
+        // What a request card's head prints when the cost was raised (0.37.0).
+        ...((why || (finishedAt !== null)) ? { glyph: paidGlyph } : {}),
         // How the resumed roll passes the gate: not at all when this use has passed it already
         // (or needs none); else at the roll, as a use with no request does.
         gate: atRoll ? "roll" : "none"
@@ -336,6 +350,11 @@ export class SwItem extends Item {
       if (actor.announcesSpends) {
         lines.push(`${game.i18n.format("STARWROUGHT.Actions.spent", { name: actor.name, spent: plan.n })} ${actor.actionsLeftLine?.() ?? ""}`.trim());
       }
+      // The card's head prints the row's own cost: say why more was spent (0.37.0). Said for an
+      // adversary too, whose spend line is not (the review of 0.37.0): its Prepared card and its
+      // Recenter card say the reason, and a card with the row's ❶ on it and two pips gone said
+      // nothing.
+      if (why) lines.push(raisedLine(plan));
     }
     if (plan.note) lines.push(plan.note);
     if (prepared) lines.push(game.i18n.localize("STARWROUGHT.Cost.preparedPaid"));
@@ -363,7 +382,9 @@ export class SwItem extends Item {
    */
   async #applyCost(plan, paid) {
     if (Number.isInteger(paid) && (paid >= 0)) return paid;
-    if (plan?.picked || plan?.n) return plan.n;
+    // THE VERSION USED, never a raised price (0.37.0, ruling 380): `listed` is the row's own cost
+    // for this use, `n` what a Condition made of it. A plan with no `listed` was never raised.
+    if (plan?.picked || plan?.n) return Number.isInteger(plan.listed) ? plan.listed : plan.n;
     // A Reaction pays its own half where the row prints one ("❶ (⓿↺)" pays nought), and that
     // is the cost its lines read, in an encounter or out of one.
     if (this.system.reaction) {
@@ -473,9 +494,17 @@ export class SwItem extends Item {
    * at once, as before), by a passive row (an Activity, an Endeavor) or by a row the system pays
    * another way, which says so on its card instead. A range of costs is asked of the player, and a
    * closed pick comes back `cancelled`: the use stops there, before the gate.
+   *
+   * WHAT A CONDITION ADDS (0.37.0; rulings 375 to 384; Heedless: "Maneuvers with Concentrate take
+   * 1 extra action") is added HERE and nowhere else on this path, at the two answers that are a
+   * cost of the use (`picked`): a fixed cost and a picked one. So a row this method never charges
+   * is never raised either (a passive row, a Reaction, one paid elsewhere), by construction.
+   * `listed` is the row's own cost for this use, the version of the Maneuver; `n` is what is
+   * paid; `raise` says by how much and by which Condition (rules/cost.mjs, `rowRaise`, the same
+   * function the Maneuvers tab asks, so the two agree).
    * @param {Actor|null} actor
    * @param {string|null} elsewhere  `paidElsewhere(this)`: the i18n key of who pays, or null.
-   * @returns {Promise<{n: number, note: string|null, cancelled: boolean}>}
+   * @returns {Promise<{n: number, note: string|null, cancelled: boolean, picked?: boolean, listed?: number, raise?: object}>}
    */
   async #chargePlan(actor, elsewhere) {
     const none = { n: 0, note: null, cancelled: false };
@@ -485,12 +514,15 @@ export class SwItem extends Item {
     if (this.system.reaction) return none;
     const options = SW.actionCostOptions(this.system);
     if (!options.length) return none;
+    const raise = rowRaise(actor, this);
+    const extra = raise.extra;
     // `picked` (0.32.0): this number IS the cost of the use, nought included, so a line that
     // waits on the cost paid reads it and nothing asks a second time.
-    if (options.length === 1) return { ...none, n: options[0], picked: true };
+    if (options.length === 1) return { ...none, n: options[0] + extra, listed: options[0], picked: true, raise };
     const { pickCost } = await import("../apps/cost-picker.mjs");
-    const n = await pickCost({ name: SW.plainName(this.name), options });
-    return (n === null) ? { ...none, cancelled: true } : { ...none, n, picked: true };
+    // The picker shows what each version will cost and answers the version (0.37.0).
+    const n = await pickCost({ name: SW.plainName(this.name), options, extra, why: extra ? raiseReason(raise) : "" });
+    return (n === null) ? { ...none, cancelled: true } : { ...none, n: n + extra, listed: n, picked: true, raise };
   }
 
   /**
@@ -610,7 +642,7 @@ export class SwItem extends Item {
     const perform = performs[0].perform;
     const F = (key, data) => game.i18n.format(key, data);
     if (performs.length > 1) ui.notifications.warn(F("STARWROUGHT.Subordinate.oneOnly", { parent: named, name: perform.name }));
-    const target = await this.#findManeuver(actor, perform.slug);
+    const target = await findManeuver(actor, perform.slug);
     if (!target) return void ui.notifications.warn(F("STARWROUGHT.Subordinate.missing", { parent: named, name: perform.name }));
     const sub = SW.plainName(target.name);
     const counted = !!actor?.inEncounter && setting("trackActions", true);
@@ -641,29 +673,8 @@ export class SwItem extends Item {
     });
   }
 
-  /**
-   * The Maneuver of this name for this actor (0.25.0): the actor's own copy (one a Talent granted,
-   * or a GM's), else the Basic Maneuver every character has (helpers/content.mjs: the Actions
-   * pack's, with a world Item of the same name standing in for the printed one), else any world
-   * Maneuver, else the pack's document by its index.
-   * @param {Actor} actor
-   * @param {string} slug  `slugify(plainName(name))`.
-   * @returns {Promise<Item|null>}
-   */
-  async #findManeuver(actor, slug) {
-    const slugOf = name => SW.slugify(SW.plainName(name ?? ""));
-    const is = item => (item?.type === "action") && (slugOf(item.name) === slug);
-    const owned = actor?.items?.find(is);
-    if (owned) return owned;
-    const basic = (await loadBasicActions()).find(is);
-    if (basic) return basic;
-    const world = game.items?.find(is);
-    if (world) return world;
-    const pack = game.packs.get(`${SW.SYSTEM_ID}.actions`);
-    if (!pack) return null;
-    const entry = (await pack.getIndex()).find(e => slugOf(e.name) === slug);
-    return entry ? pack.getDocument(entry._id) : null;
-  }
+  // `#findManeuver`, which lived here through 0.36.0, is `findManeuver` in helpers/content.mjs
+  // since 0.37.0: Recenter's own method reads its row the same way.
 
   /**
    * The ally a Maneuver that GIVES a result is made for (0.22.0), as roll config: the one token
@@ -779,7 +790,7 @@ export class SwItem extends Item {
     return postCheckRequest({
       mode: "answer", user: actor, item: this, token, rolled, line,
       defenses: how.check.defenses,
-      cost: how.cost, label: how.label,
+      cost: how.cost, label: how.label, glyph: how.glyph,
       // Where the gate is still to be passed (a Maneuver that rolls passes it at the roll): begun
       // at the user's own Opportunity, the request stands whenever the answer comes; begun on
       // the GM's leave, that leave is spent when the roll is made.
@@ -1009,7 +1020,7 @@ export class SwItem extends Item {
         mode: "roll", user: actor, item: this, token: token.document,
         rolled, line: said,
         defenses: check.defenses,
-        cost: 0, label: how.label, gate: "none",
+        cost: 0, label: how.label, glyph: how.glyph, gate: "none",
         applies: applies?.applies ?? null, ally: null,
         prepared: false, paid: how.paid ?? null,
         dialog: config.dialog,

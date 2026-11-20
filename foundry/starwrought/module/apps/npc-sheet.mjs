@@ -7,7 +7,9 @@
  */
 
 import * as SW from "../config.mjs";
-import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf } from "../helpers/actor-context.mjs";
+import { actionsContext, bindContext, vigorContext, zoneWounds, rulesPageOf, recenterButton } from "../helpers/actor-context.mjs";
+// 0.37.0: what a Condition adds to an ability's cost (Heedless), as the charge itself reads it.
+import { raiseMark, shownRaise } from "../helpers/situation.mjs";
 import { effectReadAs, effectAppliedTag, conditionInfo } from "../helpers/effects.mjs";
 import { openRulesPage } from "../documents/chat.mjs";
 // AURAS (0.5.1): the ring toggle on an ability row that carries an aura.
@@ -207,6 +209,14 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
     };
 
     context.abilities = actor.items.filter(i => (i.type === "action") && !i.system.attack.enabled);
+    // What a Condition adds to each ability's cost (0.37.0; Heedless), by Item id: the mark beside
+    // its pips, from the function the Maneuvers tab asks (helpers/situation.mjs, `shownRaise`:
+    // the charge's own answer, and no mark where the tracking setting means nothing is charged).
+    context.raiseByItem = Object.fromEntries(context.abilities
+      .map(i => [i.id, raiseMark(shownRaise(actor, i, { owned: true }), SW.actionCostOptions(i.system ?? {}))])
+      .filter(([, mark]) => mark));
+    // What Recenter costs now, for its button.
+    context.recenter = await recenterButton(actor);
     // AURAS (0.5.1): the ring toggle beside each ability row that carries an aura, by Item id.
     context.auraByItem = auraRowsByItem(actor);
     context.otherItems = actor.items.filter(i => !["action"].includes(i.type));

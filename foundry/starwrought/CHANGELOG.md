@@ -7,6 +7,234 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.37.0 (2026-11-19): a Condition may raise what a thing costs: the `COST` word, for Heedless
+
+Built from **Player's Handbook v4.25**, which did not move. Mike, of the Heedless row
+("Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1
+extra action."): "how should we automate Heedless?", then "Yes, plan it". Planned first; his
+decisions, by question: a raised cost that reaches three makes the Maneuver Prepared, by the
+book; a free Maneuver costs ❶; Recenter, which carries Concentrate, costs ❷; and the word is
+read on a Condition's row only for now. **One rule kind is new, `cost`, the twenty-sixth, with
+the tag `COST`; no hook point is.** One cell is printed below for him to paste. The Conditions
+sheet was built as he saved it on the day (below); his four workbooks in progress were not
+converted, built, staged or written.
+
+**The cell.**
+
+```
+  Heedless   (data/conditions.xlsx, in place of the N/A)
+      [EFFECT COST: 1; IF: TRAIT(Concentrate)]
+```
+
+Then double-click `sync_conditions.cmd`, and run Sync content in Foundry. Until the cell is in
+the sheet, Heedless changes nothing.
+
+- **`COST: 1`**: what you use costs 1 more action. A whole number from 1 to 6.
+- **`IF: TRAIT(Concentrate)`**: the thing you are using carries that trait. One trait, one word,
+  to a line.
+- Not read yet, each refused by name: a cost made cheaper (`COST: -1`), a cost raised for
+  everything (no trait), a Maneuver named after a comma, and the line anywhere but a Condition's
+  row.
+
+**What changes at the table**, while a creature is Heedless, in an encounter:
+
+| The Maneuver | Costs | And so |
+|---|---|---|
+| Well-Read ⓿ | ❶ | |
+| Seek, Balance, Climb, Swim and the other ❶ rows | ❷ | |
+| Recenter ❶ | ❷ | From the sheet's button, its row and the Macro |
+| Recall Knowledge ❶ to ❷ | ❷ or ❸ | The picker shows "❶ for ❷" and "❷ for ❸ Prepare" |
+| Pick Lock, Stabilize and the other ❷ rows | ❸ | Prepared: two now, finished at the next Opportunity |
+| Calm Animal ❷ to ❸ | ❸ or ❹ | Prepared either way |
+| Brace an Object ❸, Field Patch ❹ | ❹, ❺ | Prepared, as they were |
+| Search, Avoid Notice and the other Activities | No change | They cost no actions |
+
+- **The card says why.** The spend reads "Seek ❷ (Heedless +1)". A Maneuver's own card, the
+  Prepared card and Recenter's card carry "Heedless: Concentrate takes 1 extra action, so this
+  costs more than its row prints."
+- **The sheets show it.** A raised row wears "+1" beside its cost on the Maneuvers tab and on an
+  adversary's sheet, with the reason and the price on hover. A row that can no longer be paid
+  for is left out, or dimmed, as before. Both sheets' Recenter buttons show ❷.
+- **Adversaries pay it too.** An adversary's spending is never announced in chat, so its reason
+  is on its Maneuver's own card, or beside the cost on the card of its check ("❷ ... (Heedless
+  +1)"), and the GM sees the pips.
+- **The raise goes wherever the cost goes.** Outside an encounter nothing is paid. With "Track
+  the six-action round" off, the tab's rows pay nothing and wear no "+1", and Recenter, which
+  pays either way, still pays ❷.
+
+**The rulings** (375 to 379 are Mike's; the rest are Claude's readings and his to overrule).
+
+- **375. `COST` raises what a thing with a trait costs** (Mike): `[EFFECT COST: 1; IF:
+  TRAIT(Concentrate)]`.
+- **376. A raised cost of three or more is Prepared** (Mike, by question: "by the book").
+- **377. ⓿ becomes ❶** (Mike, by question).
+- **378. Recenter pays it** (Mike, by question).
+- **379. Read on a Condition's row only, for now** (Mike, by question).
+- **380. `IF: COST(n)` reads the version used, never the raised price.** A Maneuver with results
+  by cost (Trip, Demoralize) gives the results of the version chosen, whatever was paid. A
+  Prepared Maneuver remembers both numbers.
+- **381. One Condition counts once, its largest line that matches; two Conditions add.**
+- **382. The raise goes wherever the cost goes**: nothing where nothing is paid, and Recenter
+  pays it with the tracking setting off, as it pays its ❶.
+- **383. Adversaries pay it**, as every Condition's line acts for whoever has the Condition.
+- **384. A trait written "Auditory or Visual" is neither trait for a cost.** A Maneuver is
+  raised only by a trait it carries outright. No row needs this today.
+
+**Worth knowing.**
+
+- **Recenter at ❷ is a real cost.** A raging Berserker pays two actions to close Exposed Zones
+  and end a Bind.
+- **Seven ❷ rows become Prepared while Heedless**: Glimmer, Rescue Haul, Stabilize, Captivate,
+  Disable Device, Pick Lock, and Calm Animal at ❷. A Wound abandons a Prepared Maneuver, as
+  always.
+- **The price is settled at the click.** A Maneuver already Prepared, or waiting on its
+  target's answer, keeps the price it began at: it is not charged again if Heedless comes on
+  before it is finished, and nothing is returned if Heedless ends.
+- **Getting Heedless onto a creature is still by hand**, except where a Maneuver's row applies
+  it. Demoralize's ❸ Critical Success can: `[EFFECT APPLY: Heedless, target; UNTIL: giver
+  opportunity; IF: RESULT(critical success); IF: COST(3)]`. Rage is a Talent, and a Talent
+  cannot apply an Effect yet.
+- **`COST(<n>)` after `IF:` is described everywhere as the version of the Maneuver used.** It
+  always read that; the words said "the number of actions paid", which a raise would have made
+  untrue. A line's As read says "when the 1-action version is used".
+
+**Not built.** The word reaches a Maneuver paid from its own row on the Maneuvers tab, and
+Recenter. It does not reach these, which the system pays for in its own code. None carries
+Concentrate today, and the build warns if a `COST` line ever names a trait one of them carries:
+
+- Strikes and Casts, and a row with an attack of its own.
+- Movement by dragging a token.
+- A Reaction, on a row or among the Reaction Talents of the Combat window.
+- Raise a Shield, the visor, a character's Reload, Gain Control and Pass. (An adversary's
+  Reload is a plain row of its sheet, and is raised.)
+- A row whose rule acts when it is used or from a card's button (`MARK`, `PERMIT`,
+  `SUBORDINATE`, `REROLL`, a Reaction's `IMMUNE`), and a Maneuver performed as part of another.
+
+Also not built: `COST` on a Talent, a Maneuver or a custom effect; a cost made cheaper; a
+Maneuver named as the target.
+
+**The Conditions sheet as built** (`node assets/build_all.mjs --conditions`, on the file as
+saved at 16:58 on 2026-11-19): 26 Conditions, 11 rules on 7 rows.
+
+- **Frightened is the one line** `[EFFECT CHECK: -N condition]`, as 0.36.0 allowed. The numbers
+  are the same, and the build's warning about its three lines is gone.
+- **Grabbed's Effect is reworded.**
+- **Heedless's cell is still `N/A`**: paste the cell above.
+- Controlled and Controlling still write a bare X, and the build warns on both.
+
+**In the code.** The kind is `module/rules/kinds/cost.mjs`: its parse, its summary and its
+ceiling, with no hook, as the `ignore` kind has none, and no import that reaches the registry.
+`module/rules/cost.mjs` is everything else, and the one answer to "is this row raised" for the
+charge, the sheets and the build: the reader `costRaise(actor, traits)` with `carriesTrait`,
+`raiseWords` and `raiseReason`; `costRoad` (the road a Maneuver's cost takes), `rowRaise`,
+`raisedCosts`; the build's `costCensus` and `builtInTraitNotes`; and `paidElsewhere`, which
+moved there from `documents/item.mjs`. The raise is added in `SwItem##chargePlan`, at its two
+answers that are a cost of the use, so a row that method never charges is never raised; the
+plan carries `n` (what is paid), `listed` (the version) and `raise`. `##applyCost` answers
+`listed`; `actor.prepare` stores `listed` beside `cost` and takes a `note` for its card;
+`finishPrepared` hands `listed` back, and `cost` as `charged` for the Finish card's glyph. The
+cost picker (`module/apps/cost-picker.mjs`) shows each version with its price and answers the
+version. `SwActor#recenterCost` and `recenter` (`module/documents/actor/position.mjs`) read the
+row's traits, the row handed in or found by `findManeuver` (`module/helpers/content.mjs`, moved
+from `item.mjs`), with `BUILT_IN_TRAITS` (`module/documents/maneuvers.mjs`) standing in only
+when no row can be read. On the sheets (`module/helpers/situation.mjs`): `shownRaise` (the
+charge's answer, and nothing for a row while the tracking setting is off), `raiseOf` on the
+situation, `raiseMark`, the raised costs handed to the pure `maneuverStatus`; `recenterButton`
+(`module/helpers/actor-context.mjs`); the row signature carries the raise. In the build: the
+COST census in `assets/build_foundry.mjs`, its rows in `assets/build_report.py`, and the
+red-cell tool's hints, each told apart from immunity's and from the older `COST(<n>)`
+condition's.
+
+**The review.** Two independent readers of the finished change, before it was called done. One
+read the engine and drove the real `SwItem#use` in Node down every road; the other read the
+grammar, the build, the tests and the documents. Neither found a wrong payment, a double
+payment, or a raised price reaching an `IF: COST(n)` line. Fourteen findings, all low, all
+mended:
+
+- **A fragile import order** (both readers). The kind's file imported the engine, the engine
+  imports the registry, and the registry imports the kind, so importing the kind's file first
+  threw. It loaded only because another module reached the engine first. The reader now lives
+  in `module/rules/cost.mjs`, and the self-test imports each of the two files first, in a
+  process of its own.
+- **A GM's adversary never said why.** Its spend card is never posted, and that card carried
+  the reason. Its Maneuver's own card now carries the line, and its check's card says
+  "(Heedless +1)" beside the cost.
+- **With "Track the six-action round" off, the "+1" promised a cost nothing charges.** A row
+  wears no mark under that setting. Recenter's stays.
+- **The Finish card of a Maneuver Prepared at a raised price printed the row's own cost.** It
+  prints the price it was Prepared at.
+- **`; COST: 2` was told to write `IF: COST(2)` after any tag.** Only `APPLY` and `REMOVE` read
+  that condition, so only they are told so.
+- **Slips that read**: `COST: 1,` and `COST: , 1` (a comma with nothing beside it), and
+  `TRAIT(Concentrate-)`. And `TRAIT(Auditory or Visual)` and `TRAIT(Concentrate, Manipulate)`
+  are told one trait to a line.
+- **The build's census**: a basic row with a use rule was named as not reached when it is; a
+  trait only Activities carry was called a misspelling; a weapon that does not ship was
+  counted; Reload is said to be a character's.
+- **The build report dropped the new misspelt-trait warning**, and three older warnings with it
+  (below).
+- **The red-cell tool's hint for `COST`** took the older `COST(<n>)` condition's messages for
+  the tag's.
+- Smaller: a stored value above six counts as six; a Maneuver named "Constructor" is no
+  built-in and is not paid elsewhere; a style class nothing styled, on the Recenter button; a
+  comment.
+
+**Mended beside it, older than the release.**
+
+- **The build report never showed a warning filed under "Automation cell"** from the two steps
+  that parse cells. The report puts the red-cell analysis in their place, and that lists
+  failures only. So "A Condition counts once on a roll" and "is not read on a Defense yet"
+  (0.36.0) and "N/A and also carries rules" (0.26.1) were never on the Issues sheet. They are
+  filed under "Automation" now. **A warning of those two steps must not be filed under
+  "Automation cell".**
+
+**Stated, not changed.**
+
+- `module/rules/kinds/ignore.mjs` has had the import shape the `cost` kind's file had, since
+  0.15.0, and loads only because the engine is reached before it.
+- The first time an adversary's sheet is drawn in a session it reads the whole Actions pack, to
+  find Recenter's row.
+- A warning of the build's that names a Maneuver could be matched by an earlier row of the
+  report's table, and take that row's advice.
+
+**Checked.**
+
+- `node assets/test_rules.mjs`: 265 checks, six of them for the kind (the line and every slip;
+  each file imported first; one Condition once and two adding; the roads; the build's census
+  and Recenter's kept traits against the shipped row).
+- `node --check` on every module; `node assets/build_all.mjs --check`; the style check (one
+  failure, the em-dash in Dwarf Lore B13 of his uncommitted workbook); the smoke test on the
+  rebuilt app; `node assets/build_all.mjs --conditions` on the sheet as saved.
+- **Live in the test world, a GM tab and a player tab**, Foundry restarted first, the Heedless
+  line given to the open world's registry in memory (no file was written), before the review
+  and again for its mends:
+  - Tess Heedless in an encounter: Seek pays ❷ and its spend card reads "Seek ❷ (Heedless +1)";
+    Well-Read pays ❶ with the reason on its card; Pick Lock is Prepared with two spent and one
+    reserved, its card says why, and Finish rolls it on a card that reads ❸; Brace an Object
+    reserves two.
+  - Recall Knowledge: the picker offers "❶ for ❷" and "❷ for ❸ Prepare". Calm Animal: both are
+    Prepared.
+  - Recenter from the sheet's button, from its row and from the Macro: ❷ each time. With the
+    tracking setting off it still pays ❷, Seek pays nothing and reads ❶, and Recenter's is the
+    one row that keeps its "+1". Outside an encounter nothing is paid.
+  - Seventeen rows wear "+1"; Seek leaves the list with one action left; Feint is unchanged;
+    Search pays nothing; Heedless off, everything is as before.
+  - A probe row with results by cost and Concentrate: the `COST(1)` lines applied at ❶ for ❷,
+    and the `COST(2)` lines after a Finish at ❷ for ❸.
+  - The Bandit Heedless: Seek takes two of its six and its check card reads "❷ ... (Heedless
+    +1)"; Well-Read takes one and its card carries the reason; its sheet shows the marks and
+    Recenter at ❷.
+  - As the player: seventeen marks, Pick Lock Prepared at ❸ for the ❷ version, Finish on a card
+    that reads ❸, and Recenter priced at ❷.
+- **Not driven live**: a request card for a raised Maneuver answered by its target (the
+  reviewer's harness read the stored cost); two Conditions raising one cost (the self-test's);
+  a table with no GM.
+- The test world was left as found but for one "Content synced" card (439 messages): its
+  content is level with these sources, Heedless's row there still `N/A`, Mike's Combat with
+  testpc8 active at round 4, the Bandit Prone as found.
+
+---
+
 ## 0.36.0 (2026-11-19): a bare `CHECK` reaches every roll, `SKILL` is the narrow word, and ten minutes' rest lowers Fatigued by 1
 
 Built from **Player's Handbook v4.25**, which did not move. Mike, of Frightened's three lines:

@@ -77,9 +77,11 @@ const PRESSING = new Set();
  * @param {boolean} [args.prepared]    A Prepared Maneuver, being finished.
  * @param {number|null} [args.paid]    The cost it was Prepared at.
  * @param {boolean} [args.dialog]      False when the roll is to open no window.
+ * @param {string|null} [args.glyph]   What the card's head prints in place of the row's own cost,
+ *                                     when a Condition raised it (0.37.0).
  * @returns {Promise<{pending: true, message: ChatMessage}|null>}
  */
-export async function postCheckRequest({ mode, user, item, token, rolled, line = "", defenses = [], cost = 0, label = "", gate = "none", applies = null, ally = null, prepared = false, paid = null, dialog, traits = null } = {}) {
+export async function postCheckRequest({ mode, user, item, token, rolled, line = "", defenses = [], cost = 0, label = "", gate = "none", applies = null, ally = null, prepared = false, paid = null, dialog, traits = null, glyph = null } = {}) {
   const target = token?.actor ?? null;
   if (!user || !item || !target || !rolled?.slug) return null;
   const userToken = user.tokenOnScene?.() ?? null;
@@ -113,7 +115,7 @@ export async function postCheckRequest({ mode, user, item, token, rolled, line =
     ? `<button type="button" data-sw-action="checkDefend" data-defense="${esc(key)}"><i class="fa-solid fa-dice-d20"></i> ${esc(F("STARWROUGHT.CheckRequest.rollDefense", { defense: defenseLabel(key) }))}</button>`
     : `<button type="button" data-sw-action="checkAnswer" data-defense="${esc(key)}"><i class="fa-solid fa-shield-halved"></i> ${esc(defenseLabel(key))}</button>`).join("");
   const content = `<div class="starwrought action-card sw-check-request" data-request-mode="${record.mode}">
-    <h3><span class="sw-spend-glyph">${esc(item.system?.glyph ?? "")}</span> ${names.maneuver}</h3>
+    <h3><span class="sw-spend-glyph">${esc(glyph || (item.system?.glyph ?? ""))}</span> ${names.maneuver}</h3>
     <p>${F((record.mode === "roll") ? "STARWROUGHT.CheckRequest.asksRoll" : "STARWROUGHT.CheckRequest.asksAnswer", names)}</p>
     <div class="sw-card-buttons sw-check-defenses" data-owner-uuid="${esc(target.uuid)}">${buttons}</div>
     <div class="sw-card-buttons sw-check-withdraw" data-owner-uuid="${esc(user.uuid)}">

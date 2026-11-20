@@ -88,6 +88,11 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
                  line, nothing after it, and on a Condition's row alone for now. Separate traits
                  on a Maneuver are each enough (Calm Animal: Auditory, Visual); one trait written
                  "Auditory or Visual" (Captivate) needs both.
+                 A COST RAISED BY A TRAIT (0.37.0): [EFFECT COST: 1; IF: TRAIT(Concentrate)] on
+                 Heedless. While a creature has the Condition, a Maneuver that carries the trait
+                 costs that many more actions (a cost that reaches three is Prepared). A whole
+                 number from 1 to 6, one trait named by one word, and on a Condition's row alone
+                 for now. It reaches Maneuvers paid from their own row, and Recenter.
     System       Yes for the Conditions the system itself puts on and takes off (Dying, Wounded,
                  Spent, Preparing, the Bind's three, Exposed, Dead): the row holds their text.
     Listed?      Yes prints the row in the reference tables. A sheet without the column lists all.
@@ -525,8 +530,9 @@ ACTIONS WORKBOOKS (actions_maneuvers.xlsx, actions_activities.xlsx, actions_ende
     The Effect is a Condition (a number after one that carries a value) or a name of your own.
     After it, "self" (the default: whoever uses the action) or "target" (the one creature it is
     used on). IF: RESULT(<degree>) is the result of the action's check; with none the line stands
-    whenever the action is used. IF: COST(<n>) is the number of actions it was paid with, for a
-    row that prints a table for each cost. UNTIL: says how long: giver opportunity (until the
+    whenever the action is used. IF: COST(<n>) is the version of the action that was used, by
+    its listed cost (never a price a Condition raised), for a row that prints a table for each
+    cost. UNTIL: says how long: giver opportunity (until the
     user's next Opportunity begins), giver opportunity end, recipient opportunity (through the
     end of the next Opportunity of the creature the Effect is on), recipient opportunity start,
     encounter; with none, until something takes it off. In Foundry an Effect on the user lands

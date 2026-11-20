@@ -208,6 +208,13 @@ registerKind(apply);
 import check from "./check.mjs";
 registerKind(check);
 
+// 0.37.0: Heedless's `COST: 1; IF: TRAIT(Concentrate)` on a Condition's row: what a creature uses
+// costs more actions while it has the Condition. `cost` has no hook point, as `ignore` has none:
+// the places that settle a cost ask `costRaise` in ../cost.mjs, which also says which costs that
+// reaches. The kind's own file imports nothing that reaches this registry (the review of 0.37.0).
+import cost from "./cost.mjs";
+registerKind(cost);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";

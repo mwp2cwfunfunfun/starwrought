@@ -84,6 +84,8 @@ import { splitTraits } from "../foundry/starwrought/module/data/items/weapon-tra
 // The Effects census (0.32.0): pure, and the two tables of Maneuvers the system runs another way.
 import { effectCensus } from "../foundry/starwrought/module/rules/applied.mjs";
 import { BUILT_IN_MANEUVERS, PAID_ELSEWHERE } from "../foundry/starwrought/module/documents/maneuvers.mjs";
+// 0.37.0: what a `COST` line reaches, and what it does not.
+import { costCensus, builtInTraitNotes } from "../foundry/starwrought/module/rules/cost.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "..");
@@ -287,7 +289,7 @@ function freeTalentOf(row, rules, source) {
 /* -------------------------------------------- */
 
 /** What the Automation cells added up to, for the summary line: rules, documents carrying any, kinds used. */
-const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), immuneAsked: new Map(), unread: 0, unreadDocuments: 0, carriers: [] };
+const automationTally = { rules: 0, documents: 0, kinds: new Set(), traitsAsked: new Map(), immuneAsked: new Map(), costAsked: [], unread: 0, unreadDocuments: 0, carriers: [] };
 
 /**
  * An Item's `automation` and `rules` from the cell the converter copied through (0.9.0; rulings
@@ -560,6 +562,8 @@ for (const c of registryConditions ?? []) {
   const ask = (asked, key, name) => (asked.get(key) ?? asked.set(key, []).get(key)).push(`${source} (${name ?? key})`);
   for (const rule of Array.isArray(c.rules) ? c.rules : []) {
     if ((rule?.kind === "prevent") && (rule.effect === "trait") && rule.trait) ask(automationTally.immuneAsked, rule.trait, rule.name);
+    // A `COST` line (0.37.0) names the trait of what costs more; its census is its own (below).
+    if ((rule?.kind === "cost") && rule.trait) automationTally.costAsked.push({ trait: rule.trait, name: rule.name ?? rule.trait, source });
     for (const w of Array.isArray(rule?.when) ? rule.when : (rule?.when ? [rule.when] : [])) if (w?.trait) ask(automationTally.traitsAsked, w.trait, w.name);
   }
 }
@@ -2067,6 +2071,26 @@ if (automationTally.traitsAsked.size || automationTally.immuneAsked.size) {
   };
   census(automationTally.traitsAsked, carriedFirst);
   census(automationTally.immuneAsked, carriedAny);
+}
+
+// The COST census (0.37.0): a `COST` line's trait that no shipping Maneuver carries outright (a
+// misspelling), and one carried by something the raise does not reach: a Maneuver the system pays
+// for in its own code, a Reaction, a Talent, a weapon (module/rules/cost.mjs, `costRoad`). And
+// whether the traits kept for Recenter, for when its row cannot be read, still match its row.
+{
+  const others = [];
+  // Enabled rows only, as the Talents below: a weapon that does not ship carries nothing in play.
+  for (const weapon of equipment?.weapons ?? []) {
+    if (weapon.enabled !== false) others.push({ name: weapon.name ?? "", what: "a weapon", traits: splitTraits(weapon.traits) });
+  }
+  for (const tree of Object.values(trees)) {
+    for (const node of tree.nodes ?? []) {
+      if ((node.enabled !== false) && (node.traits ?? []).length) others.push({ name: node.name ?? "", what: "a Talent", traits: node.traits });
+    }
+  }
+  const shipping = packs.actions ?? [];
+  for (const warning of costCensus({ asked: automationTally.costAsked, rows: shipping, others })) console.warn(`  WARNING: ${warning}`);
+  for (const warning of builtInTraitNotes(shipping)) console.warn(`  WARNING: ${warning}`);
 }
 
 // The Effects census (0.32.0): a named Effect a line reads that no Maneuver applies, and an APPLY

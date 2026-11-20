@@ -31,6 +31,8 @@ import { hasPermit } from "../documents/cards/opportunity.mjs";
 import { ENGINE_REQUIRES } from "../documents/maneuvers.mjs";
 import { freeHands, requiresFor, maneuverStatus } from "../rules/requires.mjs";
 import { effectsOn, conditionIdsFor } from "../rules/effect-list.mjs";
+// 0.37.0: what a Condition adds to a row's cost (Heedless), the one function the charge asks too.
+import { rowRaise, raisedCosts, raiseReason } from "../rules/cost.mjs";
 import { setting } from "./settings.mjs";
 
 /** The Bind states a character may be in; anything else is no Bind. */
@@ -146,6 +148,8 @@ export function situationOf(actor) {
       full: w.system.isFull !== false
     })),
     encounter,
+    // What a Condition adds to a row's cost (0.37.0), asked for each row as it is judged.
+    raiseOf: (item, owned) => shownRaise(actor, item, { owned }),
     tracking: !!setting("trackActions", true),
     actionsLeft: Math.max(0, Number(actor.system?.actions?.value) || 0),
     isTurn: !!actor.isTurn,
@@ -164,9 +168,13 @@ export function situationOf(actor) {
  * Trigger is by its own text something done when the Trigger comes, so the tab does not hide it for
  * want of the Opportunity.
  * @param {Item} item  An action Item, owned or straight from the compendium.
+ * @param {object} [options]
+ * @param {number} [options.extra]  What a Condition adds to each cost the row may be paid at
+ *        (0.37.0; `rowRaise`): the "cannot pay" test compares the raised costs. A Reaction half's
+ *        own cost is never raised (the Reaction's road is not reached).
  * @returns {{slug: string, requires: object[], mode: string, reaction: boolean, costs: number[], reactionCost: number|null}}
  */
-export function maneuverRow(item) {
+export function maneuverRow(item, { extra = 0 } = {}) {
   const sys = item.system ?? {};
   const slug = SW.slugify(SW.plainName(item.name));
   const traits = (sys.traits ?? []).map(t => String(t).trim().toLowerCase());
@@ -185,21 +193,68 @@ export function maneuverRow(item) {
     requires,
     mode,
     reaction: !!sys.reaction || traits.includes("reaction") || !!String(sys.trigger ?? "").trim(),
-    costs: SW.actionCostOptions(sys),
+    costs: raisedCosts(SW.actionCostOptions(sys), extra),
     reactionCost: (sys.reaction && (own !== undefined) && (own !== null) && (own !== "")) ? SW.actionCostValue(own) : null
   };
+}
+
+/**
+ * What a Condition adds to a row's cost AS A SHEET SHOWS IT (0.37.0): `rowRaise`, the charge's own
+ * answer, less the one case where the charge will never ask. With "Track the six-action round"
+ * off a Maneuver's row pays nothing, so it is not raised and wears no mark (the review of 0.37.0:
+ * the mark promised a cost the table had switched off). Recenter pays whatever the setting says,
+ * so its raise stands (ruling 382). The one function the Maneuvers tab and the adversary sheet ask.
+ * @param {object|null} actor
+ * @param {object} item
+ * @param {object} [options]
+ * @param {boolean} [options.owned]
+ * @param {boolean} [options.tracking]  The `trackActions` setting; read here when not given.
+ * @returns {{extra: number, by: object[], road: string}}
+ */
+export function shownRaise(actor, item, { owned = !!item?.actor, tracking = !!setting("trackActions", true) } = {}) {
+  const raise = rowRaise(actor, item, { owned });
+  if (!tracking && (raise.road === "row")) return { extra: 0, by: [], road: raise.road };
+  return raise;
+}
+
+/**
+ * The mark a row wears while a Condition raises its cost (0.37.0): "+1", and on hover why and what
+ * it will cost. Shown WHENEVER THE CONDITION IS HELD AND THE COST WOULD BE CHARGED (`shownRaise`),
+ * in an encounter or out of one, so the mark does not depend on the Combat and never goes stale;
+ * the tooltip says the cost is an encounter's.
+ * @param {{extra: number, by: object[]}} raise  `rowRaise`'s answer.
+ * @param {number[]} options  The costs the row prints (`actionCostOptions`).
+ * @returns {{n: number, tip: string}|null}
+ */
+export function raiseMark(raise, options) {
+  const extra = Number(raise?.extra) || 0;
+  if (extra <= 0) return null;
+  const glyph = n => SW.ACTION_GLYPHS[n] ?? String(n);
+  const raised = raisedCosts(options, extra);
+  const pays = !raised.length ? ""
+    : (raised.length <= 2) ? raised.map(glyph).join(` ${game.i18n.localize("STARWROUGHT.Cost.or")} `)
+      : `${glyph(raised[0])} ${game.i18n.localize("STARWROUGHT.Cost.to")} ${glyph(raised.at(-1))}`;
+  return { n: extra, tip: game.i18n.format("STARWROUGHT.Cost.raisedTip", { reason: raiseReason(raise), pays }) };
 }
 
 /**
  * Does this Maneuver apply now for this character, and if not, why not, in the viewer's language?
  * @param {Item} item
  * @param {object} situation  `situationOf(actor)`, read once for the whole tab.
- * @returns {{slug: string, applicable: boolean, reasons: string[]}}
+ * @param {object} [options]
+ * @param {boolean} [options.owned]  Is the row an Item on the character (0.37.0)? A Basic row is
+ *        charged as a row even when it carries a use rule (rules/cost.mjs, `costRoad`).
+ * @returns {{slug: string, applicable: boolean, reasons: string[], raise: {n: number, tip: string}|null}}
  */
-export function statusOf(item, situation) {
-  const row = maneuverRow(item);
+export function statusOf(item, situation, { owned = !!item?.actor } = {}) {
+  // What a Condition adds to this row's cost (0.37.0): the same answer the charge will get.
+  const raise = (typeof situation?.raiseOf === "function") ? situation.raiseOf(item, owned) : { extra: 0, by: [] };
+  const row = maneuverRow(item, { extra: raise.extra });
   const status = maneuverStatus(row, situation);
-  return { slug: row.slug, applicable: status.applicable, reasons: status.reasons.map(reasonText) };
+  return {
+    slug: row.slug, applicable: status.applicable, reasons: status.reasons.map(reasonText),
+    raise: raiseMark(raise, SW.actionCostOptions(item.system ?? {}))
+  };
 }
 
 /** One reason as a line of the row's tooltip. */
