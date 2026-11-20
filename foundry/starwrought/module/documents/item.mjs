@@ -950,7 +950,9 @@ export class SwItem extends Item {
         subtitle: request.line ?? "",
         applies: request.applies ? { applies: request.applies } : {},
         ally: request.ally ? { ally: request.ally } : {},
-        config: { beforeRoll, ...((request.dialog === false) ? { dialog: false } : {}) },
+        // The moment the Maneuver was used (0.39.0, ruling 400): the request kept it, so what the
+        // roll gives or puts on for some rounds is counted from the use, not from the answer.
+        config: { beforeRoll, ...((request.dialog === false) ? { dialog: false } : {}), ...(request.moment ? { moment: request.moment } : {}) },
         extra: { checkRequest: { from: requestId } }
       });
       // A Prepared Maneuver is finished by its roll, as Finish would have finished it.

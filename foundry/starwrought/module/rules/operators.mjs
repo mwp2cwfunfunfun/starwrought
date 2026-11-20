@@ -103,11 +103,93 @@ export function readBonusType(word) {
 }
 
 /** The shapes a window is written in, for messages. */
-const UNTIL_SHAPES = "`giver opportunity`, `recipient opportunity <N>` or `encounter`";
+const UNTIL_SHAPES = "`giver opportunity`, `recipient opportunity <N>`, `<N> rounds` or `encounter`";
 /** The same where a last word may name the edge (an APPLY line's window, 0.32.0). */
-const UNTIL_EDGE_SHAPES = "`giver opportunity`, `giver opportunity end`, `recipient opportunity`, `recipient opportunity start` or `encounter`";
+const UNTIL_EDGE_SHAPES = "`giver opportunity`, `giver opportunity end`, `recipient opportunity`, `recipient opportunity start`, `<N> rounds` or `encounter`";
 /** The last word of a window with edges, to the edge it names. */
 const UNTIL_EDGES = Object.freeze({ end: "end", start: "begin", begin: "begin" });
+/** The most rounds a duration may count, and the most a Condition's value may drop at once (0.39.0). */
+export const UNTIL_ROUNDS_MAX = 99;
+export const UNTIL_DROP_MAX = 9;
+/** A minus as a cell may hold it: the hyphen, or the minus sign a word processor makes of it. */
+const MINUS = new RegExp(`^[-${String.fromCharCode(0x2212)}]`);
+/** What is told to a line that names a round's start or end (0.39.0; rulings 393 and 394). */
+const ROUNDS_FROM_WHEN = "a round is counted from when the effect goes on, never from the round's start or end: write how many rounds it lasts, as in `1 round`";
+/**
+ * Where the drop is written, for a line that is no Condition's row. The tail is for the natural
+ * next try after APPLY (the review of 0.39.0): `APPLY: frightened 2; UNTIL: 2 rounds` is refused
+ * too, since a Condition with a value moves by its own row.
+ */
+const DROP_ELSEWHERE = "`each round -1` lowers a Condition's own value as rounds pass, and is written on that Condition's row of the Conditions workbook; here write how long it lasts, as in `2 rounds` (beside a Condition with a value APPLY takes no UNTIL at all: that Condition moves by its own row)";
+/**
+ * What a Condition's own row is told for anything but its one shape (the review of 0.39.0: the
+ * general messages named four windows that row then refuses, and never the one it reads).
+ */
+const dropShape = written => `on a Condition's row UNTIL says how its value drops as rounds pass: write \`each round -1\` (or \`each 2 rounds -1\`), not "${written}"`;
+
+/**
+ * A window counted in ROUNDS (0.39.0; Mike, 2026-11-19: "durations like opportunities and rounds
+ * are always counted when it was applied"). Two shapes, or null when the words are not about
+ * rounds at all:
+ *
+ *   <N> round(s)                 it lasts N rounds from when it goes on        { who: "round", n }
+ *   each [<N>] round(s) -<k>     a Condition's own value drops by k for every N rounds that pass
+ *                                { who: "round", n, step: k, each: true }; read only with `drops`
+ *
+ * A leading `for` is let through (`for 2 rounds` is how the book says it). Every near miss is told
+ * what to write, the retired idea of a round's end first.
+ * @param {string[]} words  The window's words, lower-cased.
+ * @param {{drops?: boolean}} options
+ * @returns {object|null}
+ */
+function readRounds(words, { drops = false } = {}) {
+  const isCount = w => /^\d+$/.test(w ?? "");
+  const isRound = w => /^rounds?$/.test(w ?? "");
+  if (!words.some(isRound)) return null;
+  const written = words.join(" ");
+  // The filler the book's own sentence carries is let through: "for 2 rounds", "for the next 2
+  // rounds", "the next 2 rounds". Only before a count: "next round" names a round, not a length.
+  let all = [...words];
+  if (all[0] === "for") all = all.slice(1);
+  if ((all[0] === "the") && (all[1] === "next") && isCount(all[2])) all = all.slice(2);
+  else if ((all[0] === "next") && isCount(all[1])) all = all.slice(1);
+  const drop = w => (MINUS.test(w ?? "") && /^\d+$/.test(w.slice(1))) ? Number(w.slice(1)) : null;
+  const count = (w, example = "2 rounds") => {
+    const n = Number(w);
+    if (Number.isInteger(n) && (n >= 1) && (n <= UNTIL_ROUNDS_MAX)) return n;
+    throw new RuleSyntaxError(`"${w}" is not a count of rounds: write a whole number from 1 to ${UNTIL_ROUNDS_MAX}, as in \`${example}\``);
+  };
+  // The retired idea first: a round's start or end is no moment a duration is counted to. On a
+  // Condition's row the answer leads with the one shape that row reads.
+  if (all.some(w => ["end", "ends", "start", "starts", "beginning", "begin", "begins", "next"].includes(w))) {
+    throw new RuleSyntaxError(drops
+      ? `"${written}": on a Condition's row write \`each round -1\`: its value drops for each round that passes since it went on, never at a round's start or end`
+      : `"${written}": ${ROUNDS_FROM_WHEN}`);
+  }
+  // `each [<N>] round(s) -<k>`: a Condition's own value, dropping.
+  if ((all[0] === "each") || (all[0] === "every")) {
+    const rest = all.slice(1);
+    const n = isCount(rest[0]) ? count(rest.shift(), "each 2 rounds -1") : 1;
+    if (!isRound(rest[0])) throw new RuleSyntaxError(`"${written}": a value that drops is written \`each round -1\` or \`each 2 rounds -1\``);
+    if (rest.length === 1) throw new RuleSyntaxError(`"${written}" does not say how much it drops: write \`each round -1\``);
+    const k = (rest.length === 2) ? drop(rest[1]) : null;
+    if ((k === null) || (k < 1) || (k > UNTIL_DROP_MAX)) {
+      throw new RuleSyntaxError(`"${written}": the drop is a minus and a whole number from 1 to ${UNTIL_DROP_MAX}, as in \`each round -1\``);
+    }
+    if (!drops) throw new RuleSyntaxError(DROP_ELSEWHERE);
+    return { who: "round", n, step: k, each: true };
+  }
+  // The drop written the other way round, or after a plain count: told the one shape.
+  if (all.some(w => drop(w) !== null)) {
+    throw new RuleSyntaxError(drops
+      ? `"${written}": a value that drops is written \`each round -1\` (or \`each 2 rounds -1\`)`
+      : DROP_ELSEWHERE);
+  }
+  if ((all.length === 2) && isRound(all[1]) && isCount(all[0])) return { who: "round", n: count(all[0]) };
+  if (drops) throw new RuleSyntaxError(dropShape(written));
+  if ((all.length === 1) && isRound(all[0])) throw new RuleSyntaxError(`"${written}" does not say how many: write \`1 round\` or \`2 rounds\``);
+  throw new RuleSyntaxError(`a duration in rounds is written \`<N> rounds\`, as in \`2 rounds\`, not "${written}"`);
+}
 
 /**
  * A window (0.22.0): how long a result a Maneuver GIVES stays pending on its recipient. Written
@@ -131,14 +213,33 @@ const UNTIL_EDGES = Object.freeze({ end: "end", start: "begin", begin: "begin" }
  * The edge is stored only when written (`edge: "begin" | "end"`), so a window with none reads as
  * it always did. Opt-in because GIVE and ALTER share this reader and what they store and settle
  * (./given.mjs) keeps no edge: read there, the word would be accepted and lost.
+ *
+ * A WINDOW IN ROUNDS (0.39.0) is read wherever a window is: `<N> rounds`, counted from when the
+ * thing goes on (./clock.mjs says when a round has passed). WITH `drops` (a Condition's own row
+ * alone asks for it) the words may instead say how that Condition's value falls: `each round -1`.
  * @param {string} text
- * @param {{edges?: boolean}} [options]
- * @returns {{who: "giver"|"recipient"|"encounter", n: number, edge?: "begin"|"end"}}
+ * @param {{edges?: boolean, drops?: boolean}} [options]
+ * @returns {{who: "giver"|"recipient"|"encounter"|"round", n: number, edge?: "begin"|"end", step?: number, each?: true}}
  */
-export function readUntil(text, { edges = false } = {}) {
+export function readUntil(text, { edges = false, drops = false } = {}) {
   const words = String(text ?? "").trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const shapes = edges ? UNTIL_EDGE_SHAPES : UNTIL_SHAPES;
   if ((words.length === 1) && (words[0] === "encounter")) return { who: "encounter", n: 0 };
+  const rounds = readRounds(words, { drops });
+  if (rounds) return rounds;
+  if (!drops) return readOpportunities(words, text, edges);
+  // A CONDITION'S ROW: a window of Opportunities that reads is handed on, and the kind says such
+  // a window is not read on a row yet (ruling 402). Anything that does not read is told the one
+  // shape the row does read, never the four it refuses (the review of 0.39.0).
+  try {
+    return readOpportunities(words, text, false);
+  } catch {
+    throw new RuleSyntaxError(dropShape(String(text ?? "").trim()));
+  }
+}
+
+/** A window of Opportunities, the reading `readUntil` has had since 0.22.0 (edges since 0.32.0). */
+function readOpportunities(words, text, edges) {
+  const shapes = edges ? UNTIL_EDGE_SHAPES : UNTIL_SHAPES;
   if (["giver", "recipient"].includes(words[0]) && (words[1] === "opportunity")) {
     const rest = words.slice(2);
     let edge = null;
@@ -179,6 +280,17 @@ export function untilWords(until, { giver = "the giver", recipient = "the recipi
   // "your" for a card that speaks to its reader, "their" for a creature the sentence has already
   // named (0.32.0); any other name takes 's.
   const possessive = name => ((name === "you") ? "your" : ((name === "they") ? "their" : `${name}'s`));
+  // 0.39.0: a window in rounds, and a Condition's value dropping as rounds pass.
+  if (until?.who === "round") {
+    const n = Math.max(1, Number(until.n) || 1);
+    // A sentence of its own, since a summary sets it after the line's conditions and it holds
+    // whatever they say (the review of 0.39.0).
+    if (until.each) {
+      const step = Math.max(1, Number(until.step) || 1);
+      return n === 1 ? `its value drops by ${step} each round` : `its value drops by ${step} every ${n} rounds`;
+    }
+    return n === 1 ? "for 1 round" : `for ${n} rounds`;
+  }
   if (!until || (until.who === "giver") || (until.who === "recipient")) {
     const whose = possessive((until?.who === "recipient") ? recipient : giver);
     const n = Math.max(1, Number(until?.n) || 1);

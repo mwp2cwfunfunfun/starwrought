@@ -66,7 +66,7 @@
  */
 
 import { RuleSyntaxError, CONDITION_ROW } from "../syntax.mjs";
-import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, effectHolds, readsOtherEffects, refuseOutcome, summarizeOperators, titled, readTargetName, readBonusType } from "../operators.mjs";
+import { rankMeets, whoMatches, compare, hasTrait, needsMoment, againstHolds, markedHolds, effectHolds, readsOtherEffects, refuseOutcome, summarizeOperators, titled, readTargetName, readBonusType, untilWords } from "../operators.mjs";
 import { effectsOn } from "../effect-list.mjs";
 import { slugify, plainName, isLoreSlug, DEFENSES, flagKey, ruleCarrierKey } from "../../config.mjs";
 
@@ -241,6 +241,21 @@ export default {
         if (e.scale && (context.takes !== undefined) && (String(context.takes ?? "").trim().toLowerCase() !== "n")) {
           throw new RuleSyntaxError(`\`${e.value < 0 ? "-" : ""}N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number`);
         }
+        // 0.39.0 (ruling 395): `UNTIL: each round -1` says how the Condition's own value drops as
+        // rounds pass. It is the one window a Condition's row reads: how long the Condition itself
+        // lasts is not read here yet (ruling 402), and a value needs a Condition that takes one.
+        if (e.ops.until) {
+          if (!e.ops.until.each) {
+            throw new RuleSyntaxError(`${TAG} on a Condition's row reads \`UNTIL: each round -1\`, which lowers the Condition's own value as rounds pass; how long the Condition itself lasts (${untilWords(e.ops.until)}) is not read on its row yet`);
+          }
+          if ((context.takes !== undefined) && (String(context.takes ?? "").trim().toLowerCase() !== "n")) {
+            throw new RuleSyntaxError("`UNTIL: each round -1` lowers a Condition's own value, and this Condition takes none: put N in the row's Takes cell");
+          }
+        }
+      } else if (e.ops.until) {
+        // The grammar's gate refuses it before the kind is asked; said here too, so a caller that
+        // hands this kind its ops another way never stores a window nothing reads.
+        throw new RuleSyntaxError(`${TAG} does not take UNTIL`);
       }
       // THE RETURN IS A FIXED LIST OF FIELDS: a component this kind reads must be copied here, or
       // it is dropped in silence and the bonus applies always. `has` rides only when the line asks
@@ -250,7 +265,10 @@ export default {
         claim: e.ops.claim, marked: e.ops.marked, ...(e.ops.has ? { has: e.ops.has } : {}),
         // `scale: "N"` (0.33.0): `value` is the sign, and the hook multiplies it by the value of
         // the Condition whose row this is. Copied only when set, as `has` is.
-        ...(e.scale ? { scale: e.scale } : {})
+        ...(e.scale ? { scale: e.scale } : {}),
+        // `until` (0.39.0): on a Condition's row, how its own value drops as rounds pass
+        // (`{ who: "round", n, step, each: true }`; ../clock.mjs, `fadeOf`). Copied only when set.
+        ...(e.ops.until ? { until: e.ops.until } : {})
       };
     }
     // A bonus is an effect: a feature block names no bonus, and the 0.13.0 form is refused by the
@@ -268,7 +286,10 @@ export default {
     // A scope is named as it is known NOW, whatever name the rule was stored with: a line read
     // before 0.36.0 says "to Skill checks", which is what it does (it was stored "Checks").
     const target = ((rule?.to?.type === "scope") ? SCOPES[rule.to.slug]?.name : null) ?? rule?.to?.name ?? "";
-    return `${shown} ${titled(rule?.type)} ${word} to ${target}${tail ? `, ${tail}` : ""}`;
+    // A Condition's own value dropping as rounds pass (0.39.0): "...; its value drops by 1 each
+    // round". After a semicolon, so it is not read as one more condition of the line.
+    const fades = rule?.until?.each ? `; ${untilWords(rule.until)}` : "";
+    return `${shown} ${titled(rule?.type)} ${word} to ${target}${tail ? `, ${tail}` : ""}${fades}`;
   },
 
   hooks: {

@@ -1,13 +1,43 @@
 [
   {
-    "id": "0.38.0-grabbed-cell",
+    "id": "0.39.0-frightened-cell",
     "since": "2026-11-19",
-    "status": "decided",
+    "status": "open",
     "category": "Data",
-    "where": "data/conditions.xlsx, the Grabbed row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.38.0)",
-    "question": "Since 0.38.0 a Condition's row says which Defense its holder cannot use: [EFFECT CANNOT: evade]. Through 0.37.0 the system's own code made Evade unusable while Grabbed or Restrained. A sheet in which no such line reaches Grabbed or Restrained has lost that rule, and the Conditions build warns of it.",
-    "recommendation": "Type [EFFECT CANNOT: evade] in the Grabbed row's Automation cell in place of the N/A (Restrained needs nothing: it counts as Grabbed), double-click sync_conditions.cmd, then run Sync content in the open world. Do this before a world is played on 0.38.0. Its Notes cell can then read: Off-Guard comes through Includes. Evade is taken away by this row's CANNOT line; \"can't Move or Step\" is the table's.",
-    "decidedBy": "Mike, 2026-11-19: the line is on the Grabbed row as saved at 20:11 (ruling 386), built with 0.38.0. Delete this row at the next build. (The row's Notes cell still says the system marks Evade unavailable; nothing reads it.)"
+    "where": "data/conditions.xlsx, the Frightened row's Automation and Effect cells; printed in foundry/starwrought/CHANGELOG.md (0.39.0)",
+    "question": "Since 0.39.0 a Condition's row can say its value drops as rounds pass. Frightened's row does not say it yet, so Frightened still does not drop by itself.",
+    "recommendation": "Type [EFFECT CHECK: -N condition; UNTIL: each round -1] in the Frightened row's Automation cell, and reword its Effect: \"You suffer a -N condition penalty to all checks. Reduce N by 1 for each round that passes.\" Then double-click sync_conditions.cmd and run Sync content in the open world. The row's Notes cell can lose \"It does not yet drop by 1 at the end of each round: lower it by hand.\"",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.39.0-claudes-readings",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.39.0, rulings 397 to 402",
+    "question": "Six readings of Claude's on durations in rounds: (397) if the fighter a duration is counted by is out of the fight, the next fighter in the order stands in, and with nobody the count falls at the round's end; (398) a Condition has one clock, which a raise restarts, as do switching it off and on and leaving the tracker and coming back, while lowering it by hand does not; (399) only a fighter in a running encounter is counted; (400) rounds are counted from the Maneuver's use, not from a late press of its card's button; (401) a change is said to whoever saw the thing go on; (402) how long a Condition itself lasts is not read on its row yet.",
+    "recommendation": "Leave them. The two to know: 397 (when the stand-in is the first fighter, the count falls as the next round opens, up to a circuit early; the other reading waits for that round's end, which is later by more) and 399 (a Frightened creature outside an encounter keeps its value until a hand lowers it).",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.39.0-quiet-changes",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.39.0, Worth knowing and Not built",
+    "question": "Your rule: any time a Condition or an Effect changes, chat shows it. 0.39.0 says every change the clock makes. Still silent: a raised shield coming down as an Opportunity begins; the \"Aid from Wren (used)\" marker lapsing; a Condition toggled by hand on a token; a death (a pop-up only).",
+    "recommendation": "The last two are the next release, as you chose. For the first two say yes or no: a shield card would print at every Opportunity of every shield user, and the marker's at every Opportunity an Aid was used in. Claude would leave both quiet.",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.39.0-slowed",
+    "since": "2026-11-19",
+    "status": "open",
+    "category": "Rules decision",
+    "where": "data/conditions.xlsx, the Slowed and Stunned rows",
+    "question": "Slowed says \"Reduce N by 1 at the end of each round\" and has no Automation line to carry an UNTIL (its lost actions are in the system's code), so it cannot say its drop. You said you will reword \"end of the round\" as \"for # round(s)\". By its present words Slowed 1 put on in the middle of a round would be gone before it ever took an action.",
+    "recommendation": "Next word: give Slowed a line for its lost actions, something like [EFFECT ACTIONS: -N; UNTIL: each round -1], so the row is the word for both. Decide with it whether Slowed drops before or after it takes its actions. Tell Claude when the row's text is settled and it will be planned.",
+    "decidedBy": ""
   },
   {
     "id": "0.38.0-claudes-readings",

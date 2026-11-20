@@ -27,7 +27,7 @@
  */
 
 import { RuleSyntaxError } from "./syntax.mjs";
-import { EFFECT_TAGS } from "./effects.mjs";
+import { EFFECT_TAGS, COMPONENTS, componentAsBlock } from "./effects.mjs";
 
 /** The keywords a block may begin with, each to the kind that reads it. */
 export const FEATURE_KEYWORDS = Object.freeze({
@@ -142,6 +142,9 @@ function readBlock(inner) {
     const rest = inner.slice(words[0].length).trim();
     throw new RuleSyntaxError(`"${words[0]}" is an effect tag, and an effect goes in an EFFECT block with a colon after the tag: write \`[EFFECT ${words[0].toUpperCase()}: ${rest}]\``);
   }
+  // A COMPONENT written as a block of its own (`[UNTIL each round -1]`, the review of 0.39.0).
+  const component = (tag || keyword).toUpperCase();
+  if (COMPONENTS.includes(component) && !Object.hasOwn(FEATURE_KEYWORDS, component.toLowerCase())) throw new RuleSyntaxError(componentAsBlock(component));
   throw new RuleSyntaxError(`"${words[0]}" is not a feature keyword: write ${FEATURE_KEYWORD_LIST.join(", ")}, or \`[<Constellation> trained]\`; an effect goes in \`[EFFECT <tag>: ...]\``);
 }
 

@@ -36,6 +36,8 @@
 
 import { untilWords, untilEdge, DEGREE_NAMES } from "./operators.mjs";
 import { settle } from "./given.mjs";
+// 0.39.0: the stamp a window counted in rounds is counted from (./clock.mjs, pure).
+import { stampOf } from "./clock.mjs";
 
 /** The two things a line does, by its tag. */
 export const APPLY_OPS = Object.freeze(["apply", "remove"]);
@@ -83,13 +85,26 @@ export function needsCost(lines) {
  * The window a line's `UNTIL` becomes on the Effect, as it is applied in an encounter. Null for a
  * line with none (the Effect lasts until removed). A window whose Opportunities cannot be counted
  * (its owner is no fighter in this Combat) lasts the encounter instead, as a pending result's does.
+ *
+ * A window in ROUNDS (0.39.0; ./clock.mjs) is counted from `moment`, where in the fight the
+ * Maneuver was used: whose Opportunity was running, that fighter's Initiative and the round. It
+ * stores that stamp and `n` under keys of its own and is never written while it runs.
  * @param {{who: string, n: number, edge?: string}|null} until
- * @param {{giverCombatant?: string|null, recipientCombatant?: string|null}} [who]
+ * @param {{giverCombatant?: string|null, recipientCombatant?: string|null, moment?: {anchor?: string|null, init?: number|null, round?: number}|null}} [who]
  * @returns {{who: string, edge: string|null, combatant: string|null, n: number, begun: number}|null}
  */
-export function appliedWindow(until, { giverCombatant = null, recipientCombatant = null } = {}) {
+export function appliedWindow(until, { giverCombatant = null, recipientCombatant = null, moment = null } = {}) {
   if (!until) return null;
   const whole = { who: "encounter", edge: null, combatant: null, n: 0, begun: 0 };
+  if (until.who === "round") {
+    if (!moment) return whole;
+    const rounds = Number(until.n);
+    const stamp = stampOf({ combat: "-", anchor: moment.anchor, init: moment.init, round: moment.round });
+    return {
+      who: "round", edge: null, combatant: null, n: (Number.isInteger(rounds) && (rounds >= 1)) ? rounds : 1, begun: 0,
+      anchor: stamp.anchor, init: stamp.init, since: stamp.since
+    };
+  }
   if ((until.who !== "giver") && (until.who !== "recipient")) return whole;
   const combatant = (until.who === "giver") ? giverCombatant : recipientCombatant;
   if (!combatant) return whole;
@@ -140,7 +155,9 @@ export function isAppliedRecord(record) {
 export function sameApplication(a, b) {
   if (!isAppliedRecord(a) || !isAppliedRecord(b)) return false;
   if ((a.slug !== b.slug) || ((a.from ?? null) !== (b.from ?? null)) || ((a.by ?? "") !== (b.by ?? ""))) return false;
-  const shape = u => (u ? [u.who ?? null, u.edge ?? null, u.combatant ?? null, Number(u.n) || 0] : null);
+  // The stamp of a window in rounds is part of what it is (0.39.0): two uses of one Maneuver in
+  // different rounds are two applications, though every other key is the same.
+  const shape = u => (u ? [u.who ?? null, u.edge ?? null, u.combatant ?? null, Number(u.n) || 0, u.anchor ?? null, u.since ?? null] : null);
   return JSON.stringify(shape(a.until)) === JSON.stringify(shape(b.until));
 }
 
@@ -148,7 +165,7 @@ export function sameApplication(a, b) {
  * What one turn change does to an applied Effect's window: `"keep"`, `"expire"` or `{ begun }`,
  * as `settle` answers for a pending result (./given.mjs).
  * @param {object} record
- * @param {{combat?: string|null, ended?: string|null, began?: string|null}} change
+ * @param {{combat?: string|null, ended?: string|null, began?: string|null, round?: number|null, roundEnded?: number|null, order?: object[]}} change
  */
 export function settleApplied(record, change = {}) {
   if (!isAppliedRecord(record)) return "keep";

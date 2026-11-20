@@ -34,7 +34,7 @@
  * the registry.
  */
 
-import { RuleSyntaxError, CONDITION_ROW } from "./syntax.mjs";
+import { RuleSyntaxError, CONDITION_ROW, CONDITION_ROW_TAGS } from "./syntax.mjs";
 import {
   emptyOps, splitOperands, readRank, readRange, readWho, readDegree, readAgainst, splitComparison, traitKey,
   WHO_FOR, WHO_WHILE, titled, readUntil, readTargetName, WORD_CHAR
@@ -78,10 +78,34 @@ export const EFFECT_TAGS = Object.freeze({
 export const MODIFIER_TAGS = Object.freeze(["check", "skill", "atk", "def", "init", "speed", "give"]);
 
 /**
- * The component words after the tag. `UNTIL` is read on a GIVE line alone and `VALUE` on an ALTER
- * line alone (0.22.0); every other tag refuses each by name.
+ * The tags whose line, ON A CONDITION'S ROW, may carry `UNTIL: each round -1` (0.39.0; ruling 395):
+ * the modifier tags a Condition's row reads. The drop is the Condition's own value falling as
+ * rounds pass, written on the line that reads that value.
+ */
+const CONDITION_DROP_TAGS = Object.freeze(["check", "skill", "atk", "def", "init"]);
+
+/**
+ * The component words after the tag. `UNTIL` is read after GIVE (0.22.0) and APPLY (0.32.0), and
+ * on a Condition's own row after a modifier tag (0.39.0); `VALUE` after ALTER alone. Every other
+ * tag refuses each by name.
  */
 export const COMPONENTS = Object.freeze(["IF", "IFT", "FOR", "LIMIT", "UNTIL", "VALUE"]);
+
+/**
+ * What a COMPONENT is told when it is written as a line of its own, in a block or inside EFFECT
+ * (`[UNTIL each round -1]`, `[EFFECT UNTIL: each round -1]`; the review of 0.39.0, where the
+ * answers were the list of feature keywords and the list of tags). `UNTIL` is the one a
+ * Condition's row with no modifier line reaches for (Slowed), so it is also told that such a row
+ * cannot say its drop yet.
+ * @param {string} word  The component, in capitals.
+ * @returns {string}
+ */
+export function componentAsBlock(word) {
+  if (word === "UNTIL") {
+    return "UNTIL is a component, not a line of its own: it follows an effect after a semicolon, as in `[EFFECT APPLY: Taking Cover; UNTIL: 2 rounds]` or, on a Condition's row, `[EFFECT CHECK: -N condition; UNTIL: each round -1]`. A row with no such line to carry it cannot say how its value drops yet";
+  }
+  return `${word} is a component, not a line of its own: it follows an effect after a semicolon, as in \`[EFFECT CHECK: 1 condition, aid; IF: RANK(Origin >= trained)]\``;
+}
 
 /** The tags each of the two 0.22.0 components may follow (`UNTIL` after `APPLY` too since 0.32.0). */
 const COMPONENT_TAG = Object.freeze({ UNTIL: ["give", "apply"], VALUE: ["alter"] });
@@ -200,22 +224,40 @@ export function splitComponents(line) {
 }
 
 /**
- * One component after the tag into `ops`: `IF: ...`, `IFT: ...`, `FOR: ...`, `LIMIT: ...`, and
- * (0.22.0) `UNTIL: ...` after GIVE and `VALUE: ...` after ALTER, each refused by name after any
- * other tag, here rather than in the kinds because `bonus` reads its ops without a refusal list.
+ * One component after the tag into `ops`: `IF: ...`, `IFT: ...`, `FOR: ...`, `LIMIT: ...`,
+ * `UNTIL: ...` (after GIVE and APPLY, and on a Condition's row after a modifier tag) and
+ * `VALUE: ...` (after ALTER), each refused by name after any other tag, here rather than in the
+ * kinds because `bonus` reads its ops without a refusal list.
  */
 function readComponent(component, ops, context, tag = "") {
   const match = component.match(/^([A-Za-z]+)\s*:\s*([\s\S]*)$/);
   const word = match?.[1]?.toUpperCase() ?? "";
   const inside = match?.[2]?.trim() ?? "";
-  if (Object.hasOwn(COMPONENT_TAG, word) && !COMPONENT_TAG[word].includes(tag)) {
+  // 0.39.0: on a CONDITION'S ROW a modifier line may say how that Condition's own value drops as
+  // rounds pass (`CHECK: -N condition; UNTIL: each round -1`). The kind decides the rest (bonus.mjs).
+  const onRow = context?.itemType === CONDITION_ROW;
+  // A tag that row does not read at all (SPEED, GIVE, APPLY) is refused by its name once the
+  // line is read (./grammar.mjs). Its UNTIL is not judged first, or the author would be told
+  // where a drop is written when the trouble is the tag (the review of 0.39.0).
+  if ((word === "UNTIL") && onRow && !CONDITION_ROW_TAGS.includes(tag)) return;
+  const dropsHere = (word === "UNTIL") && onRow && CONDITION_DROP_TAGS.includes(tag);
+  if (Object.hasOwn(COMPONENT_TAG, word) && !COMPONENT_TAG[word].includes(tag) && !dropsHere) {
+    // A bonus line off a Condition's row is told where a duration IS written, since "for 2
+    // rounds" is the natural thing to try on one. A custom effect typed on the Effects tab has
+    // a Duration of its own, and is sent neither to APPLY nor to the workbook.
+    if ((word === "UNTIL") && MODIFIER_TAGS.includes(tag) && (tag !== "give") && (context?.itemType === "effect")) {
+      throw new RuleSyntaxError(`${tag.toUpperCase()} does not take UNTIL: a custom effect lasts as its Duration says (until removed, the next roll, or the encounter), and a count of rounds is not read there yet`);
+    }
+    if ((word === "UNTIL") && MODIFIER_TAGS.includes(tag) && (tag !== "give")) {
+      throw new RuleSyntaxError(`${tag.toUpperCase()} does not take UNTIL: a bonus lasts as long as the thing that carries it. How long an Effect lasts is written after APPLY (\`APPLY: Taking Cover; UNTIL: 2 rounds\`), and a Condition's own value drops by \`UNTIL: each round -1\` on its row of the Conditions workbook`);
+    }
     throw new RuleSyntaxError(`${tag.toUpperCase()} does not take ${word}`);
   }
   switch (word) {
     case "UNTIL":
       if (ops.until) throw new RuleSyntaxError("UNTIL is given twice");
       // An APPLY line's window may name its edge (0.32.0); a GIVE's keeps the two it always had.
-      ops.until = readUntil(inside, { edges: tag === "apply" });
+      ops.until = readUntil(inside, { edges: tag === "apply", drops: dropsHere });
       return;
     case "VALUE":
       if (ops.set !== null) throw new RuleSyntaxError("VALUE is given twice");
@@ -244,7 +286,13 @@ function readComponent(component, ops, context, tag = "") {
       ops.limit = { per };
       return;
     }
-    default:
+    default: {
+      // A component word with its colon lost (`UNTIL each round -1`, the review of 0.39.0): told
+      // the colon, where the message below called it "not a component" and listed others.
+      const bare = component.trim().split(/\s+/)[0].toUpperCase();
+      if (!component.includes(":") && COMPONENTS.includes(bare)) {
+        throw new RuleSyntaxError(`${bare} is a component and takes a colon: write \`${bare}: ${component.trim().slice(bare.length).trim() || "..."}\``);
+      }
       // `APPLY: prone; COST: 2` (0.37.0): since COST is also a tag, the general message below
       // would say it begins its own line, when the author meant the condition. Told only after
       // APPLY and REMOVE, the two tags that read `IF: COST(<n>)`: after any other the advice would
@@ -259,7 +307,10 @@ function readComponent(component, ops, context, tag = "") {
       // Origin; aid`), so the message says which mark does what (0.21.0).
       // GIVE and ALTER (0.22.0) are told their own components, so a `PRESERVE:` after an ALTER is
       // not sent looking for a FOR.
-      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come ${(tag === "give") || (tag === "apply") ? "IF: and UNTIL:" : tag === "remove" ? "IF:" : tag === "alter" ? "VALUE: and IF:" : "IF:, IFT:, FOR: and LIMIT:"}${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
+      // A Condition's row is told its own two (0.39.0): FOR and LIMIT are refused there.
+      const rowLine = (context?.itemType === CONDITION_ROW) && CONDITION_DROP_TAGS.includes(tag);
+      throw new RuleSyntaxError(`"${component}" is not a component: after the tag come ${(tag === "give") || (tag === "apply") ? "IF: and UNTIL:" : tag === "remove" ? "IF:" : tag === "alter" ? "VALUE: and IF:" : rowLine ? "IFT: and UNTIL:" : "IF:, IFT:, FOR: and LIMIT:"}${component.includes(":") ? "" : " (descriptors are separated by commas; a semicolon begins a component)"}`);
+    }
   }
 }
 

@@ -179,6 +179,45 @@ RULES = [
     (r"Takes is N, and the system keeps no value for", "Error", "Data",
      "This Condition carries no value in the system, so -N would always count 1: clear the Takes cell and write whole numbers, "
      "or ask Claude to give the Condition a value."),
+    # 0.39.0: durations in rounds, and a Condition's own value dropping. Two findings of the
+    # Conditions build first ("Automation", never "Automation cell"), then the cells' own messages.
+    (r"two lines say different things of how the value drops", "Error", "Automation",
+     "A Condition has one value, so it has one clock: keep `UNTIL: each round -1` on ONE line of the row in data/conditions.xlsx "
+     "and take it off the other. Every line that reads -N follows the value as it drops."),
+    (r"lines carry the same UNTIL: each", "Note", "Automation",
+     "The Condition has one value, so `UNTIL: each round -1` on one line is enough; the others can lose it. Nothing is wrong."),
+    (r"a round is counted from when the effect goes on, never from the round's start or end", "Fix", "Automation cell",
+     "Mike's rule (2026-11-19): durations are counted from when they are applied. Write how many rounds it lasts, `UNTIL: 1 round` "
+     "or `UNTIL: 2 rounds`; on a Condition's own row, `UNTIL: each round -1` for a value that drops."),
+    (r"`each round -1` lowers a Condition's own value as rounds pass, and is written on that Condition's row", "Fix", "Automation cell",
+     "`each round -1` is how a Condition's own number drops, and belongs on that Condition's row of data/conditions.xlsx. "
+     "On a Maneuver's APPLY or GIVE line write how long the thing lasts instead: `UNTIL: 2 rounds`."),
+    (r"the row is marked System, and its value is told to drop as rounds pass", "Decision", "Automation",
+     "The system puts this Condition on and takes it off by its own rules (Dying, Wounded). A value that drops each round "
+     "would end it at 0 behind those rules. If that is meant, nothing to do; otherwise take the UNTIL off the line."),
+    (r"UNTIL is a component, not a line of its own|is a component, not a line of its own|is a component and takes a colon", "Fix", "Automation cell",
+     "IF, IFT, FOR, LIMIT, UNTIL and VALUE follow an effect after a semicolon and take a colon: "
+     "[EFFECT CHECK: -N condition; UNTIL: each round -1]. A Condition's row with no modifier line (Slowed, Stunned) cannot say "
+     "how its value drops yet: tell Claude and the word comes with it; mark the cell N/A meanwhile."),
+    (r"on a Condition's row UNTIL says how its value drops as rounds pass|on a Condition's row write `each round -1`", "Fix", "Automation cell",
+     "On a Condition's own row the one thing UNTIL reads is the value dropping: `UNTIL: each round -1` (or `each 2 rounds -1`), "
+     "counted from when the Condition went on. There is no round's start or end to count to."),
+    (r"a custom effect lasts as its Duration says", "Fix", "Automation cell",
+     "A custom effect typed on the Effects tab takes its Duration from the row's own Duration choice; a count of rounds is "
+     "not read there yet. Take the UNTIL off the line."),
+    (r"on a Condition's row reads `UNTIL: each round -1`", "Fix", "Automation cell",
+     "A Condition's row reads only how its own value drops (`UNTIL: each round -1`). How long a Condition itself lasts is not "
+     "read on its row yet: say which Condition wants it and Claude will plan the word; meanwhile leave the UNTIL off."),
+    (r"`UNTIL: each round -1` lowers a Condition's own value, and this Condition takes none", "Fix", "Automation cell",
+     "Only a Condition with a value can drop: put N in the row's Takes cell, or take the UNTIL off the line."),
+    (r"does not take UNTIL: a bonus lasts as long as the thing that carries it", "Fix", "Automation cell",
+     "A bonus line has no duration of its own. If a Maneuver should put on something that lasts, write it as an Effect: "
+     "[EFFECT APPLY: <Name>; UNTIL: 2 rounds]. If this is a Condition's value dropping, the line belongs on its row of "
+     "data/conditions.xlsx with `UNTIL: each round -1`."),
+    (r"is not a count of rounds|a value that drops is written `each round -1`|does not say how much it drops|the drop is a minus and a whole number|does not say how many: write `1 round`|a duration in rounds is written",
+     "Fix", "Automation cell",
+     "A duration in rounds is `UNTIL: <N> rounds` (1 to 99), counted from when the thing goes on. A Condition's value that drops "
+     "is `UNTIL: each round -1` (or `each 2 rounds -1`) on that Condition's own row."),
     # 0.38.0: a Defense a Condition takes away. ABOVE the row below and the immunity rows: the
     # table is case blind and the first match wins, and those rows hold the word "cannot" and the
     # words "is read on a Condition's row for now".

@@ -108,6 +108,10 @@ import { costRaise, carriesTrait, raiseWords, raiseReason, costRoad, rowRaise, r
 import { unusableDefenses, reasonOf, EVADE_BY_HAND } from "../foundry/starwrought/module/rules/cannot.mjs";
 import { BUILT_IN_TRAITS, RAISED_BUILT_INS } from "../foundry/starwrought/module/documents/maneuvers.mjs";
 import { fileURLToPath } from "node:url";
+// 0.39.0: rounds counted from a moment, pure.
+import { stampOf, standIn, roundsPassed, clockOf, clockRuns, sameClock, momentIn, fadeOf, fadesOf, fadesDisagree, tickFade } from "../foundry/starwrought/module/rules/clock.mjs";
+// Who sees what the clock changed: the rule is pure (the poster reads the card and the token).
+import { audienceFor } from "../foundry/starwrought/module/rules/effects-state.mjs";
 import { closeConditions, conditionSetOf, holdsCondition, heldIds, heldIdsFor } from "../foundry/starwrought/module/rules/condition-set.mjs";
 import { conditionCarriers, conditionModifiers, isConditionCarrier, CONDITION_CARRIER_TYPE } from "../foundry/starwrought/module/rules/engine.mjs";
 import { conditionIdsFor, conditionOfRef } from "../foundry/starwrought/module/rules/effect-list.mjs";
@@ -3015,7 +3019,7 @@ check("operators: readUntil reads the three windows, and untilWords says them", 
   same(readUntil("recipient opportunity 2"), { who: "recipient", n: 2 }, "Patient Assistance's window");
   same(readUntil("recipient opportunity"), { who: "recipient", n: 1 }, "a count left out is 1");
   same(readUntil("ENCOUNTER"), { who: "encounter", n: 0 }, "the encounter");
-  const shapes = "a window is written `giver opportunity`, `recipient opportunity <N>` or `encounter`, not";
+  const shapes = "a window is written `giver opportunity`, `recipient opportunity <N>`, `<N> rounds` or `encounter`, not";
   throws(() => readUntil("forever"), new RegExp(`^${shapes.replace(/[<>]/g, "\\$&")} "forever"$`), "an unknown window");
   throws(() => readUntil(""), /not ""$/, "nothing");
   throws(() => readUntil("recipient opportunity 2 3"), /not "recipient opportunity 2 3"$/, "a word too many");
@@ -3092,13 +3096,17 @@ check("give: the components it has no use for are refused by name, and UNTIL and
   must(giveError(`${line}; LIMIT: encounter]`) === "GIVE does not take LIMIT", "LIMIT");
   must(giveError(`${line}; IFT: TRAIT(Fear)]`) === "GIVE does not take IFT: TRAIT(...)", "a trait");
   must(giveError(`${line}; UNTIL: encounter; UNTIL: encounter]`) === "UNTIL is given twice", "UNTIL twice");
-  must(giveError(`${line}; UNTIL: forever]`) === 'a window is written `giver opportunity`, `recipient opportunity <N>` or `encounter`, not "forever"', "a window that is none");
+  must(giveError(`${line}; UNTIL: forever]`) === 'a window is written `giver opportunity`, `recipient opportunity <N>`, `<N> rounds` or `encounter`, not "forever"', "a window that is none");
   must(giveError(`${line}; VALUE: nothing]`) === "GIVE does not take VALUE", "VALUE is ALTER's");
   must(giveError(`${line}; PRESERVE: this]`) === '"PRESERVE: this" is not a component: after the tag come IF: and UNTIL:', "an unknown component is told GIVE's own");
   // The two new components after every other tag, by the tag's own name.
   const onRow = cell => parseAutomation(cell, { resolve, itemType: "effect" }).errors[0]?.message ?? "";
   for (const [cell, tag] of [["CHECK: 1 condition, aid", "CHECK"], ["DEF: 1 situation, guard", "DEF"], ["IMMUNE: prone", "IMMUNE"], ["USE: Presence, Origin, aid", "USE"], ["REROLL: diplomacy; IF: RESULT(critical failure)", "REROLL"]]) {
-    must(onRow(`${cell}; UNTIL: encounter`) === `${tag} does not take UNTIL`, `${tag} with UNTIL`);
+    // 0.39.0: a bonus line on a custom effect row is told that row has a Duration of its own;
+    // every other tag keeps its exact words.
+    must(onRow(`${cell}; UNTIL: encounter`) === (["CHECK", "DEF"].includes(tag)
+      ? `${tag} does not take UNTIL: a custom effect lasts as its Duration says (until removed, the next roll, or the encounter), and a count of rounds is not read there yet`
+      : `${tag} does not take UNTIL`), `${tag} with UNTIL`);
     must(onRow(`${cell}; VALUE: nothing`) === `${tag} does not take VALUE`, `${tag} with VALUE`);
   }
   must(alterError("[EFFECT ALTER: Aid.duration; VALUE: encounter; UNTIL: encounter]") === "ALTER does not take UNTIL", "UNTIL is GIVE's");
@@ -3137,7 +3145,7 @@ check("alter: the refusals, and the cells drafted for later versions say what is
   }
   must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: no-effect; PRESERVE: original-degree]") === '"PRESERVE: original-degree" is not a component: after the tag come VALUE: and IF:', "his PRESERVE is no component, and the message names ALTER's own");
   must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: no-effect]") === '"no-effect": a result is changed to nothing in this version, as in `ALTER: Aid.critical-failure; VALUE: nothing`', "his no-effect is told the word");
-  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: recipient-opportunity-end(1)]") === 'a window is written `giver opportunity`, `recipient opportunity <N>` or `encounter`, not "recipient-opportunity-end(1)"', "his window is told the three that read");
+  must(alterError("[EFFECT ALTER: Aid.duration; VALUE: recipient-opportunity-end(1)]") === 'a window is written `giver opportunity`, `recipient opportunity <N>`, `<N> rounds` or `encounter`, not "recipient-opportunity-end(1)"', "his window is told the three that read");
   must(alterError("[EFFECT ALTER: Aid.critical-failure]") === "ALTER says what the property becomes: add `VALUE: ...`, as in `ALTER: Aid.critical-failure; VALUE: nothing`", "no VALUE");
   must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE:]") === "VALUE: says what the property becomes, as in `VALUE: nothing` or `VALUE: recipient opportunity 2`", "an empty VALUE");
   must(alterError("[EFFECT ALTER: Aid.critical-failure; VALUE: nothing; VALUE: nothing]") === "VALUE is given twice", "VALUE twice");
@@ -5215,6 +5223,16 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     same(viaAnother.warnings, [], "a line that reaches Grabbed through what it counts as is enough");
     const takesX = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Wrong-Footed") ? { ...r, automation: "[EFFECT CANNOT: guard]" } : r)) });
     must((takesX.errors.length === 0) && takesX.warnings.some(w => /Wrong-Footed: a CANNOT line on a Condition that takes X takes the Defense away against everyone/.test(w)), "CANNOT on a Condition that takes X is said to reach everyone");
+    // 0.39.0: a row whose value drops as rounds pass, and one clock to a Condition.
+    const dropping = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT CHECK: -N condition; UNTIL: each round -1]" } : r)) });
+    same([dropping.errors, dropping.warnings], [[], []], "a row whose value drops as rounds pass builds");
+    same(dropping.json.conditions.find(c => c.name === "Frightened").rules[0].until, { who: "round", n: 1, step: 1, each: true }, "and the drop is in the built file");
+    const twoClocks = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Fatigued") ? { ...r, automation: "[EFFECT DEF: -N condition; UNTIL: each round -1]\n[EFFECT ATK: -N condition; UNTIL: each 2 rounds -1]" } : r)) });
+    must(twoClocks.errors.some(e => /Fatigued: lines 1 and 2: two lines say different things of how the value drops/.test(e)), "two clocks on one row stop the build, and the lines are named");
+    const sameClock = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Fatigued") ? { ...r, automation: "[EFFECT DEF: -N condition; UNTIL: each round -1]\n[EFFECT ATK: -N condition; UNTIL: each round -1]" } : r)) });
+    must(!sameClock.errors.length && sameClock.warnings.some(w => /Fatigued: lines 1 and 2: 2 lines carry the same UNTIL: each/.test(w)), "the same clock twice builds, and is said");
+    const systemClock = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Dying") ? { ...r, takes: "N", automation: "[EFFECT CHECK: -N condition; UNTIL: each round -1]" } : r)) });
+    must(systemClock.warnings.some(w => /Dying: the row is marked System, and its value is told to drop as rounds pass/.test(w)), "a clock on a Condition the system runs is said");
     // A row that makes a second new Condition, and a new one that takes a value.
     const more = buildConditions({ staged: sheet(rows => [...rows, row("Dazed", { takes: "N", automation: "[EFFECT ATK: -N condition]" })]) });
     same([more.errors, more.created, CONDITION_REGISTRY.dazed?.numeric], [[], ["Supine", "Dazed"], true], "a new Condition may take a value of its own");
@@ -6199,6 +6217,280 @@ check("answers: a Defense that cannot be used is refused while another can be, a
   same([usableAnswers(both), refusedDefense(both, "evade"), refusedDefense(both, "guard")], [["evade", "guard"], null, null], "with none usable every one permitted stands");
   must(isLegalAnswer(both, "evade", {}) && isLegalAnswer(both, "guard", {}), "either may be the answer");
   must(!isLegalAnswer(both, "evade", { reaction: "sidestep" }) && !isLegalAnswer(both, "guard", { reaction: "parry" }) && !isLegalAnswer(both, "evade", { posture: { talentId: "r1", zone: "arms" } }), "with no Reaction and no Posture");
+});
+
+/* -------------------------------------------- */
+/*  Durations in rounds (0.39.0)                */
+/* -------------------------------------------- */
+
+// The minus sign a word processor makes of a hyphen, built from its code so this file stays plain.
+const MINUS_SIGN = String.fromCharCode(0x2212);
+// The order of Mike's example: Tess, the Bandit, Wren.
+const ORDER = [{ id: "tess", initiative: 20 }, { id: "bandit", initiative: 15 }, { id: "wren", initiative: 10 }];
+// An effect put on in round 2, during Wren's Opportunity.
+const WREN_ROUND_2 = { anchor: "wren", init: 10, round: 2 };
+const stampAtWren = stampOf({ combat: "c1", ...WREN_ROUND_2 });
+
+check("rounds: `<N> rounds` and `each round -1` read, and every slip is told what to write (ruling 395)", () => {
+  same([readUntil("2 rounds"), readUntil("1 round"), readUntil("for 2 rounds"), readUntil("3 Round"), readUntil("99 rounds")],
+    [{ who: "round", n: 2 }, { who: "round", n: 1 }, { who: "round", n: 2 }, { who: "round", n: 3 }, { who: "round", n: 99 }], "a plain count, a leading `for` let through");
+  const drop = { drops: true };
+  same([readUntil("each round -1", drop), readUntil("each 2 rounds -1", drop), readUntil("every round -2", drop), readUntil(`each round ${MINUS_SIGN}1`, drop)],
+    [{ who: "round", n: 1, step: 1, each: true }, { who: "round", n: 2, step: 1, each: true }, { who: "round", n: 1, step: 2, each: true }, { who: "round", n: 1, step: 1, each: true }], "the drop, where a Condition's row asks for it");
+  same(readUntil("2 rounds", drop), { who: "round", n: 2 }, "a plain count reads there too; the kind decides what a row takes");
+  throws(() => readUntil("each round -1"), /^`each round -1` lowers a Condition's own value as rounds pass, and is written on that Condition's row/, "the drop anywhere else");
+  for (const old of ["round end", "end of round", "end of the round", "round start", "next round", "round end -1"]) {
+    throws(() => readUntil(old), /a round is counted from when the effect goes on, never from the round's start or end: write how many rounds it lasts, as in `1 round`$/, `the retired "${old}"`);
+    throws(() => readUntil(old, drop), /on a Condition's row write `each round -1`: its value drops for each round that passes since it went on, never at a round's start or end$/, `the retired "${old}" on a Condition's row`);
+  }
+  // The filler the book's own sentence carries, before a count alone.
+  same([readUntil("for the next 2 rounds"), readUntil("next 2 rounds"), readUntil("the next 3 rounds")], [{ who: "round", n: 2 }, { who: "round", n: 2 }, { who: "round", n: 3 }], "for the next 2 rounds");
+  throws(() => readUntil("2 rounds of combat"), /^a duration in rounds is written `<N> rounds`, as in `2 rounds`, not "2 rounds of combat"$/, "words after the count");
+  throws(() => readUntil("round"), /does not say how many: write `1 round` or `2 rounds`$/, "no count");
+  // A CONDITION'S ROW is told its one shape, never the four windows it refuses.
+  const rowShape = /^on a Condition's row UNTIL says how its value drops as rounds pass: write `each round -1` \(or `each 2 rounds -1`\), not "/;
+  for (const bad of ["round", "forever", "each turn -1", "-1", "", "giver opportunity end", "recipient opportunity 12", "3 round extra"]) throws(() => readUntil(bad, drop), rowShape, `"${bad}" on a Condition's row`);
+  throws(() => readUntil("each 0 rounds -1", drop), /^"0" is not a count of rounds: write a whole number from 1 to 99, as in `each 2 rounds -1`$/, "a count of 0 in the drop");
+  same([readUntil("giver opportunity", drop), readUntil("encounter", drop)], [{ who: "giver", n: 1 }, { who: "encounter", n: 0 }], "a window that reads is handed on, for the kind to refuse by name");
+  throws(() => readUntil("each round -1"), /beside a Condition with a value APPLY takes no UNTIL at all: that Condition moves by its own row\)$/, "and the drop elsewhere says what APPLY takes beside a value");
+  for (const bad of ["0 rounds", "100 rounds"]) throws(() => readUntil(bad), /is not a count of rounds: write a whole number from 1 to 99/, bad);
+  throws(() => readUntil("each round", drop), /does not say how much it drops: write `each round -1`$/, "no drop");
+  for (const bad of ["each round 1", "each round -0", "each round -10", "each round +1", "each round -1 -1"]) throws(() => readUntil(bad, drop), /the drop is a minus and a whole number from 1 to 9/, bad);
+  for (const other of ["1 round -1", "-1 per round", "-1 each round"]) {
+    throws(() => readUntil(other, drop), /a value that drops is written `each round -1`/, `"${other}" on a Condition's row`);
+    throws(() => readUntil(other), /^`each round -1` lowers a Condition's own value/, `"${other}" anywhere else`);
+  }
+  throws(() => readUntil("2 rounds please"), /^a duration in rounds is written `<N> rounds`, as in `2 rounds`, not "2 rounds please"$/, "a word too many");
+  same([untilWords({ who: "round", n: 1 }), untilWords({ who: "round", n: 3 }), untilWords({ who: "round", n: 1, step: 1, each: true }), untilWords({ who: "round", n: 2, step: 1, each: true })],
+    ["for 1 round", "for 3 rounds", "its value drops by 1 each round", "its value drops by 1 every 2 rounds"], "in words");
+  same([readUntil("giver opportunity"), readUntil("recipient opportunity 2"), readUntil("encounter")], [{ who: "giver", n: 1 }, { who: "recipient", n: 2 }, { who: "encounter", n: 0 }], "the older windows read as they did");
+});
+
+check("rounds: the drop is read on a Condition's row alone, and a count after APPLY, GIVE and ALTER (rulings 395 and 402)", () => {
+  const [frightened] = conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition; UNTIL: each round -1]");
+  same(frightened.until, { who: "round", n: 1, step: 1, each: true }, "stored on the rule");
+  must(summarize(frightened) === "-N Condition penalty to every roll and Threshold; its value drops by 1 each round", `As read says it: ${summarize(frightened)}`);
+  must(/against a ranged Blow; its value drops by 1 every 2 rounds$/.test(summarize(conditionCell("Row", "n", "[EFFECT DEF: -N condition, guard; IFT: RANGED; UNTIL: each 2 rounds -1]")[0])), "the drop is set apart from the line's conditions");
+  must(!("until" in conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition]")[0]), "a line with none is stored as it was before 0.39.0");
+  for (const tag of ["SKILL", "ATK", "DEF", "INIT"]) {
+    same(conditionCell("Row", "n", `[EFFECT ${tag}: -N condition; UNTIL: each round -1]`)[0].until?.each, true, `${tag} carries it too`);
+  }
+  for (const takes of ["", "x", "zone"]) {
+    must(/^`UNTIL: each round -1` lowers a Condition's own value, and this Condition takes none/.test(conditionRowError("[EFFECT DEF: -2 situation; UNTIL: each round -1]", takes)), `a Condition that takes "${takes}"`);
+  }
+  // A tag the row does not read is told so, whatever its UNTIL says.
+  for (const [cell, tag] of [["[EFFECT SPEED: -1 condition; UNTIL: each round -1]", "SPEED"], ["[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: each round -1]", "GIVE"], ["[EFFECT APPLY: prone; UNTIL: each round -1]", "APPLY"]]) {
+    must(conditionRowError(cell, "n").startsWith(`${tag} is not read on a Condition's row yet`), `${tag} with a drop on a Condition's row: ${conditionRowError(cell, "n")}`);
+  }
+  // A component written as a line of its own, or with its colon lost.
+  must(/^UNTIL is a component, not a line of its own: .* A row with no such line to carry it cannot say how its value drops yet$/.test(conditionRowError("[EFFECT UNTIL: each round -1]", "n")), "UNTIL inside EFFECT");
+  must(/^UNTIL is a component, not a line of its own/.test(conditionRowError("[UNTIL each round -1]", "n")), "UNTIL as a block");
+  must(/^IF is a component, not a line of its own/.test(bonusError("[EFFECT IF: RANK(Origin >= trained)]", { resolve, itemType: "talent" })), "any component");
+  must(conditionRowError("[EFFECT CHECK: -N condition; UNTIL each round -1]", "n") === "UNTIL is a component and takes a colon: write `UNTIL: each round -1`", "the colon lost");
+  must(/is not a component: after the tag come IFT: and UNTIL:$/.test(conditionRowError("[EFFECT CHECK: -N condition; DROP: 1]", "n")), "an unknown component on a Condition's row is told that row's two");
+  must(/^CHECK does not take UNTIL: a custom effect lasts as its Duration says/.test(bonusError("CHECK: 1 situation, stealth; UNTIL: 2 rounds", { resolve, itemType: "effect" })), "a custom effect row");
+  must(/a round is counted from when the effect goes on/.test(applyError("[EFFECT APPLY: Taking Cover; UNTIL: 2 rounds end]")), "an edge word after a count of rounds");
+  same(bonusRule("[EFFECT CHECK: -N condition; UNTIL: each round -1]", { resolve: conditionResolve, itemName: "Row", itemType: CONDITION_ROW }).until.each, true, "a tool that knows no Takes lets it read");
+  must(/is not read on its row yet$/.test(conditionRowError("[EFFECT CHECK: -N condition; UNTIL: 2 rounds]", "n")), "how long the Condition lasts is not read on its row (ruling 402)");
+  must(/\(until the giver's next Opportunity\) is not read on its row yet$/.test(conditionRowError("[EFFECT CHECK: -N condition; UNTIL: giver opportunity]", "n")), "nor a window of Opportunities");
+  must(conditionRowError("[EFFECT CHECK: -N condition; UNTIL: each round -1; UNTIL: each round -1]", "n") === "UNTIL is given twice", "twice on one line");
+  for (const cell of ["[EFFECT CANNOT: evade; UNTIL: each round -1]", "[EFFECT IMMUNE: TRAIT(Visual); UNTIL: each round -1]", "[EFFECT COST: 1; IF: TRAIT(Concentrate); UNTIL: each round -1]"]) {
+    must(/does not take UNTIL$/.test(conditionRowError(cell, "n")), `${cell}: only a modifier line carries the drop`);
+  }
+  // Off a Condition's row a bonus line is told where a duration is written.
+  const onTalent = bonusError("[EFFECT CHECK: 1 condition, aid; UNTIL: each round -1]", { resolve, itemType: "talent" });
+  must(/^CHECK does not take UNTIL: a bonus lasts as long as the thing that carries it/.test(onTalent) && /`UNTIL: each round -1` on its row of the Conditions workbook$/.test(onTalent), `a Talent's bonus line: ${onTalent}`);
+  // The plain count, where a window is read.
+  same(bonusRule("[EFFECT APPLY: Taking Cover; UNTIL: 2 rounds]", onRowOf).until, { who: "round", n: 2 }, "after APPLY");
+  must(/^APPLY takes no UNTIL beside a Condition with a value/.test(applyError("[EFFECT APPLY: frightened 2, target; UNTIL: 2 rounds; IF: RESULT(success)]")), "not beside a Condition with a value (ruling 317 stands)");
+  must(/^`each round -1` lowers a Condition's own value/.test(applyError("[EFFECT APPLY: Taking Cover; UNTIL: each round -1]")), "the drop after APPLY");
+  must(/a round is counted from when the effect goes on/.test(applyError("[EFFECT APPLY: Taking Cover; UNTIL: round end]")), "a round's end after APPLY");
+  same(giveRule("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: 1 round]").until, { who: "round", n: 1 }, "after GIVE");
+  same(bonusRule("[EFFECT ALTER: Aid.duration; VALUE: 2 rounds]", { resolve: groupResolve, itemType: "talent" }).until, { who: "round", n: 2 }, "as the window an ALTER sets");
+  must(/^`each round -1` lowers a Condition's own value/.test(alterError("[EFFECT ALTER: Aid.duration; VALUE: each round -1]")), "the drop as an ALTER's value");
+  must(/^gives a \+1 Situation bonus to the next roll with/.test(summarize(giveRule("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: 2 rounds]"))) && /, for 2 rounds$/.test(summarize(giveRule("[EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: 2 rounds]"))), "a GIVE's As read says the rounds");
+});
+
+check("clock: a round has passed when the anchor begins its first Opportunity of a later round (rulings 393 and 394)", () => {
+  same(stampAtWren, { combat: "c1", anchor: "wren", init: 10, since: 2 }, "the stamp, every key");
+  same(stampOf({ combat: "c1" }), { combat: "c1", anchor: null, init: null, since: 0 }, "a stamp with nobody's Opportunity running");
+  const began = (id, round, stamp = stampAtWren, order = ORDER) => roundsPassed(stamp, { combat: "c1", began: id, round }, order);
+  const ended = (round, stamp = stampAtWren, order = ORDER) => roundsPassed(stamp, { combat: "c1", roundEnded: round }, order);
+  same([began("wren", 2), ended(2), began("tess", 3), began("bandit", 3), began("wren", 3)], [0, 0, 0, 0, 1], "Mike's example: Wren's first Opportunity of round 3, and nothing before it");
+  same([began("wren", 3, { ...stampAtWren, since: 3 }), ended(3, { ...stampAtWren, since: 3 })], [0, 0], "once counted, her later Opportunities of that round and its end count nothing");
+  same(began("tess", 3, stampOf({ combat: "c1", anchor: "tess", init: 20, round: 2 })), 1, "the anchor first in the order: as the next round opens");
+  same(began("wren", 3, stampOf({ combat: "c1", anchor: "wren", init: 10, round: 2 })), 1, "the anchor last, whose Pass ended the round: her first Opportunity of the next");
+  same([roundsPassed(stampAtWren, { combat: "c2", began: "wren", round: 3 }, ORDER), roundsPassed(stampAtWren, { combat: "c1", ended: "wren", round: 3 }, ORDER), roundsPassed(null, { combat: "c1", began: "wren", round: 3 }, ORDER), roundsPassed(stampAtWren, null, ORDER)],
+    [0, 0, 0, 0], "another Combat, an Opportunity ending, no stamp, no change");
+  same([began("wren", 1), began("wren", 2), ended(1), ended(2)], [0, 0, 0, 0], "a rewind counts nothing");
+  same([began("wren", 4), ended(4)], [2, 2], "a GM who jumps two rounds forward counts two");
+  const solo = [{ id: "solo", initiative: 12 }];
+  const lone = stampOf({ combat: "c1", anchor: "solo", init: 12, round: 1 });
+  same([began("solo", 1, lone, solo), began("solo", 2, lone, solo)], [0, 1], "a lone fighter: its steps within the round count nothing, its first of the next round does");
+  same(began("bandit", 3, stampOf({ combat: "c1", anchor: "bandit", init: 15, round: 2 })), 1, "put on by a Reaction in the Bandit's Opportunity: the Bandit's place counts, whoever reacted");
+  const nobody = stampOf({ combat: "c1", round: 2 });
+  same([began("tess", 3, nobody), ended(2, nobody), ended(3, nobody)], [0, 0, 1], "nobody's Opportunity was running: the round's end is what counts");
+});
+
+check("clock: the next fighter in the order stands in for an anchor who is out of the fight (ruling 397)", () => {
+  same(standIn(stampAtWren, ORDER), "wren", "the anchor, while it is in the fight");
+  const bandit = stampOf({ combat: "c1", anchor: "bandit", init: 15, round: 2 });
+  const banditDead = ORDER.map(f => (f.id === "bandit") ? { ...f, out: true } : f);
+  same(standIn(bandit, banditDead), "wren", "dead and passed over: the next after it");
+  same(standIn(stampAtWren, ORDER.map(f => (f.id === "wren") ? { ...f, out: true } : f)), "tess", "the last in the order, passed over: it wraps to the first");
+  same(standIn(bandit, ORDER.filter(f => f.id !== "bandit")), "wren", "gone from the tracker: its Initiative is its place");
+  same(standIn(stampAtWren, ORDER.filter(f => f.id !== "wren")), "tess", "gone, and it was last: the top of the order");
+  same(standIn(stampOf({ combat: "c1", anchor: "gone", round: 2 }), ORDER), "tess", "gone with no Initiative known: the top of the order");
+  same([standIn(stampAtWren, []), standIn(stampAtWren, ORDER.map(f => ({ ...f, out: true }))), standIn(stampOf({ combat: "c1", round: 2 }), ORDER)], [null, null, null], "nobody left, and a stamp with no anchor");
+  same([roundsPassed(bandit, { combat: "c1", began: "wren", round: 3 }, banditDead), roundsPassed(bandit, { combat: "c1", began: "tess", round: 3 }, banditDead)], [1, 0], "the stand-in's first Opportunity counts, another's does not");
+  same(roundsPassed(stampAtWren, { combat: "c1", roundEnded: 3 }, []), 1, "with nobody, the round's end is the last resort");
+  // Ties and the unrolled, as Foundry sorts them: the same Initiative by ascending id, no Initiative last.
+  const tied = [{ id: "p", initiative: 20 }, { id: "a1", initiative: 15 }, { id: "z2", initiative: 15 }, { id: "q", initiative: 10 }];
+  same(standIn(stampOf({ combat: "c1", anchor: "b9", init: 15, round: 2 }), tied), "z2", "a tie: the fighter who stood AFTER the anchor, not the one before it");
+  same(standIn(stampOf({ combat: "c1", anchor: "zz", init: 15, round: 2 }), tied), "q", "a tie with nobody after it at that number: the next number down");
+  same(standIn(stampOf({ combat: "c1", anchor: "gone", init: 8, round: 2 }), [{ id: "p", initiative: 20 }, { id: "q", initiative: 12 }, { id: "n", initiative: null }]), "n", "an unrolled fighter sorts last, and stands after every number");
+});
+
+check("clock: the moment a duration is counted from, kept by the card and standing over a late press (ruling 400)", () => {
+  const fight = { started: true, id: "c1", round: 3, combatant: { id: "wren", initiative: 10 } };
+  same(momentIn(fight), { combat: "c1", anchor: "wren", init: 10, round: 3 }, "now: whose Opportunity is running, their Initiative, the round");
+  same([momentIn(null), momentIn({ ...fight, started: false })], [null, null], "no Combat, or one that has not started: no rounds pass");
+  same(momentIn({ ...fight, combatant: null }), { combat: "c1", anchor: null, init: null, round: 3 }, "nobody's Opportunity running");
+  same(momentIn(fight, { combat: "c1", anchor: "tess", init: 20, round: 2 }), { combat: "c1", anchor: "tess", init: 20, round: 2 }, "the card's moment stands over a late press");
+  same(momentIn(fight, { combat: "c9", anchor: "tess", init: 20, round: 2 }), { combat: "c1", anchor: "wren", init: 10, round: 3 }, "a moment of another Combat does not: counted from now");
+  same(momentIn({ ...fight, combatant: { id: "solo" } }).init, null, "an unrolled fighter's place is unknown");
+});
+
+check("timed: who sees what the clock changed is whoever saw the thing go on (ruling 401)", () => {
+  const who = { gms: ["gm"], owners: ["gm", "mike"], table: [] };
+  const adversary = { gms: ["gm"], owners: ["gm"], table: ["gm"] };
+  same(audienceFor({ ...who, card: { blind: true, whisper: ["gm"], author: "mike" }, open: true }), ["gm"], "a blind roll's thing ends for the GM alone");
+  same(audienceFor({ ...who, card: { blind: false, whisper: ["gm"], author: "mike" }, open: true }), ["gm", "mike"], "a whispered roll's: its recipients and its author");
+  same(audienceFor({ ...who, card: { blind: false, whisper: [], author: "mike" }, open: true }), [], "a public card, a thing on the token: the table");
+  same(audienceFor({ ...adversary, card: undefined, open: true }), [], "an adversary's Condition, which its token shows: the table");
+  same(audienceFor({ ...adversary, card: undefined, open: true, hidden: true }), ["gm"], "a hidden token: the GM alone");
+  same(audienceFor({ ...adversary, card: { blind: false, whisper: [], author: "gm" }, hidden: true, open: true }), ["gm"], "hidden, whatever the card");
+  same([audienceFor({ ...who, card: undefined }), audienceFor({ ...adversary, card: undefined })], [[], ["gm"]], "nothing the token shows: where the creature's other cards go");
+  same(audienceFor({ ...who, card: null }), ["gm", "mike"], "its card is gone, and the token does not show it: the owners and the GM, never the table");
+  same(audienceFor({ ...who, card: null, open: true }), [], "its card is gone, and the token shows it: the table");
+  same(audienceFor(), [], "nothing given");
+});
+
+check("timed: every string the cards format exists, with the placeholders the code passes, and the report's rows meet the messages", () => {
+  const lang = JSON.parse(readFileSync(fileURLToPath(new URL("../foundry/starwrought/lang/en.json", import.meta.url)), "utf8"));
+  const wants = {
+    title: [], titleEncounter: [], dropped: ["name", "to", "from", "why"], gone: ["name", "effect", "why"], goneStill: ["name", "effect", "why"],
+    lost: ["name", "effect", "why"], resultOver: ["label", "amount", "why"], rowOver: ["name", "label"], rowOverText: ["name", "text"], zoneClosed: ["name", "zone"],
+    whyDrop: [], whyDropped: [], whyRounds: [], whyWindow: [], whyEncounter: []
+  };
+  for (const [key, holes] of Object.entries(wants)) {
+    const text = lang[`STARWROUGHT.Timed.${key}`];
+    must(typeof text === "string" && text.length > 0, `STARWROUGHT.Timed.${key} exists`);
+    same([...new Set([...text.matchAll(/\{(\w+)\}/g)].map(m => m[1]))].sort(), [...holes].sort(), `STARWROUGHT.Timed.${key}: its placeholders`);
+    must(!text.includes(String.fromCharCode(0x2014)), `STARWROUGHT.Timed.${key}: no em-dash`);
+  }
+  same(Object.keys(lang).filter(k => k.startsWith("STARWROUGHT.Timed.")).length, Object.keys(wants).length, "and no string is left that nothing asks for");
+  const source = ["rules/effects-state.mjs", "documents/cards/timed.mjs", "documents/combat.mjs"].map(f => readFileSync(fileURLToPath(new URL(`../foundry/starwrought/module/${f}`, import.meta.url)), "utf8")).join("\n");
+  for (const key of [...source.matchAll(/STARWROUGHT\.Timed\.(\w+)/g)].map(m => m[1])) must(Object.hasOwn(wants, key), `the code asks for STARWROUGHT.Timed.${key}, which the language file must hold`);
+  // The build report files a message by a pattern of its words: each new message must meet one.
+  const report = readFileSync(fileURLToPath(new URL("./build_report.py", import.meta.url)), "utf8");
+  // The red-cell tool's hints test for a piece of the message, lower-cased: `"..." in low`.
+  const hints = [...readFileSync(fileURLToPath(new URL("./highlight_automation.py", import.meta.url)), "utf8").matchAll(/"((?:[^"\\]|\\.)+)" in low/g)].map(m => m[1].replace(/\\(.)/g, "$1"));
+  const messages = [
+    [conditionRowError("[EFFECT CHECK: -N condition; UNTIL: 2 rounds]", "n"), "on a Condition's row reads `UNTIL: each round -1`"],
+    [conditionRowError("[EFFECT CHECK: -N condition; UNTIL: round end]", "n"), "on a Condition's row write `each round -1`"],
+    [conditionRowError("[EFFECT CHECK: -N condition; UNTIL: forever]", "n"), "on a Condition's row UNTIL says how its value drops as rounds pass"],
+    [conditionRowError("[EFFECT DEF: -2 situation; UNTIL: each round -1]", ""), "`UNTIL: each round -1` lowers a Condition's own value, and this Condition takes none"],
+    [conditionRowError("[EFFECT UNTIL: each round -1]", "n"), "is a component, not a line of its own"],
+    [conditionRowError("[EFFECT CHECK: -N condition; UNTIL each round -1]", "n"), "is a component and takes a colon"],
+    [applyError("[EFFECT APPLY: Taking Cover; UNTIL: round end]"), "a round is counted from when the effect goes on, never from the round's start or end"],
+    [applyError("[EFFECT APPLY: Taking Cover; UNTIL: each round -1]"), "`each round -1` lowers a Condition's own value as rounds pass, and is written on that Condition's row"],
+    [applyError("[EFFECT APPLY: Taking Cover; UNTIL: 0 rounds]"), "is not a count of rounds"],
+    [bonusError("[EFFECT CHECK: 1 condition, aid; UNTIL: 2 rounds]", { resolve, itemType: "talent" }), "does not take UNTIL: a bonus lasts as long as the thing that carries it"],
+    [bonusError("CHECK: 1 situation, stealth; UNTIL: 2 rounds", { resolve, itemType: "effect" }), "a custom effect lasts as its Duration says"]
+  ];
+  for (const [message, words] of messages) {
+    must(message.includes(words), `the message carries the words its row is filed by: "${words}" in "${message}"`);
+    must(report.includes(words), `build_report.py has a row for: ${words}`);
+    must(hints.some(piece => message.toLowerCase().includes(piece)), `highlight_automation.py has a hint that meets: ${message}`);
+  }
+});
+
+check("rounds: a line that carries the drop gives the same numbers as one that does not", () => {
+  const withDrop = seedRows().map(row => (row.name === "Frightened N") ? { ...row, rules: conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition; UNTIL: each round -1]") } : row);
+  const scared = () => creature({ statuses: ["frightened"], values: { frightened: 2 } });
+  const numbers = () => ["check", "attack", "defense", "initiative"].map(kind => conditionModifiers(scared(), { kind, slug: (kind === "defense") ? "guard" : "stealth" }).map(m => [m.label, m.value, m.type]));
+  const plain = seeded(numbers);
+  const dropping = seeded(numbers, withDrop);
+  same(dropping, plain, "the drop changes no number");
+  must(plain.every(list => list.length === 1 && list[0][1] === -2), `and the number is the value: ${JSON.stringify(plain)}`);
+});
+
+check("clock: a window in rounds, on an applied Effect and on a given result, is never written while it runs", () => {
+  const window = appliedWindow({ who: "round", n: 2 }, { moment: WREN_ROUND_2 });
+  same(window, { who: "round", edge: null, combatant: null, n: 2, begun: 0, anchor: "wren", init: 10, since: 2 }, "the applied window, its stamp under keys of its own");
+  same(appliedWindow({ who: "round", n: 2 }, {}), { who: "encounter", edge: null, combatant: null, n: 0, begun: 0 }, "with no moment it cannot be counted and lasts the encounter");
+  same(appliedWindow({ who: "giver", n: 1 }, { giverCombatant: "tess", moment: WREN_ROUND_2 }), { who: "giver", edge: "begin", combatant: "tess", n: 1, begun: 0 }, "a window of Opportunities is stored as it was");
+  const record = appliedRecord({ effect: { name: "Taking Cover", slug: "taking-cover" }, maneuver: { slug: "take-cover", name: "Take Cover" }, giver: { uuid: "Actor.tess", name: "Tess" }, combat: "c1", until: window, from: null });
+  const at = (change, order = ORDER) => settleApplied(record, { combat: "c1", order, ...change });
+  same([at({ began: "wren", round: 2 }), at({ roundEnded: 2 }), at({ began: "wren", round: 3 }), at({ roundEnded: 3 }), at({ began: "tess", round: 4 }), at({ began: "wren", round: 4 })],
+    ["keep", "keep", "keep", "keep", "keep", "expire"], "two rounds: over at Wren's first Opportunity of round 4, and the answer is keep or expire alone");
+  const noWren = ORDER.filter(f => f.id !== "wren");
+  same([at({ began: "tess", round: 4 }, noWren), at({ roundEnded: 4 }, [])], ["expire", "expire"], "Wren gone: Tess stands in; nobody at all: the round's end");
+  same(settleApplied(record, { combat: "c9", order: ORDER, began: "wren", round: 4 }), "keep", "another Combat's change");
+  same([sameApplication(record, { ...record }), sameApplication(record, { ...record, until: { ...window, since: 5 } })], [true, false], "two uses in different rounds are two applications");
+  // A given result.
+  const given = until => pendingEntry({ result: { value: 1, type: "situation", until }, to: { slug: "crafting", name: "Crafting" }, maneuver: { slug: "aid", name: "Aid" }, giver: { uuid: "Actor.wren", name: "Wren" }, combat: "c1", giverCombatant: "wren", recipientCombatant: "tess", message: "m1", moment: WREN_ROUND_2 });
+  const entry = given({ who: "round", n: 1 });
+  same(entry.until, { who: "round", combatant: null, n: 1, begun: 0, anchor: "wren", init: 10, since: 2 }, "the pending result's window");
+  same(pendingEntry({ result: { value: 1, type: "situation", until: { who: "round", n: 1 } }, to: {}, maneuver: { slug: "aid" }, giver: {}, combat: "c1" }).until, { who: "encounter", combatant: null, n: 0, begun: 0 }, "with no moment it lasts the encounter");
+  same([settle(entry, { combat: "c1", began: "wren", round: 2, order: ORDER }), settle(entry, { combat: "c1", ended: "wren", round: 2, order: ORDER }), settle(entry, { combat: "c1", roundEnded: 2, order: ORDER }), settle(entry, { combat: "c1", began: "wren", round: 3, order: ORDER })],
+    ["keep", "keep", "keep", "expire"], "one round");
+  same([pendingWindowWords(entry), windowWords({ who: "round", n: 2 })], ["for 1 round, until round 3", "for 2 rounds"], "what the Effects tab and the card say");
+  const older = given({ who: "giver", n: 1 });
+  same(older.until, { who: "giver", combatant: "wren", n: 1, begun: 0 }, "a window of Opportunities is stored as it was");
+  same([settle(older, { combat: "c1", roundEnded: 2, order: ORDER }), settle(older, { combat: "c1", began: "wren", round: 3, order: ORDER })], ["keep", "expire"], "and a round's end does not move it");
+  // Through the table a GIVE line and an ALTER fill.
+  same(buildTable([{ degree: "success", value: 1, type: "situation", to: CHOSEN_TO, until: { who: "round", n: 2 } }], []).table.success.until, { who: "round", n: 2 }, "a GIVE line's rounds reach the table");
+  same(buildTable([{ degree: "success", value: 1, type: "situation", to: CHOSEN_TO, until: null }], [{ property: "duration", until: { who: "round", n: 3 }, label: "Long Aid" }]).table.success.until, { who: "round", n: 3 }, "and an ALTER's");
+});
+
+check("clock: a Condition's own value drops as rounds pass, on one clock (rulings 395 and 398)", () => {
+  const rules = conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition; UNTIL: each round -1]");
+  same([fadeOf(rules), fadeOf(conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition]")), fadeOf(null)], [{ every: 1, step: 1 }, null, null], "what the row says of its value");
+  const clock = clockOf({ combat: "c1", ...WREN_ROUND_2 });
+  same(clock, { combat: "c1", anchor: "wren", init: 10, since: 2, count: 0, holder: null }, "the clock, every key");
+  must(clockRuns(clock, "c1") && !clockRuns(clock, "c2") && !clockRuns(null, "c1") && !clockRuns({}, "c1"), "a clock is of one Combat");
+  // THE HOLDER: a creature that leaves the tracker and comes back does so as a new Combatant.
+  const held = clockOf({ combat: "c1", ...WREN_ROUND_2 }, "bandit");
+  same([held.holder, clockRuns(held, "c1", ["bandit"]), clockRuns(held, "c1", ["bandit2"]), clockRuns(held, "c1", []), clockRuns(clock, "c1", ["bandit"]), clockRuns(held, "c1")],
+    ["bandit", true, false, false, false, true], "a clock counts only while its holder is one of the creature's Combatants");
+  must(sameClock(held, { ...held }) && !sameClock(held, { ...held, count: 1 }) && !sameClock(held, { ...held, since: 3 }) && !sameClock(held, { ...held, anchor: "tess" }) && !sameClock(held, null), "the same clock at the same count");
+  const fade = fadeOf(rules);
+  const first = tickFade(clock, fade, { combat: "c1", began: "wren", round: 3 }, ORDER);
+  same(first, { drop: 1, clock: { combat: "c1", anchor: "wren", init: 10, since: 3, count: 1, holder: null } }, "2 to 1: Wren's first Opportunity of round 3");
+  same(tickFade(held, fade, { combat: "c1", began: "wren", round: 3 }, ORDER).clock.holder, "bandit", "the holder rides through a count");
+  same([tickFade(first.clock, fade, { combat: "c1", began: "wren", round: 3 }, ORDER), tickFade(first.clock, fade, { combat: "c1", roundEnded: 3 }, ORDER)], [{ drop: 0, clock: null }, { drop: 0, clock: null }], "her later Opportunities of that round, and its end, move nothing");
+  same(tickFade(first.clock, fade, { combat: "c1", began: "wren", round: 4 }, ORDER).drop, 1, "1 to gone: her first of round 4");
+  same(tickFade(clock, fade, { combat: "c1", began: "tess", round: 3 }, ORDER), { drop: 0, clock: null }, "another fighter's Opportunity");
+  same(tickFade(clock, fade, { combat: "c1", roundEnded: 3 }, ORDER.filter(f => f.id !== "wren")).drop, 1, "nobody counted it in that round: its end does");
+  same(tickFade(clock, fade, { combat: "c1", began: "wren", round: 5 }, ORDER), { drop: 3, clock: { combat: "c1", anchor: "wren", init: 10, since: 5, count: 3, holder: null } }, "three rounds at once drop three");
+  const slow = fadeOf(conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition; UNTIL: each 2 rounds -1]"));
+  const slowFirst = tickFade(clock, slow, { combat: "c1", began: "wren", round: 3 }, ORDER);
+  same([slowFirst.drop, slowFirst.clock.count, tickFade(slowFirst.clock, slow, { combat: "c1", began: "wren", round: 4 }, ORDER).drop], [0, 1, 1], "every 2 rounds: the first counts and lowers nothing, the second lowers");
+  same(tickFade(clock, fadeOf(conditionCell("Frightened", "n", "[EFFECT CHECK: -N condition; UNTIL: each round -2]")), { combat: "c1", began: "wren", round: 3 }, ORDER).drop, 2, "a step of 2");
+  same([tickFade(null, fade, { combat: "c1", began: "wren", round: 3 }, ORDER), tickFade(clock, null, { combat: "c1", began: "wren", round: 3 }, ORDER)], [{ drop: 0, clock: null }, { drop: 0, clock: null }], "no clock, or no drop on the row: nothing");
+  // One clock to a Condition: what the build asks.
+  const two = conditionCell("Fatigued", "n", "[EFFECT DEF: -N condition; UNTIL: each round -1]\n[EFFECT ATK: -N condition; UNTIL: each 2 rounds -1]");
+  const twice = conditionCell("Fatigued", "n", "[EFFECT DEF: -N condition; UNTIL: each round -1]\n[EFFECT ATK: -N condition; UNTIL: each round -1]");
+  same([fadesDisagree(two), fadesDisagree(twice), fadesDisagree(rules), fadesDisagree([]), fadesOf(twice).length], [true, false, false, false, 2], "two lines that disagree, two that agree, one, none");
+});
+
+check("clock: the module is pure, and may be the first imported", () => {
+  const here = fileURLToPath(new URL("../foundry/starwrought/module/rules/clock.mjs", import.meta.url));
+  must(!/^\s*import\s/m.test(readFileSync(here, "utf8")), "clock.mjs imports nothing");
+  const ran = spawnSync(process.execPath, ["--input-type=module", "-e", `import(${JSON.stringify(new URL("../foundry/starwrought/module/rules/clock.mjs", import.meta.url).href)}).then(m => { if (typeof m.roundsPassed !== "function") process.exit(2); })`], { encoding: "utf8" });
+  must(ran.status === 0, `clock.mjs loads alone: ${ran.stderr}`);
 });
 
 /* -------------------------------------------- */

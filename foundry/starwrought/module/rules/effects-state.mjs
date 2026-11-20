@@ -27,7 +27,7 @@ import { EFFECT_DURATIONS, ruleStates, givenResults } from "./engine.mjs";
 import { flagKey, SYSTEM_ID } from "../config.mjs";
 // 0.22.0: a result a Maneuver gave, pending on its recipient (./given.mjs is the pure half).
 // 0.25.0: the used Effect a roll leaves when it uses one up (named Effects, step one).
-import { settle, isGivenKey, givenFlagKey, usedEntry, usedLive, usedEffects, isUsedKey, usedFlagKey } from "./given.mjs";
+import { settle, isGivenKey, givenFlagKey, usedEntry, usedLive, usedEffects, isUsedKey, usedFlagKey, resultWords } from "./given.mjs";
 // 0.24.0: the record of a Move made as part of a Maneuver, which ends with its Opportunity.
 import { MOVE_RECORD_FLAG, MOVE_USED_FLAG, recordLive } from "./maneuver-move.mjs";
 // The Bind's two windows (0.27.0), counted on the same change of Opportunity; pure.
@@ -36,7 +36,12 @@ import { momentaryStep, MOMENTARY_FLAG, PRESSED_FLAG } from "../combat/bind-rule
 // pure half; ./effect-list.mjs says what a named Effect is).
 import { settleApplied, isAppliedRecord, sameApplication, APPLIED_ICON } from "./applied.mjs";
 import { namedEffectOf, conditionOfRef } from "./effect-list.mjs";
-import { CONDITIONS, conditionIdOf, plainName } from "../config.mjs";
+import { CONDITIONS, conditionIdOf, plainName, statusEffectId, conditionNameKey, PARTY_TYPE } from "../config.mjs";
+// 0.39.0: rounds counted from a moment (./clock.mjs, pure): a window in rounds, and a
+// Condition's own value dropping as rounds pass.
+import { CLOCK_FLAG, clockOf, clockRuns, fadeOf, tickFade, isRoundWindow } from "./clock.mjs";
+// What a creature still counts as once an effect is gone (Off-Guard through Prone, a Torso Wound).
+import { conditionSetOf } from "./condition-set.mjs";
 
 /** The three states, in the order the switch cycles them. */
 export const RULE_STATES = Object.freeze(["on", "skip", "off"]);
@@ -372,6 +377,176 @@ export async function removeUsed(actor, key) {
   return true;
 }
 
+/* -------------------------------------------- */
+/*  What the clock changed, for chat (0.39.0)   */
+/* -------------------------------------------- */
+
+/**
+ * WHAT THE CLOCK CHANGED (0.39.0; ruling 396). Mike, 2026-11-19: "any time a condition or effect
+ * changes, it should show in chat, just like when other things change." Through 0.38.0 every
+ * sweep below was silent ("a window closing is not an event"). Now each puts a LINE here for
+ * what it ended or lowered, and the caller posts them: one card for each creature and audience
+ * (documents/cards/timed.mjs), from the client that made the change, which is one client for
+ * each creature (`responsibleFor`), so nothing is said twice.
+ *
+ * A line is `{ actor, text, from, open }`: `text` is PLAIN (the poster escapes it); `from` is
+ * the card that put the thing on, whose audience the line inherits, so a blind roll gives
+ * nothing away; `open` says the thing shows on the token for everyone (a Condition, an Effect a
+ * Maneuver applied), so the line is the table's unless the token is hidden (ruling 401).
+ *
+ * The sink is a plain object, so this module still loads in Node, where the self-test imports
+ * it: the poster, which needs Foundry, is imported only when there is something to say.
+ * @returns {{lines: object[]}}
+ */
+export function timedLines() {
+  return { lines: [] };
+}
+
+/** Put one line in a sink. A missing sink, actor or text says nothing. */
+export function sayLine(sink, actor, text, { from = null, open = false } = {}) {
+  if (!sink || !actor || !text) return;
+  sink.lines.push({ actor, text: String(text), from: from ? String(from) : null, open: open === true });
+}
+
+/**
+ * Post what a sink holds, and empty it. Never throws: a card that cannot be posted is logged,
+ * and the change it would have said has already been made.
+ * @param {{lines: object[]}} sink
+ * @param {{encounter?: boolean}} [options]  The lines are of an encounter's end.
+ */
+export async function postTimedLines(sink, { encounter = false } = {}) {
+  if (!sink?.lines?.length) return;
+  const lines = sink.lines.splice(0);
+  try {
+    const { postTimedChanges } = await import("../documents/cards/timed.mjs");
+    await postTimedChanges(lines, { encounter });
+  } catch (error) {
+    console.error("STARWROUGHT | what the clock changed could not be said in chat:", error);
+  }
+}
+
+const L = key => game.i18n.localize(key);
+const F = (key, data) => game.i18n.format(key, data);
+
+/**
+ * WHO SEES A LINE (ruling 401): whoever saw the thing go on. Pure, so the self-test pins it; the
+ * poster (documents/cards/timed.mjs) reads the card, the token and the users and asks here.
+ *
+ *  - `card` is the card that put the thing on: `undefined` when the line names none, `null`
+ *    when it names one that is gone, else `{ blind, whisper, author }`. A blind card's line is
+ *    the GM's alone; a whispered one's goes to its recipients and its author.
+ *  - A hidden token's changes are the GM's alone.
+ *  - A thing that shows on the token for everyone (`open`) is the table's.
+ *  - A line whose card is GONE, about something that does not show on the token (a result that
+ *    was given), goes to the creature's owners and the GM: the card may have been a blind or a
+ *    whispered roll, and its degree is not the table's to learn from its ending (the review of
+ *    0.39.0). The owners see that result on their own Effects tab already.
+ *  - Anything else goes where the creature's other cards go (`table`).
+ * @param {{card?: object|null, hidden?: boolean, open?: boolean, gms?: string[], owners?: string[], table?: string[]}} line
+ * @returns {string[]}  The users whispered to; an empty list is the table.
+ */
+export function audienceFor({ card = undefined, hidden = false, open = false, gms = [], owners = [], table = [] } = {}) {
+  if (card) {
+    if (card.blind) return [...gms];
+    const whisper = Array.isArray(card.whisper) ? [...card.whisper] : [];
+    if (whisper.length) {
+      if (card.author && !whisper.includes(card.author)) whisper.push(card.author);
+      return whisper;
+    }
+  }
+  if (hidden) return [...gms];
+  if (open) return [];
+  if (card === null) return [...owners];
+  return [...table];
+}
+
+/**
+ * Run a sweep with a sink of its own when the caller handed none in, and post what it collected
+ * WHATEVER HAPPENS: a throw between two parts of a sweep must not lose the lines of the changes
+ * already made (the review of 0.39.0).
+ */
+async function withSink(sink, options, body) {
+  const own = sink ?? timedLines();
+  try {
+    return await body(own);
+  } finally {
+    if (!sink) await postTimedLines(own, options);
+  }
+}
+
+/** Why a thing ended, in words: its rounds, its Opportunity, a value dropped away, the encounter. */
+function whyWords(why) {
+  return L({ rounds: "STARWROUGHT.Timed.whyRounds", drop: "STARWROUGHT.Timed.whyDrop", dropped: "STARWROUGHT.Timed.whyDropped", encounter: "STARWROUGHT.Timed.whyEncounter" }[why] ?? "STARWROUGHT.Timed.whyWindow");
+}
+
+/**
+ * Does the creature still count as having a Condition, now that one effect carrying it is gone?
+ * Off-Guard stays through Prone's Includes or a Torso Wound, and through an authored effect of
+ * several statuses; "is no longer Off-Guard" would then be false (the review of 0.39.0).
+ */
+function stillCounts(actor, id) {
+  try {
+    return !!actor?.statuses?.has?.(id) || conditionSetOf(actor).held.has(id);
+  } catch {
+    return false;
+  }
+}
+
+/** A Condition as a card names it: "Frightened 2", "Off-Guard". */
+function conditionWordsOf(id, value = null) {
+  const name = L(conditionNameKey(id));
+  return (CONDITIONS[id]?.numeric && value) ? `${name} ${value}` : name;
+}
+
+/**
+ * What is said when a Condition or a named Effect ends on the clock, asked AFTER it has gone:
+ * "Tess is no longer Off-Guard: its time is up." for a Condition; the same with "still counts
+ * as" when she is Off-Guard by other means; "Tess loses Taking Cover: its rounds are up." for a
+ * named Effect, as the system's own `Applied.offEffect` says it.
+ * @param {Actor} actor
+ * @param {{id?: string|null, name?: string, why: string}} what  A Condition's id, or an Effect's name.
+ */
+function goneWords(actor, { id = null, name = "", why }) {
+  const who = actor?.name ?? "";
+  if (!id) return F("STARWROUGHT.Timed.lost", { name: who, effect: name, why: whyWords(why) });
+  return F(stillCounts(actor, id) ? "STARWROUGHT.Timed.goneStill" : "STARWROUGHT.Timed.gone", { name: who, effect: conditionWordsOf(id), why: whyWords(why) });
+}
+
+/** "Aid from Wren (+1 Situation to Crafting) was not used: its time is up." */
+function resultOverWords(entry, why) {
+  return F("STARWROUGHT.Timed.resultOver", {
+    label: String(entry?.label ?? ""),
+    amount: resultWords({ value: entry?.value, type: entry?.type }, entry?.to?.name ?? ""),
+    why: whyWords(why)
+  });
+}
+
+/**
+ * The turn order now, for who stands in for a fighter who has left the fight (./clock.mjs,
+ * `standIn`). `out` is "passed over for good": the defeated when the tracker skips them, and a
+ * party, which never acts. Never "has no action left": that fighter acts again next round.
+ */
+function orderOf(combat) {
+  const skipDefeated = !!combat?.settings?.skipDefeated;
+  return [...(combat?.turns ?? [])].map(c => ({
+    id: c.id,
+    initiative: ((c.initiative === null) || (c.initiative === undefined)) ? null : Number(c.initiative),
+    out: (skipDefeated && !!c.isDefeated) || (c.actor?.type === PARTY_TYPE)
+  }));
+}
+
+/**
+ * One change of the clock, as every sweep reads it: the Combat, whose Opportunity ended and
+ * whose began (Combatant ids), the round that event is of, the round that ended (a round's end
+ * alone), and the order. A change that is already one is passed through.
+ */
+function turnOf(combat, change = {}) {
+  if (change && Array.isArray(change.order) && (change.combat === combat?.id)) return change;
+  const roundEnded = ((change?.roundEnded === null) || (change?.roundEnded === undefined)) ? null : Number(change.roundEnded);
+  const round = ((change?.round === null) || (change?.round === undefined)) ? (Number(combat?.round) || 0) : Number(change.round);
+  return { combat: combat?.id ?? null, ended: change?.ended ?? null, began: change?.began ?? null, round, roundEnded, order: orderOf(combat) };
+}
+
 /**
  * Every Actor that may hold a pending result of this Combat: its combatants' Actors, the Actors of
  * the tokens on its scene (an unlinked token's Actor is in no collection but its token's), and the
@@ -397,31 +572,53 @@ function holdersOf(combat) {
  * is its one writer. Every client hears a turn change; each Actor's responsible client (the active
  * GM, else its first active owner) writes that Actor, as the round's own hooks do. The one turn
  * change no other client hears, a lone fighter's next Opportunity, is told to them by
- * `settleLoneStep` below. Says nothing in chat: a window closing is not an event, and the line
- * leaves the Effects tab.
+ * `settleLoneStep` below.
+ *
+ * Since 0.39.0 this is THE CLOCK'S ONE ENTRY: a change of Opportunity (`ended`, `began`, with
+ * the `round` the event is of) or a round's end (`roundEnded`), which a window counted in rounds
+ * and a Condition's own clock also read. And it SAYS what it ended (ruling 396; through 0.38.0
+ * "a window closing is not an event"): into `sink` when the caller will post for a whole turn
+ * change, else in a card of its own.
  * @param {Combat} combat
- * @param {{ended?: string|null, began?: string|null}} change  Combatant ids.
+ * @param {{ended?: string|null, began?: string|null, round?: number|null, roundEnded?: number|null}} change
+ *        Combatant ids, the round of the event, or the round that ended.
+ * @param {{sink?: {lines: object[]}|null}} [options]
  */
-export async function settleGivenResults(combat, change = {}) {
-  if (!combat || (!change?.ended && !change?.began)) return;
+export async function settleGivenResults(combat, change = {}, { sink = null } = {}) {
+  const roundOver = (change?.roundEnded !== null) && (change?.roundEnded !== undefined);
+  if (!combat || (!change?.ended && !change?.began && !roundOver)) return;
+  return withSink(sink, {}, own => sweepClock(combat, change, own));
+}
+
+/** The body of `settleGivenResults`: every sweep of the clock, its lines into `own`. */
+async function sweepClock(combat, change, own) {
+  const turn = turnOf(combat, change);
   // The Bind's two windows are counted on the same change of Opportunity (0.27.0), from here so
   // that every path that settles the pending results settles them too: the turn change, a lone
   // fighter's step and its socket echo.
-  await settleBindWindows(combat, change);
+  if (turn.ended || turn.began) await settleBindWindows(combat, change, { sink: own });
   // 0.32.0: and the windows of the Effects an APPLY line put on, for the same reason.
-  await settleAppliedEffects(combat, change);
+  await settleAppliedEffects(combat, turn, { sink: own });
+  // 0.39.0: and a Condition's own value, dropping as rounds pass.
+  await settleConditionClocks(combat, turn, { sink: own });
   for (const actor of holdersOf(combat)) {
     try {
       if (!responsibleFor(actor)) continue;
       const update = {};
+      const over = [];
       for (const entry of givenResults(actor)) {
-        const verdict = settle(entry, { combat: combat.id, ended: change.ended ?? null, began: change.began ?? null });
+        const verdict = settle(entry, turn);
         if (verdict === "keep") continue;
         const key = givenFlagKey(entry.id);
-        if (verdict === "expire") update[`${GIVEN_PATH}.-=${key}`] = null;
-        else update[`${GIVEN_PATH}.${key}.until.begun`] = verdict.begun;
+        if (verdict === "expire") {
+          update[`${GIVEN_PATH}.-=${key}`] = null;
+          over.push(entry);
+        } else update[`${GIVEN_PATH}.${key}.until.begun`] = verdict.begun;
       }
       if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+      // A result that was given and never used, as its time runs out: said to whoever saw the
+      // card that gave it.
+      for (const entry of over) sayLine(own, actor, resultOverWords(entry, isRoundWindow(entry.until) ? "rounds" : "window"), { from: entry.message });
     } catch (error) {
       console.error(`STARWROUGHT | the pending results on ${actor?.name ?? "an actor"} could not be settled:`, error);
     }
@@ -445,10 +642,16 @@ export async function settleGivenResults(combat, change = {}) {
  * step runs it on the clicking client alone.
  * @param {Combat} combat
  * @param {{ended?: string|null, began?: string|null}} [change]  Combatant ids.
- * @param {{over?: boolean}} [options]  The encounter itself has ended.
+ * @param {{over?: boolean, sink?: {lines: object[]}|null}} [options]  The encounter itself has
+ *        ended; where to put what is said (0.39.0), a card of its own with none.
  */
-export async function settleBindWindows(combat, change = {}, { over = false } = {}) {
+export async function settleBindWindows(combat, change = {}, { over = false, sink = null } = {}) {
   if (!combat) return;
+  return withSink(sink, { encounter: over }, own => sweepBindWindows(combat, change, over, own));
+}
+
+/** The body of `settleBindWindows`, its lines into `own`. */
+async function sweepBindWindows(combat, change, over, own) {
   const pressedOn = actor => actor.effects?.find?.(e => e.statuses?.has("offGuard") && e.getFlag?.(SYSTEM_ID, PRESSED_FLAG)) ?? null;
   const seen = new Set();
   const actors = [];
@@ -482,7 +685,11 @@ export async function settleBindWindows(combat, change = {}, { over = false } = 
       const began = ids.includes(change?.began) ? change.began : null;
       const ended = ids.includes(change?.ended) ? change.ended : null;
 
-      if (pressed && (over || began)) await actor.setCondition("offGuard", false);
+      if (pressed && (over || began)) {
+        await actor.setCondition("offGuard", false);
+        // Said since 0.39.0; the words know whether the creature is still Off-Guard another way.
+        sayLine(own, actor, goneWords(actor, { id: "offGuard", why: over ? "encounter" : "window" }), { open: true });
+      }
 
       if (record) {
         const bind = actor.system?.bind;
@@ -573,7 +780,7 @@ const SOCKET = `system.${SYSTEM_ID}`;
  */
 export async function settleLoneStep(combat, combatantId) {
   if (!combat || !combatantId) return;
-  await settleGivenResults(combat, { ended: combatantId, began: combatantId });
+  await settleGivenResults(combat, { ended: combatantId, began: combatantId, round: combat.round });
   // 0.24.0: the Opportunity a Maneuver's Move belonged to has ended, though the ids did not change.
   await endManeuverMoves(combat, { current: null });
   try {
@@ -599,7 +806,7 @@ export async function onStepSocket(message, senderId) {
   if (!(sender.isGM || combatant.actor?.testUserPermission(sender, "OWNER"))) return;
   if ((typeof combat.canTakeOpportunity === "function")
     && combat.turns.some(c => (c.id !== combatant.id) && combat.canTakeOpportunity(c))) return;
-  await settleGivenResults(combat, { ended: combatant.id, began: combatant.id });
+  await settleGivenResults(combat, { ended: combatant.id, began: combatant.id, round: combat.round });
   await endManeuverMoves(combat, { current: null });
 }
 
@@ -644,7 +851,7 @@ function conditionOf(effect) {
  * @param {{force?: boolean}} [options]
  * @returns {Promise<{ok?: true, refreshed?: boolean, skipped?: "window"|"prevented"|"already"|"stronger"}>}
  */
-export async function applyEffectTo(actor, line, record, { force = false } = {}) {
+export async function applyEffectTo(actor, line, record, { force = false, moment = null } = {}) {
   if (!actor || !line?.effect || !isAppliedRecord(record)) return { skipped: "already" };
   if (line.until && !record.combat) return { skipped: "window" };
   // What the line's Effect means NOW (0.33.0, ruling 333): a line parsed while Supine was a named
@@ -659,7 +866,9 @@ export async function applyEffectTo(actor, line, record, { force = false } = {})
       // take it back; one that was already there is raised and keeps whose it was. Both are
       // decided inside the Condition's write queue (`raise`), so of two writes in one moment the
       // higher value stands, whichever lands last.
-      const effect = await actor.setCondition(id, want, { flags: { [SYSTEM_ID]: { applied: record } } }, { force, raise: true });
+      // `moment` (0.39.0, ruling 400): a Condition whose own value drops as rounds pass is
+      // counted from the Maneuver's use, as its card kept it, not from a button pressed late.
+      const effect = await actor.setCondition(id, want, { flags: { [SYSTEM_ID]: { applied: record } } }, { force, raise: true, moment });
       if (!effect) return { skipped: "prevented" };
       if ((Number(effect.getFlag?.(SYSTEM_ID, "value")) || 1) > want) return { skipped: "stronger" };
       // Raised or put on: either way the value is new, so the card says "is Frightened 3".
@@ -770,13 +979,22 @@ async function endApplied(actor, effect, record) {
  * this Combat (./applied.mjs, `settleApplied`). The count rides on the record and this is its one
  * writer, on each creature's responsible client, as for the pending results above. The holders are
  * looked for beyond the tracker, since a target need not be a fighter: the Combat's fighters, the
- * scene's tokens and the world's Actors. Says nothing in chat: a window closing is not an event.
+ * scene's tokens and the world's Actors. Since 0.39.0 a window may be counted in ROUNDS, and an
+ * Effect that ends is SAID (ruling 396): to whoever saw the card that put it on, else to the
+ * table, since an Effect a Maneuver applied shows on the token for everyone.
  * @param {Combat} combat
- * @param {{ended?: string|null, began?: string|null}} [change]  Combatant ids.
- * @param {{over?: boolean}} [options]  The encounter itself has ended: every window closes.
+ * @param {object} [change]  A change of the clock (`turnOf`), or `{ ended, began }` Combatant ids.
+ * @param {{over?: boolean, sink?: {lines: object[]}|null}} [options]  The encounter itself has
+ *        ended: every window closes. Where to put what is said, a card of its own with none.
  */
-export async function settleAppliedEffects(combat, change = {}, { over = false } = {}) {
+export async function settleAppliedEffects(combat, change = {}, { over = false, sink = null } = {}) {
   if (!combat) return;
+  return withSink(sink, { encounter: over }, own => sweepAppliedEffects(combat, change, over, own));
+}
+
+/** The body of `settleAppliedEffects`, its lines into `own`. */
+async function sweepAppliedEffects(combat, change, over, own) {
+  const turn = turnOf(combat, change);
   const seen = new Set();
   const holders = [];
   const consider = actor => {
@@ -793,10 +1011,14 @@ export async function settleAppliedEffects(combat, change = {}, { over = false }
       for (const effect of appliedEffectsOn(actor)) {
         const record = appliedOf(effect);
         if ((record.combat !== combat.id) || !record.until) continue;
-        const verdict = over ? "expire" : settleApplied(record, { combat: combat.id, ended: change?.ended ?? null, began: change?.began ?? null });
+        const verdict = over ? "expire" : settleApplied(record, turn);
         if (verdict === "keep") continue;
         if (verdict === "expire") {
-          await endApplied(actor, effect, record);
+          const id = conditionOf(effect);
+          const name = String(effect.name ?? record.name ?? "");
+          if (await endApplied(actor, effect, record)) {
+            sayLine(own, actor, goneWords(actor, { id, name, why: over ? "encounter" : (isRoundWindow(record.until) ? "rounds" : "window") }), { from: record.from, open: true });
+          }
         } else if (sameApplication(appliedOf(actor.effects.get(effect.id)), record)) {
           // The count goes on the window it was made for, never on one a later APPLY just set.
           await effect.update({ [`flags.${SYSTEM_ID}.applied.until.begun`]: verdict.begun }, { swAnnounced: true });
@@ -804,6 +1026,103 @@ export async function settleAppliedEffects(combat, change = {}, { over = false }
       }
     } catch (error) {
       console.error(`STARWROUGHT | the applied Effects on ${actor?.name ?? "an actor"} could not be settled:`, error);
+    }
+  }
+}
+
+/* -------------------------------------------- */
+/*  A Condition's own clock (0.39.0)            */
+/* -------------------------------------------- */
+
+/**
+ * The effect that IS a Condition on a creature and is switched on: the one under the
+ * Condition's static id, else a single-status effect (the test `#writeCondition` makes). An
+ * authored effect of several statuses is the GM's and has no value of its own; one switched
+ * off is not on the creature.
+ */
+function ownConditionEffect(actor, id) {
+  const staticId = statusEffectId(id);
+  const mine = [...(actor?.effects ?? [])].filter(e => !e.disabled && e.statuses?.has(id) && ((e.id === staticId) || (e.statuses.size === 1)));
+  return mine.find(e => e.id === staticId) ?? mine[0] ?? null;
+}
+
+/**
+ * A CONDITION'S OWN VALUE, DROPPING AS ROUNDS PASS (0.39.0; rulings 393 to 399). A row of the
+ * Conditions workbook may say `UNTIL: each round -1` on one of its lines (Frightened): for every
+ * round that passes since the Condition went on, its value falls, and at 0 it is gone.
+ *
+ * The count rides on the Condition's own effect (`flags.starwrought.clock`; ./clock.mjs). It is
+ * stamped as the Condition goes on (SwActor#setCondition, and the token palette's create), and
+ * HERE for one that has none or another Combat's: with the fighter whose Opportunity just ended,
+ * which is the one that was running when it went on. A stamp is never made on a round's end
+ * alone, where nobody's Opportunity is known.
+ *
+ * Fighters of this Combat only (ruling 399), each on its responsible client. A clock counts only
+ * while its HOLDER is one of the creature's Combatants here: a creature that left the tracker
+ * and came back does so as a new Combatant, so its clock starts again and the rounds it spent
+ * out of the fight are not counted in one drop (the review of 0.39.0). The dead are not
+ * counted, and lose their clock, so a creature brought back starts again too. A creature
+ * fighting in two started Combats keeps the clock of the one that stamped it.
+ * The lowering is `setCondition`'s `drop`, decided inside its write queue on the clock the tick
+ * was worked out from.
+ * @param {Combat} combat
+ * @param {object} turn  A change of the clock (`turnOf`).
+ * @param {{sink?: {lines: object[]}|null}} [options]
+ */
+async function settleConditionClocks(combat, turn, { sink = null } = {}) {
+  const seen = new Set();
+  const roundOver = turn.roundEnded !== null;
+  for (const combatant of combat.combatants ?? []) {
+    const actor = combatant?.actor;
+    if (!actor?.system || seen.has(actor.uuid)) continue;
+    seen.add(actor.uuid);
+    try {
+      if (actor.type === PARTY_TYPE) continue;
+      const fading = [...(actor.statuses ?? [])].filter(id => CONDITIONS[id]?.numeric && fadeOf(CONDITIONS[id].rules));
+      if (!fading.length || !responsibleFor(actor)) continue;
+      // Every Combatant of this body: a linked Actor may stand in the fight more than once.
+      const holders = [...(combat.combatants ?? [])].filter(c => c.actor?.uuid === actor.uuid).map(c => c.id);
+      const dead = !!actor.statuses?.has("dead");
+      for (const id of fading) {
+        const effect = ownConditionEffect(actor, id);
+        if (!effect) continue;
+        const fade = fadeOf(CONDITIONS[id].rules);
+        const clock = effect.getFlag?.(SYSTEM_ID, CLOCK_FLAG) ?? null;
+        if (dead) {
+          if (clock) await effect.update({ [`flags.${SYSTEM_ID}.${CLOCK_FLAG}`]: null }, { swAnnounced: true });
+          continue;
+        }
+        if (!clockRuns(clock, combat.id, holders)) {
+          // Another started Combat this creature also fights in is counting it: left to that one.
+          const other = (clock?.combat && (clock.combat !== combat.id)) ? globalThis.game?.combats?.get?.(clock.combat) : null;
+          if (other?.started && (other.getCombatantsByActor?.(actor) ?? []).some(c => c.id === clock.holder)) continue;
+          if (roundOver && !turn.ended && !turn.began) continue;
+          const anchor = turn.ended ?? turn.began ?? null;
+          const init = anchor ? (combat.combatants.get(anchor)?.initiative ?? null) : null;
+          await effect.update({ [`flags.${SYSTEM_ID}.${CLOCK_FLAG}`]: clockOf({ combat: combat.id, anchor, init, round: turn.round }, holders[0] ?? null) }, { swAnnounced: true });
+          continue;
+        }
+        const change = roundOver ? { combat: combat.id, roundEnded: turn.roundEnded } : { combat: combat.id, began: turn.began, round: turn.round };
+        const { drop, clock: next } = tickFade(clock, fade, change, turn.order);
+        if (!next) continue;
+        if (!drop) {
+          // A round counted that lowers nothing yet (`each 2 rounds -1`): the count alone moves.
+          await effect.update({ [`flags.${SYSTEM_ID}.${CLOCK_FLAG}`]: next }, { swAnnounced: true });
+          continue;
+        }
+        const before = Number(effect.getFlag?.(SYSTEM_ID, "value")) || 1;
+        // The card that put it on, when one did: a Condition a whispered card applied is said
+        // to those who saw that card, and to the table otherwise, since the token shows it.
+        const from = appliedOf(effect)?.from ?? null;
+        const left = await actor.setCondition(id, null, { flags: { [SYSTEM_ID]: { [CLOCK_FLAG]: next } } }, { drop, from: clock });
+        const after = left ? (Number(left.getFlag?.(SYSTEM_ID, "value")) || 1) : 0;
+        if (after >= before) continue;
+        sayLine(sink, actor, after > 0
+          ? F("STARWROUGHT.Timed.dropped", { name: actor.name, to: conditionWordsOf(id, after), from: conditionWordsOf(id, before), why: whyWords("drop") })
+          : goneWords(actor, { id, why: "dropped" }), { from, open: true });
+      }
+    } catch (error) {
+      console.error(`STARWROUGHT | the Conditions' clocks on ${actor?.name ?? "an actor"} could not be settled:`, error);
     }
   }
 }
@@ -817,10 +1136,17 @@ export async function settleAppliedEffects(combat, change = {}, { over = false }
  * encounter. Every client hears `deleteCombat`; the one that writes to each character is its
  * responsible client (the active GM, else its first active owner; helpers/authority.mjs), the
  * pattern the round's hooks use, so a table with no GM still clears them and nothing is written
- * twice. Nothing is said in chat: the effect was the player's note to the system, not an event.
+ * twice. Since 0.39.0 everything that ends with the encounter is SAID (ruling 396), in one card
+ * for each creature: through 0.38.0 "the effect was the player's note to the system, not an
+ * event".
  * @param {Combat} combat
  */
 export async function endEncounterEffects(combat) {
+  return withSink(null, { encounter: true }, sink => sweepEncounterEnd(combat, sink));
+}
+
+/** The body of `endEncounterEffects`, its lines into `sink`. */
+async function sweepEncounterEnd(combat, sink) {
   const actors = new Set();
   for (const combatant of combat?.combatants ?? []) {
     if (combatant?.actor) actors.add(combatant.actor);
@@ -831,8 +1157,16 @@ export async function endEncounterEffects(combat) {
       const rows = effectsOf(actor);
       const kept = rows.filter(e => e.duration !== "encounter");
       if (kept.length === rows.length) continue;
-      const update = { "system.effects": kept, ...rowFlagDeletions(actor, rows.filter(e => e.duration === "encounter")) };
+      const gone = rows.filter(e => e.duration === "encounter");
+      const update = { "system.effects": kept, ...rowFlagDeletions(actor, gone) };
       await actor.update(update, { swAnnounced: true });
+      // A row with no label is named by its text, in quotes, so the card does not run the line
+      // into the sentence.
+      for (const row of gone) {
+        sayLine(sink, actor, row.label
+          ? F("STARWROUGHT.Timed.rowOver", { name: actor.name, label: String(row.label) })
+          : F("STARWROUGHT.Timed.rowOverText", { name: actor.name, text: String(row.text ?? "") }));
+      }
     } catch (error) {
       console.error(`STARWROUGHT | the encounter effects on ${actor?.name ?? "an actor"} could not be cleared:`, error);
     }
@@ -843,10 +1177,14 @@ export async function endEncounterEffects(combat) {
     try {
       if (!responsibleFor(actor)) continue;
       const update = {};
+      const over = [];
       for (const entry of givenResults(actor)) {
-        if (entry.combat && (entry.combat === combat.id)) update[`${GIVEN_PATH}.-=${givenFlagKey(entry.id)}`] = null;
+        if (!entry.combat || (entry.combat !== combat.id)) continue;
+        update[`${GIVEN_PATH}.-=${givenFlagKey(entry.id)}`] = null;
+        over.push(entry);
       }
       if (Object.keys(update).length) await actor.update(update, { swAnnounced: true });
+      for (const entry of over) sayLine(sink, actor, resultOverWords(entry, "encounter"), { from: entry.message });
     } catch (error) {
       console.error(`STARWROUGHT | the pending results on ${actor?.name ?? "an actor"} could not be cleared:`, error);
     }
@@ -856,10 +1194,11 @@ export async function endEncounterEffects(combat) {
   await endManeuverMoves(combat, { ended: true });
   // 0.27.0: the Bind's two windows close with the encounter: a Gain Control's Off-Guard goes, and
   // a momentary Control falls back to a neutral Bind.
-  await settleBindWindows(combat, {}, { over: true });
+  await settleBindWindows(combat, {}, { over: true, sink });
   // 0.32.0: every window ends with the encounter, an applied Effect's too. One with no window
   // (Prone from a Trip) lasts until something takes it off, and stays.
-  await settleAppliedEffects(combat, {}, { over: true });
+  await settleAppliedEffects(combat, {}, { over: true, sink });
+  // 0.39.0: and all of it is said, one card for each creature, as this function returns.
   // 0.25.0: a used Effect of this Combat goes with it wherever its holder is by now. The sweep
   // above walks the fighters; one whose Combatant or token was removed while it held the Effect
   // is no fighter any more, and its record would otherwise stay listed for good (the review of

@@ -21,6 +21,8 @@ import * as SW from "../config.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 // CHARACTER EFFECTS (0.16.0): the two marks the state switch and a one-roll custom effect ask for.
 import { markUpdates, onStepSocket } from "./effects-state.mjs";
+// 0.39.0: where in the fight we are, the moment a duration in rounds is counted from (pure).
+import { momentIn } from "./clock.mjs";
 
 /** Is this token one the rules count? */
 function eligible(token) {
@@ -112,6 +114,15 @@ export function sceneContextFor(actor, token = null) {
 export function encounterContext() {
   const combat = globalThis.game?.combat ?? null;
   return { combat: combat?.id ?? null, round: combat?.round ?? 0, combatant: (combat?.started ? combat.combatant?.id : null) ?? null };
+}
+
+// WHERE IN THE FIGHT WE ARE (0.39.0): `momentIn` is pure and lives in ./clock.mjs, where the
+// self-test drives it; it is handed on from here for the callers that already read this module.
+export { momentIn };
+
+/** The moment in the Combat this client views, for a check card to keep; null outside a started one. */
+export function encounterMoment() {
+  return momentIn(globalThis.game?.combat ?? null);
 }
 
 /**

@@ -448,6 +448,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `requires.mjs` | The pure half of it (0.28.0), and of the tab: `readRequires` (the words), `requireWords` and `termWords` (the same in English), `checkCondition` (true, false, or null for "cannot tell"), `availability` (a block fails only when every alternative is known false), `requiresFor(rules, engine)` (the row's own blocks, else the engine's), `maneuverStatus(row, situation)` (the four reasons a row is left out), `freeHands` and `arrangeManeuvers` (Favorites first, no row twice). Imports `syntax.mjs` and the config. |
 | `kinds/cost.mjs` | The `cost` kind (0.37.0): what a creature uses costs more actions while it has a Condition, by the tag `COST` on a Condition's row (`[EFFECT COST: 1; IF: TRAIT(Concentrate)]`). No hook, and no import that reaches the registry: its parse, its summary and `COST_RAISE_MAX`. |
 | `kinds/cannot.mjs` | The `cannot` kind (0.38.0): a creature that has a Condition cannot answer with a Defense, by the tag `CANNOT` on a Condition's row (`[EFFECT CANNOT: evade]`). No hook, and no import that reaches the registry: its parse and its summary. |
+| `clock.mjs` | Rounds counted from a moment (0.39.0), pure and importing nothing: `stampOf` and `momentIn` (the Combat, the fighter whose Opportunity is running, that fighter's Initiative, the round), `standIn(stamp, order)` (who counts for an anchor that is out of the fight: the next after its place, ties by id, the unrolled last), `roundsPassed(stamp, change, order)`, and for a window `isRoundWindow`, `roundWindowOver`, `endsInRound`; for a Condition's own value `fadeOf`, `fadesOf`, `fadesDisagree` (what its row says: `UNTIL: each round -1`), `clockOf(moment, holder)`, `clockRuns(clock, combat, holders)`, `sameClock`, `tickFade`. `given.mjs`, `applied.mjs`, `effects-state.mjs`, `scene.mjs`, `documents/actor/conditions.mjs` and the Conditions build import it. |
 | `cannot.mjs` | The reader of it (0.38.0): `unusableDefenses(actor)` (each Defense's Condition, or null), `reasonOf(item, held)`, and `EVADE_BY_HAND`, the old rule as a guard for a Condition with no row. Imports the registry first, then the engine, `condition-set.mjs` and the config. The two Defense passes and the Conditions build import it. |
 | `cost.mjs` | The reader and the reach of it (0.37.0): `costRaise(actor, traits)` with `carriesTrait`, `raiseWords` and `raiseReason`; `costRoad(item, { actorType, owned })` (the road a Maneuver's cost takes) and `rowRaise` (the one answer the charge and the sheets share); `raisedCosts`; the build's `costCensus` and `builtInTraitNotes`; `paidElsewhere`. Imports the registry first, then the engine, `immunity.mjs`, the config and `documents/maneuvers.mjs` (which imports nothing). |
 | `kinds/check.mjs` | The `check` kind (0.34.0): the check a Maneuver rolls, by the block `[CHECK <Constellation> or <Constellation> vs <Defense> or <Defense>]` on the Maneuver's own row (`relevant` on the left for any Constellation, a number on the right for a fixed Threshold). No hook: `SwItem` reads the plan. |
@@ -1122,6 +1123,34 @@ any write that puts the Condition on switches it on again. **The window** is the
 (`settle`), with an edge: `until: { who, edge, combatant, n, begun }`, counted by
 `settleAppliedEffects` on each creature's responsible client at every turn change and closed for
 all at the encounter's end.
+
+## Time: rounds, and what the clock says (0.39.0; rulings 393 to 402)
+
+No kind and no hook point: a window gained a unit, and a Condition's row a way to say its value
+drops. Mike: "durations like opportunities and rounds are always counted when it was applied."
+
+- **The stamp** (`clock.mjs`): `{ combat, anchor, init, since }`, where a thing went on. A round
+  has passed when the anchor begins its FIRST Opportunity of a later round; an anchor out of
+  the fight is stood in for by the next fighter in the order; with nobody, the round's end
+  counts. There is no round's start or end to count to, and the reader refuses both by name.
+- **A window in rounds** is `{ who: "round", n, anchor, init, since }` on a pending result or an
+  applied Effect, under keys of its own. It is NEVER WRITTEN while it runs (`settle` answers
+  "keep" or "expire" alone). The two older shapes are stored and settled as they were.
+- **The moment** a Maneuver was used rides on its check card (`given.moment`,
+  `applies.moment`) and on a check request (`moment`), so a button pressed late, or a roll made
+  after the target answered, counts from the use (ruling 400). `momentIn(combat, stored)`.
+- **A Condition's own clock** is `flags.starwrought.clock` on its effect: the stamp, a `count`
+  and the `holder` (the Combatant the creature fights as). Stamped as the Condition goes on, is
+  raised or is switched back on (`#writeCondition`, and two hooks for the paths that bypass
+  it); counted by `settleConditionClocks`; lowered by `setCondition(id, null, data, { drop,
+  from })`, which lands only on the clock the tick was worked out from. A clock whose holder is
+  no longer one of the creature's Combatants is not running, and is stamped anew.
+- **The one entry** is `settleGivenResults(combat, change, { sink })`: `{ ended, round }`,
+  `{ began, round }` or `{ roundEnded }`. A new thing that counts time joins that sweep.
+- **What it says** (ruling 396): a sweep puts a plain line in a sink (`timedLines`, `sayLine`)
+  and the caller posts (`postTimedLines`, which loads `documents/cards/timed.mjs` only when
+  there is something to say, so this folder still loads in Node). Who sees a line is
+  `audienceFor`, pure. **A new timed change says its line; it is never silent.**
 
 ## Adding a rule kind
 

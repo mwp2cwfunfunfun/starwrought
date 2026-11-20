@@ -42,7 +42,7 @@ import { KIND_WORD, kindOf } from "./kinds/index.mjs";
 import { RuleSyntaxError, isNotApplicable, CONDITION_ROW, CONDITION_ROW_TAGS } from "./syntax.mjs";
 // 0.16.0: the two layers of the Fantasy Grounds shape (AUTOMATION_GRAMMAR.md sections 2 and 3).
 import { isFeatureLine, readFeatureLine, FEATURE_KEYWORD_LIST } from "./features.mjs";
-import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS } from "./effects.mjs";
+import { effectTagOf, readEffectLine, splitComponents, EFFECT_TAGS, COMPONENTS, componentAsBlock } from "./effects.mjs";
 import { isBonusShape } from "./check.mjs";
 
 /**
@@ -220,9 +220,12 @@ export function parseAutomation(text, context = {}) {
             // Any other tag with its colon lost (`[EFFECT SKILL 1 situation]`, `[EFFECT IMMUNE
             // prone]`; the review of 0.36.0) is told the colon too, not the list of tags.
             const tagWord = (!keyword && Object.hasOwn(EFFECT_TAGS, inner.word)) ? inner.word.toUpperCase() : null;
+            // A COMPONENT written as a line of its own (`[EFFECT UNTIL: each round -1]`, the
+            // review of 0.39.0): told where it goes, not the list of tags.
+            const component = (!keyword && !tagWord && COMPONENTS.includes(inner.word.toUpperCase())) ? inner.word.toUpperCase() : null;
             errors.push({
               line, text: block.text,
-              message: bonus
+              message: component ? componentAsBlock(component) : bonus
                 ? `CHECK is an effect tag and takes a colon: write \`[EFFECT CHECK: ${inner.args}]\``
                 : keyword
                   ? `${keyword} is a block of its own, not an effect: write \`[${keyword} ${inner.args || "..."}]\``

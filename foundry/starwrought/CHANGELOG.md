@@ -7,6 +7,246 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.39.0 (2026-11-19): durations in rounds, counted from when they are applied, and Frightened's drop
+
+Built from **Player's Handbook v4.25**, which did not move. Mike, of Frightened's "It does not yet
+drop by 1 at the end of each round: lower it by hand": "there are going to be many talents and
+abilities with various durations... whats the best way to use an elegant system to accomodate them
+all?" A survey of the sheets came first (553 rows, about 110 that say how long something lasts),
+then a plan. His decisions, by question:
+
+- **The duration is written on the line**, after `UNTIL:`. No column on the Conditions sheet, and
+  no block of its own ("what if there are two effects but you just want one to reduce?").
+- **Rounds are counted from when the effect goes on**: "I will change any referrals to 'end of the
+  round' or 'beginning of the round' and change to 'for # round(s)'... durations like
+  opportunities and rounds are always counted when it was applied. So if someone was 3rd in
+  initiative, and the effect lasts for 1 round, it will last until their first turn in the next
+  round."
+- **A round has passed** when the fighter whose Opportunity it was, when the effect went on,
+  begins their first Opportunity of the next round.
+- **The drop is written `UNTIL: each round -1`**, and a plain duration `UNTIL: 2 rounds`.
+- **Both now**: the drop on a Condition's row, and round counts after `APPLY` and `GIVE`.
+- **"any time a condition or effect changes, it should show in chat, just like when other things
+  change."** This release covers every change the clock makes; a Condition toggled by hand on a
+  token is the next.
+
+**No rule kind, tag or hook point is new.** His four workbooks in progress were not converted,
+built, staged or written.
+
+**One correction to what Mike was first told.** The survey counted 11 rows that end at a round's
+end. Nine are Talents, which cannot apply an Effect yet, and two need Effects with lines of their
+own. So on the day this ships, Frightened is the one row that uses it.
+
+**The cell**, for Mike to paste on the Frightened row of `data/conditions.xlsx` in place of its
+line:
+
+```
+  Frightened
+      [EFFECT CHECK: -N condition; UNTIL: each round -1]
+```
+
+Its Effect text says "Reduce by 1 at the end of each round", which is no longer when it drops. A
+sentence to put there: "You suffer a -N condition penalty to all checks. Reduce N by 1 for each
+round that passes." Then double-click `sync_conditions.cmd`, and run Sync content in Foundry.
+**Until the line is in the sheet nothing drops**, as through 0.38.0: the row is the word.
+
+On a Maneuver's row, when a row needs it:
+
+```
+  [EFFECT APPLY: Taking Cover; UNTIL: 2 rounds]
+  [EFFECT GIVE: 1 situation, chosen; IF: RESULT(success); UNTIL: 1 round]
+```
+
+**What a line may say.**
+
+- **`UNTIL: <N> rounds`** (1 to 99) is read after `APPLY` and `GIVE`, and as the value of an
+  `ALTER` that changes a duration (`VALUE: 2 rounds`). Not beside a Condition with a value after
+  `APPLY`, which moves by its own row (ruling 317 stands). The book's own words read too: `for 2
+  rounds`, `for the next 2 rounds`.
+- **`UNTIL: each round -1`** is read on a Condition's own row, after `CHECK`, `SKILL`, `ATK`, `DEF`
+  or `INIT`, and only where Takes is N. `each 2 rounds -1` and `each round -2` read too.
+- **N is the Condition's one number.** When it drops, every line that reads `-N` follows, and a
+  line with a fixed number does not change. One line of a row carries the `UNTIL`; two that
+  disagree stop the Conditions build, naming the lines.
+- **There is no round's end and no round's start.** `round end`, `end of the round`, `next round`
+  are each told what to write.
+
+**What changes at the table.**
+
+- **Frightened drops by itself.** Wren Demoralizes the Bandit in round 2, at her Opportunity:
+  Frightened 2. When Wren's first Opportunity of round 3 begins it becomes Frightened 1, and at
+  her first Opportunity of round 4 it is gone.
+- **If that fighter is out of the fight** (defeated and passed over, or removed from the
+  tracker), the next fighter in the order stands in for them. With nobody left, the count falls
+  when the round ends.
+- **A raise starts the count again**: Frightened 1 raised to 2 counts from the raise. So does
+  switching the Condition off and on, and leaving the tracker and coming back. Lowering it by
+  hand does not.
+- **Only in an encounter, and only for a fighter in it.** Outside one no rounds pass, and the
+  Condition stays until something takes it off, as before.
+- **An Effect or a result may last a count of rounds**, ending at the same kind of moment.
+- **Chat says every timed change.**
+
+**What chat says.** One short card, "As time passes", for each creature, each time something of
+theirs changes on the clock. All of these were silent through 0.38.0:
+
+- a Condition dropping: "Bandit is now Frightened 1, down from Frightened 2: it drops as rounds
+  pass", and "Bandit is no longer Frightened: its value has dropped to nothing";
+- an Effect or Condition a Maneuver put on, as its time runs out, whether counted in rounds or in
+  Opportunities: "Tess is no longer Wrong-Footed: its time is up", "Tess loses Hunkered: its
+  rounds are up";
+- a result that was given and never used: "Aid from Wren (+1 Situation to Athletics) was not
+  used: its rounds are up";
+- a Gain Control's Off-Guard, as it ends;
+- a Zone a Posture Exposed, as it closes with the round;
+- everything that ends with the encounter, custom effects that last the encounter included, in
+  one card, "The encounter ends".
+
+Where a creature still counts as the Condition another way (Off-Guard through Prone), the card
+says so and does not claim it is gone.
+
+**Who sees a card: whoever saw the thing go on.** A Condition on a token everyone can see is said
+to the table, an adversary's included. Something a card put on goes to the people who saw that
+card: the GM alone for a blind roll, the whisper's recipients and the roller for a whispered one.
+A hidden token's changes go to the GM alone. A result whose card has since been deleted goes to
+the recipient's owners and the GM.
+
+### Rulings
+
+- **393. A duration in rounds is counted from when the effect goes on** (Mike).
+- **394. A round has passed when the fighter whose Opportunity it was begins their first
+  Opportunity of the next round** (Mike).
+- **395. The duration is on the line: `UNTIL: 2 rounds`, and `UNTIL: each round -1` for a
+  Condition's drop** (Mike).
+- **396. Every change to a Condition or an Effect shows in chat** (Mike). Timed changes in this
+  release, hand toggles in the next.
+
+Claude's readings, his to overrule:
+
+- **397. If that fighter is out of the fight, the next fighter in the order stands in**, the next
+  one after its place, wrapping to the top. With nobody left, or when nobody's Opportunity was
+  running as the effect went on, the count falls at the round's end.
+- **398. One clock to a Condition.** A raise restarts it, and so do switching it off and on and
+  leaving the tracker and coming back; lowering by hand does not.
+- **399. Counted only for a fighter in a running encounter.** The dead are not counted.
+- **400. Rounds are counted from the Maneuver's use.** Its card remembers the round and whose
+  Opportunity it was, so a late press of Apply or Give does not move the count, for a window and
+  for a Condition's own drop alike. (A count of Opportunities still starts at the press.)
+- **401. A change is said to whoever saw the thing go on.**
+- **402. `UNTIL: 2 rounds` on a Condition's own row is not read yet**, and `each round -1` is
+  read nowhere else.
+
+### Worth knowing
+
+- **"1 round" is not a fixed amount of play.** A round holds several circuits of Opportunities. An
+  effect put on late in a round by the first fighter in the order ends a few Opportunities later,
+  as the next round opens. That follows from the rule.
+- **A stand-in may count early.** When the anchor was last in the order and is gone, the first
+  fighter stands in, so the count falls as the next round opens: up to a circuit before the place
+  the anchor held. The other reading (wait for that round's end) errs later by more.
+- **Slowed and Stunned are not in this release.** Neither has a line to carry an `UNTIL`:
+  Slowed's lost actions are in the system's code. The natural next word gives Slowed one,
+  something like `[EFFECT ACTIONS: -N; UNTIL: each round -1]`. An `UNTIL` written as a line of its
+  own is told so.
+- **More chat.** Every "Off-Guard until your next Opportunity" now says when it ends.
+- **Two things stay quiet**, and Mike can say otherwise: a raised shield coming down as an
+  Opportunity begins, which is neither a Condition nor an Effect; and the "Aid from Wren (used)"
+  marker lapsing, which would print a card at every Opportunity an Aid was used in.
+
+### How it is built
+
+- **The reader.** `readUntil` in `module/rules/operators.mjs` reads `<N> round(s)` wherever a
+  window is read, and, with `drops` (a Condition's row alone asks for it), `each [<N>] round(s)
+  -<k>`. `untilWords` says both. A Condition's row is told its one shape for anything else, never
+  the windows it refuses.
+- **Where it is read.** The gate in `readComponent` (`module/rules/effects.mjs`) lets `UNTIL:`
+  follow a modifier tag on a Condition's row; `module/rules/kinds/bonus.mjs` stores it on the rule
+  as `until` (only when set, so a rule with none is stored as it was) and refuses it off a Takes-N
+  row. A component written as a line of its own (`[EFFECT UNTIL: ...]`), or with its colon lost,
+  has a message of its own (`componentAsBlock`).
+- **The clock**, `module/rules/clock.mjs`, pure: `stampOf` (the Combat, the fighter whose
+  Opportunity was running, that fighter's Initiative, the round), `momentIn`, `standIn` (ties by
+  id and the unrolled last, as Foundry sorts), `roundsPassed`, `roundWindowOver`, and for a
+  Condition `fadeOf`, `clockOf` (with the HOLDER, the Combatant the creature fights as),
+  `clockRuns`, `sameClock`, `tickFade`.
+- **A window in rounds** is `{ who: "round", n, anchor, init, since }` under keys of its own. It is
+  never written while it runs: the stamp and the round now say how many have passed. `settle`,
+  `normalUntil`, `pendingEntry` and `pendingWindowWords` (`module/rules/given.mjs`) and
+  `appliedWindow`, `sameApplication` (`module/rules/applied.mjs`) each have a round branch. The
+  older windows are stored and settled exactly as they were.
+- **The moment.** The check card keeps it (`flags.starwrought.given.moment`, `.applies.moment`;
+  `module/dice/check.mjs`), a check request keeps it for a roll that waits on its target, and the
+  two writers (`documents/cards/apply.mjs`, `documents/cards/give.mjs`) count from it.
+- **A Condition's own clock** is `flags.starwrought.clock` on the Condition's effect. It is
+  stamped as the Condition goes on, is raised or is switched back on: in `#writeCondition`
+  (`documents/actor/conditions.mjs`, `conditionClockFor`), and in two hooks for the paths that
+  bypass it (`preCreateActiveEffect` for the token palette, `preUpdateActiveEffect` for the
+  Effects tab's switch; `starwrought.mjs`). The sweep `settleConditionClocks`
+  (`module/rules/effects-state.mjs`) stamps one it finds without a running clock, counts, and
+  lowers the value through `setCondition`'s new `drop` option, decided inside the write queue on
+  the clock the tick was worked out from.
+- **The clock's one entry** is `settleGivenResults(combat, change, { sink })`: a change of
+  Opportunity with its round, or a round's end. `onTurnChange` (`documents/combat.mjs`) hands it
+  the rounds and `endRound` runs it once for the round's end.
+- **Chat.** Each sweep puts a plain line in a sink; `documents/cards/timed.mjs` posts one card for
+  each creature and audience. The rule for the audience is `audienceFor`, pure, in
+  `effects-state.mjs`. `onTurnChange` makes one sink for the whole turn change and posts in a
+  `finally`; a sweep called alone posts its own.
+- **The build**: two disagreeing drops on one row stop the Conditions build; the same drop twice,
+  and a drop on a Condition the system runs, are warnings. Each new message has its row in
+  `RULES` (`assets/build_report.py`) and its hint (`assets/highlight_automation.py`).
+
+### Checked
+
+- `node assets/test_rules.mjs`: 282 checks.
+- `node --check` on every module, `node assets/build_all.mjs --check`, the style check (one
+  failure, the em-dash in Dwarf Lore B13 of Mike's uncommitted workbook), the smoke test.
+- A second reader on the design before the plan was shown: the round counting held in every case
+  it walked, and its corrections were folded in (who stands in, who sees a card, stamping the
+  clock as a Condition goes on).
+- An independent review of the finished change by two readers. No wrong count and no wrong
+  stored rule. Both put clock stamping first: a Condition applied by a card's button was counted
+  from the press and not from the use, and a Condition switched off and on, or a creature that
+  left the tracker and came back, caught up every missed round in one drop. All mended, with: a
+  drop that lands only on the clock it was worked out from; ties and unrolled fighters in the
+  stand-in; a hidden token asked of the fight's own tokens; a line whose card is gone kept from
+  the table; "still counts as" where a creature is Off-Guard another way; and a Condition's row
+  told its own shape in every message.
+- Live in the test world, a GM tab and a player tab, before the review and again for its mends:
+  - Frightened 2 on the Bandit during Wren's Opportunity: no change through the rest of that
+    round or the next round's first two Opportunities, then 1 at Wren's first Opportunity, then
+    gone a round later; one card each, said once with both clients connected.
+  - A raise restarting the count; a lowering by hand keeping it; a toggle from the token stamped
+    as it goes on.
+  - The anchor removed from the tracker: the next fighter stood in.
+  - A creature that is no fighter: nothing counted, and a late stamp when it joined.
+  - A fixture Maneuver's Effect "for 2 rounds" and a fixture Aid's result "for 1 round", each
+    ending at the right Opportunity with its card.
+  - The older windows speaking: an overcommit's Wrong-Footed, a Gain Control's Off-Guard (on a
+    Prone creature: "still counts as"), a Posture's Zone, an unused result, the encounter's end.
+  - A hidden token's drop reaching the GM alone, and not shown on the player's tab.
+  - After the mends: a press two Opportunities late counted from the use; a Condition switched
+    off for two rounds and on again dropping once, not three times; a creature out of the tracker
+    for two rounds and back dropping once.
+- Not driven live: a table with no GM, a lone fighter, a rewind or a jump of rounds, a defeated
+  and skipped anchor, a reroll, an adversary's result card (each is covered by the self-test or
+  by reading).
+
+### Not built
+
+- Hand toggles of a Condition in chat, and a death in chat, which is said only in a pop-up (the
+  next release, by Mike's choice).
+- A count of rounds on a Condition's own row, or on a custom effect row of the Effects tab.
+- Slowed's and Stunned's drops.
+- The other endings from the survey: events (Move, Step, Attack, Recenter), "used" on an Effect a
+  Maneuver applies, clock time, a night's rest, Sustain.
+- `APPLY` from a Talent's own row, which most of the surveyed rows need.
+
+The test world was left as found: 441 messages, Mike's Combat with testpc8 active at round 4, the
+Bandit Prone, the fixtures of earlier releases untouched, Foundry running on 0.39.0.
+
+---
+
 ## 0.38.0 (2026-11-19): a Condition may take a Defense away: the `CANNOT` word, for Grabbed
 
 Built from **Player's Handbook v4.25**, which did not move. Mike: "Grabbed currently is

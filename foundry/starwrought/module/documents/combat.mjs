@@ -32,7 +32,7 @@
 import * as SW from "../config.mjs";
 import { SwCheck } from "../dice/check.mjs";
 import { isElected, responsibleFor } from "../helpers/authority.mjs";
-import { settleGivenResults, settleLoneStep, endManeuverMoves } from "../rules/effects-state.mjs";
+import { settleGivenResults, settleLoneStep, endManeuverMoves, timedLines, postTimedLines, sayLine } from "../rules/effects-state.mjs";
 // What an adversary's Conditions put on its Initiative (0.33.0).
 import { conditionModifiers } from "../rules/engine.mjs";
 import { setting } from "../helpers/settings.mjs";
@@ -475,6 +475,10 @@ async function onTurnChange(combat, previous, current) {
   const beganRound = current.round ?? 0;
   const roundDelta = beganRound - endedAt.round;
   const forward = (roundDelta === 0) ? movedForward(combat, previous, current) : (roundDelta > 0);
+  // 0.39.0 (ruling 396): what the clock changes at this turn change is said in chat, one card for
+  // each creature. Every sweep below puts its lines here, and they are posted on the way out,
+  // whichever way that is.
+  const sink = timedLines();
   try {
     // 0.24.0: a Move made as part of a Maneuver ends with the Opportunity its Maneuver was used in
     // (rules/effects-state.mjs). Whatever the change was (a step, a new round, a rewind), every
@@ -490,13 +494,13 @@ async function onTurnChange(combat, previous, current) {
       const stepped = roundEndSteps.get(combat.id);
       roundEndSteps.delete(combat.id);
       const real = !(stepped && (stepped.combatantId === endedId) && (stepped.round === endedAt.round) && (stepped.turn === endedAt.turn));
-      if (endedId && real) await settleGivenResults(combat, { ended: endedId });
-      if (endedAt.round > 0) await endRound(combat, endedAt.round);
+      if (endedId && real) await settleGivenResults(combat, { ended: endedId, round: endedAt.round }, { sink });
+      if (endedAt.round > 0) await endRound(combat, endedAt.round, sink);
       await startRound(combat, endedAt.round + roundDelta);
     } else {
       if (!forward) return;
       // 0.22.0: a pending result's window may close as an Opportunity ends (rules/effects-state.mjs).
-      if (endedId) await settleGivenResults(combat, { ended: endedId });
+      if (endedId) await settleGivenResults(combat, { ended: endedId, round: endedAt.round }, { sink });
       if (endedId && (endedId !== beganId) && isElected()) {
         const ended = await settleOpportunity(combat, { ...endedAt, combatantId: endedId });
         // nextRound() is on its way; the turn change it causes does the rest. The combatant the
@@ -511,11 +515,15 @@ async function onTurnChange(combat, previous, current) {
     const combatant = combat.combatants.get(beganId);
     if (combatant) {
       // ... and may count, or close, as one begins.
-      await settleGivenResults(combat, { began: beganId });
+      // The round rides along (0.39.0): a duration in rounds is over when its anchor begins its
+      // first Opportunity of a later round (rules/clock.mjs).
+      await settleGivenResults(combat, { began: beganId, round: beganRound }, { sink });
       await beginOpportunity(combat, combatant);
     }
   } catch (err) {
     console.error("STARWROUGHT | combat turn change failed", err);
+  } finally {
+    await postTimedLines(sink);
   }
 }
 
@@ -632,8 +640,15 @@ async function unmark(combatant) {
  *    Load Strain rolls Endure against that number; on a failure their Fatigued rises by 1, on a
  *    critical failure by 2, to a maximum of 3 (PHB v4.21; no exemption since v4.21, ruling 150).
  * Both are cards with a roll button, whispered to the actor's owners and the GM.
+ *
+ * Since 0.39.0 the round's end is also the clock's LAST RESORT: a duration in rounds, or a
+ * Condition's own drop, that nobody counted in this round (its anchor had no Opportunity in
+ * it, and nobody stood in) is counted now (rules/clock.mjs; ruling 397). And a Zone a Posture
+ * Exposed, which closes here, says so (ruling 396): `sink` takes the lines.
  */
-async function endRound(combat, round) {
+async function endRound(combat, round, sink = null) {
+  // Once for the Combat, never inside the loop below: the sweep walks every holder itself.
+  await settleGivenResults(combat, { roundEnded: round }, { sink });
   for (const actor of actorsIn(combat)) {
     if (!responsibleFor(actor)) continue;
     const statuses = actor.statuses ?? new Set();
@@ -641,7 +656,11 @@ async function endRound(combat, round) {
 
     // A Zone Exposed by a Posture stays Exposed "until the end of the round" and Recenter does not
     // clear it; the round's end does.
-    if (typeof actor.clearPostureExposed === "function") await actor.clearPostureExposed();
+    if (typeof actor.clearPostureExposed === "function") {
+      for (const zone of (await actor.clearPostureExposed()) ?? []) {
+        sayLine(sink, actor, game.i18n.format("STARWROUGHT.Timed.zoneClosed", { name: actor.name, zone: game.i18n.localize(SW.ZONES[zone]?.label ?? zone) }), { open: true });
+      }
+    }
 
     for (const source of persistentDamageOf(actor)) await postPersistentReminder(actor, source, round);
 

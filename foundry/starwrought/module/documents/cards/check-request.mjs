@@ -39,6 +39,7 @@ import { sameBody } from "./give.mjs";
 import { SwCheck } from "../../dice/check.mjs";
 import { ruleApplies } from "../../rules/engine.mjs";
 import { immunityRecord } from "../../rules/prevent.mjs";
+import { momentIn } from "../../rules/scene.mjs";
 import { CHECK_REQUEST, CHECK_ANSWER, usableDefenses, validRequest, standingAnswer, requestState, userDegree } from "../../rules/check-request.mjs";
 
 export { CHECK_REQUEST, CHECK_ANSWER };
@@ -108,7 +109,10 @@ export async function postCheckRequest({ mode, user, item, token, rolled, line =
     prepared: prepared === true,
     paid: Number.isInteger(paid) ? paid : null,
     dialog: dialog !== false,
-    combat: combat?.id ?? null, round: combat?.round ?? null
+    combat: combat?.id ?? null, round: combat?.round ?? null,
+    // Where in the fight the Maneuver was used (0.39.0, ruling 400): what a duration in rounds
+    // that its result brings is counted from, however long the target takes to answer.
+    moment: momentIn(combat)
   };
   const names = { name: esc(userName), maneuver: esc(record.itemName), check: esc(record.rolled.name), target: esc(targetName) };
   const buttons = record.defenses.map(key => (record.mode === "roll")
@@ -560,7 +564,8 @@ export async function postManeuverResult(rollCard) {
           lines: asked.lines, maneuver,
           target: target ? { uuid: target.uuid, name: targetName } : null,
           cost: request.applies.cost ?? null,
-          combat: request.combat ?? null
+          combat: request.combat ?? null,
+          moment: request.moment ?? null
         };
       }
     }

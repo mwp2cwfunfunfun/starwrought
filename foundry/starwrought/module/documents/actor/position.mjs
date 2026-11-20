@@ -195,7 +195,10 @@ export const PositionMixin = Base => class extends Base {
     });
   }
 
-  /** End of round: a Zone Exposed by a Posture closes now, and only now. */
+  /**
+   * End of round: a Zone Exposed by a Posture closes now, and only now.
+   * @returns {Promise<string[]>}  The Zones that closed, for the round's end to say (0.39.0).
+   */
   async clearPostureExposed() {
     const updates = {};
     const closed = [];
@@ -208,6 +211,7 @@ export const PositionMixin = Base => class extends Base {
     if (Object.keys(updates).length) await this.update(updates, { swAnnounced: true });
     // The statuses follow the Zones they mirror.
     for (const zone of closed) await this.setCondition(SW.ZONE_CONDITIONS[zone], false);
+    return closed;
   }
 
   /**

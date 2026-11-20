@@ -20,6 +20,7 @@ import { EFFECT_CARRIER_TYPE, ruleStateKey, givenResults, isConditionCarrier } f
 import { pendingRule, pendingWindowWords, appliesNow, usedEffects, usedLive } from "../rules/given.mjs";
 import { stateOf, RULE_STATES, appliedOf } from "../rules/effects-state.mjs";
 import { untilWords } from "../rules/operators.mjs";
+import { isRoundWindow, endsInRound } from "../rules/clock.mjs";
 import { claimsOf, isArmed } from "../rules/claims.mjs";
 import { conditionTitle, readEffectName } from "../rules/effect-list.mjs";
 // What a Condition also counts as (0.33.0), for the lines listed under its row.
@@ -85,10 +86,14 @@ export function effectAppliedTag(effect) {
   const until = record.until;
   const window = until
     ? F("STARWROUGHT.Applied.tagWindow", {
-      window: esc(untilWords((until.who === "encounter") ? { who: "encounter", n: 0 } : until, {
-        giver: record.byName || L("STARWROUGHT.Applied.theGiver"),
-        recipient: effect?.parent?.name || L("STARWROUGHT.Applied.theTarget")
-      }))
+      // A window in rounds (0.39.0) is counted from when it went on, so it says the round it
+      // ends in, which is what is left of it.
+      window: esc(isRoundWindow(until)
+        ? `${untilWords(until)}, until round ${endsInRound(until)}`
+        : untilWords((until.who === "encounter") ? { who: "encounter", n: 0 } : until, {
+          giver: record.byName || L("STARWROUGHT.Applied.theGiver"),
+          recipient: effect?.parent?.name || L("STARWROUGHT.Applied.theTarget")
+        }))
     })
     : L("STARWROUGHT.Applied.tagNoWindow");
   return {

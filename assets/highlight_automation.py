@@ -462,6 +462,28 @@ def why(message, text, data, vocab, item_name=""):
         return "no kind yet", "this asks for something no tag or keyword of the grammar does; a kind would have to be written for it"
     if "is not a trait word" in low:
         return "mis-typed", "a trait is letters, digits, spaces, apostrophes and hyphens"
+    # Durations in rounds (0.39.0). First, since several of these messages share words with the
+    # hints below ("on a Condition's row", "does not take").
+    if "is a component, not a line of its own" in low or "is a component and takes a colon" in low:
+        return "wrong shape", "a component (IF, IFT, FOR, LIMIT, UNTIL, VALUE) follows an effect after a semicolon and takes a colon: `[EFFECT CHECK: -N condition; UNTIL: each round -1]`"
+    if "on a condition's row until says how its value drops as rounds pass" in low or "on a condition's row write `each round -1`" in low:
+        return "wrong shape", "on a Condition's own row write `UNTIL: each round -1` (or `each 2 rounds -1`): its value drops for each round that passes since it went on"
+    if "a custom effect lasts as its duration says" in low:
+        return "wrong shape", "a custom effect takes its Duration from the row's own choice; take the UNTIL off the line"
+    if "a round is counted from when the effect goes on" in low:
+        return "wrong shape", "a duration is counted from when it is applied, never to a round's start or end: write `UNTIL: 1 round` (on a Condition's own row, `UNTIL: each round -1`)"
+    if "`each round -1` lowers a condition's own value as rounds pass" in low:
+        return "wrong shape", "`each round -1` belongs on a Condition's row of data/conditions.xlsx; here write how long it lasts, `UNTIL: 2 rounds`"
+    if "on a condition's row reads `until: each round -1`" in low:
+        return "not yet readable", "a Condition's row reads only how its value drops (`UNTIL: each round -1`); how long the Condition lasts has no word on its row yet"
+    if "lowers a condition's own value, and this condition takes none" in low:
+        return "wrong shape", "only a Condition with a value can drop: put N in the row's Takes cell"
+    if "does not take until: a bonus lasts as long as the thing that carries it" in low:
+        return "wrong shape", "a bonus has no duration of its own: put the duration on an APPLY line (`APPLY: <Name>; UNTIL: 2 rounds`), or on the Condition's row"
+    if ("is not a count of rounds" in low or "a value that drops is written" in low or "does not say how much it drops" in low
+            or "the drop is a minus and a whole number" in low or "does not say how many: write `1 round`" in low
+            or "a duration in rounds is written" in low):
+        return "mis-typed", "on a Condition's own row write `UNTIL: each round -1`; after APPLY or GIVE write `UNTIL: 2 rounds`"
     # A Defense a Condition takes away (0.38.0), read on a row of data/conditions.xlsx alone. Before
     # the immunity hints, whose wording ("is read on a Condition's row for now") this one shares.
     if low.startswith("`cannot:` says what a creature cannot use"):

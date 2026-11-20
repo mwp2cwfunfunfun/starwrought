@@ -34,7 +34,7 @@ import { castOutcomes } from "../combat/attack-source.mjs";
 import { ruleGives, ruleApplies } from "../rules/engine.mjs";
 // 0.32.0: which of a Maneuver's APPLY and REMOVE lines stand for a degree and a cost (pure).
 import { linesFor } from "../rules/applied.mjs";
-import { encounterContext } from "../rules/scene.mjs";
+import { encounterContext, encounterMoment } from "../rules/scene.mjs";
 // Immunity to a trait (0.35.0): a rerolled attack card asks again, as every card does when posted.
 import { immunityRecord } from "../rules/prevent.mjs";
 
@@ -213,6 +213,10 @@ export class SwCheck {
           maneuver: { slug: SW.slugify(SW.plainName(cfg.item.name)), name: SW.plainName(cfg.item.name) },
           ally: (cfg.ally?.uuid && (cfg.ally.uuid !== actor.uuid)) ? { uuid: String(cfg.ally.uuid), name: String(cfg.ally.name ?? "") } : null,
           combat: encounter.combat ?? null,
+          // The moment the Maneuver was used (0.39.0): what a result that lasts some rounds is
+          // counted from, however late its button is pressed (ruling 400). A roll made for a
+          // request that waited on its target is handed the moment the request was made at.
+          moment: cfg.moment ?? encounterMoment(),
           // What this die did not spend: a Skip line, or a one-roll custom effect, that changes a
           // degree other than the one rolled. A reroll that lands on one of those degrees reads
           // the same table, so it files these marks then (documents/cards/reroll.mjs).
@@ -242,7 +246,9 @@ export class SwCheck {
           maneuver: { slug: SW.slugify(SW.plainName(cfg.item.name)), name: SW.plainName(cfg.item.name) },
           target: cfg.applies.target?.uuid ? { uuid: String(cfg.applies.target.uuid), name: String(cfg.applies.target.name ?? "") } : null,
           cost,
-          combat: encounterContext().combat ?? null
+          combat: encounterContext().combat ?? null,
+          // The moment the Maneuver was used (0.39.0; ruling 400), as for a result it gives.
+          moment: cfg.moment ?? encounterMoment()
         };
       }
       // A line on Skip is passed over once, by the die it would have stood for.

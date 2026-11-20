@@ -9,12 +9,12 @@ the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 t
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
 297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321, the 0.33.0 entry 322
 to 336, the 0.34.0 entry 337 to 349, the 0.35.0 entry 350 to 360, the 0.35.1 entry 361 to
-365, the 0.36.0 entry 366 to 374, the 0.37.0 entry 375 to 384 and the 0.38.0 entry 385 to
-392). Since
+365, the 0.36.0 entry 366 to 374, the 0.37.0 entry 375 to 384, the 0.38.0 entry 385 to
+392 and the 0.39.0 entry 393 to 402). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
 their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
-too (section 5). System version **0.38.0**.
+too (section 5). System version **0.39.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -283,6 +283,28 @@ rolled from this grid for its own sake is not refused. Through 0.37.0 the system
 made Evade unusable while Grabbed or Restrained, and only showed it. Guard's own exceptions in
 the book (unaware of the attack, or nothing to ward with) are not things the sheet can see, so
 they stay with the table.
+
+**Durations in rounds, and a value that drops** (0.39.0; rulings 393 to 402). A duration is
+counted from when the thing goes on, never to a round's start or end (Mike: "durations like
+opportunities and rounds are always counted when it was applied"). A round has passed when the
+fighter whose Opportunity it was, when the thing went on, begins their first Opportunity of
+the next round; if that fighter is out of the fight, the next one in the order stands in.
+
+- **A Condition's value may drop by itself.** Its row says so on one of its lines: `[EFFECT
+  CHECK: -N condition; UNTIL: each round -1]` on Frightened. Each round that passes lowers the
+  value by 1, and at 0 the Condition is gone. A raise starts the count again, and so does
+  switching the Condition off and on; lowering it by hand does not. Only a fighter in a running
+  encounter is counted.
+- **An Effect or a result may last a count of rounds**: `UNTIL: 2 rounds` after `APPLY` or
+  `GIVE` on a Maneuver's row. It is counted from the Maneuver's use, however late its card's
+  button is pressed. The Effects tab says the round it ends in.
+- **Chat says every change the clock makes**, in one "As time passes" card for each creature:
+  a value dropping, an Effect or Condition running out of time (in rounds or in
+  Opportunities), a given result that was never used, a Gain Control's Off-Guard, a Posture's
+  Exposed Zone closing with the round, and whatever ends with the encounter. A card goes to
+  whoever saw the thing go on: the table for a Condition on a token everyone can see, the
+  audience of the card that put it on (so a blind roll gives nothing away), the GM alone for a
+  hidden token.
 
 ### Attacks and Defense rolls: the Exchange
 
@@ -3520,8 +3542,9 @@ before; the sources and the index are.
 - **What the Conditions workbook leaves to the table** (0.33.0): what a Condition FORBIDS, beyond
   a Defense (0.38.0, `CANNOT`), and how it FADES have no word yet, so Supine does not stop movement, its -2 to attacks has no
   exception for melee Attacks against adjacent creatures, Grabbed's and Restrained's "cannot
-  Move or Step" and "no action other than Escape" are by hand, Frightened and Slowed do not drop
-  by 1 at a round's end, Stunned takes no actions, and Blinded and Deafened stop no perception
+  Move or Step" and "no action other than Escape" are by hand, Slowed does not drop (Frightened
+  drops by its row since 0.39.0, `UNTIL: each round -1`, once Mike pastes the line; Slowed has
+  no line to carry one), Stunned takes no actions, and Blinded and Deafened stop no perception
   beyond what the system already read. (Heedless has its word since 0.37.0, `COST`; its row
   carries the line once Mike pastes it.) Roll
   Over has no row yet, and a rule that names Prone still means Prone and not Supine. Wrong-Footed
@@ -3756,11 +3779,24 @@ before; the sources and the index are.
   it, as a player's own roll always is; an adversary's result card cannot be thrown again (the
   roll to reroll is the player's); and a table with no GM, a player-owned adversary or
   companion, and a rule's reroll button on a requested roll were not driven live.
+- **What durations leave to the table** (0.39.0; rulings 397 to 402 are Claude's readings): a
+  round is counted only in an encounter, and only for a fighter in it, so a Frightened creature
+  outside one keeps its value until a hand lowers it; "1 round" is not a fixed amount of play
+  (put on late in a round by the first fighter in the order, it ends as the next round opens);
+  when the fighter it is counted by was last in the order and is gone, the first fighter stands
+  in, up to a circuit early; Slowed and Stunned have no line to carry a drop; how long a
+  Condition itself lasts is not read on its row, nor a count of rounds on a custom effect row;
+  a raised shield coming down and the "(used)" marker of an Aid lapsing are still not said in
+  chat, nor is a Condition toggled by hand on a token or a death (the next release); an Effect
+  put on by an adversary's result card is counted from the request, and one applied outside a
+  started Combat is not counted at all. Not driven live: a table with no GM, a lone fighter, a
+  rewind or a jump of rounds, a defeated and skipped anchor, a reroll.
 - **What applying Effects leaves to the table** (0.32.0): (the Wrong-Footed Condition's own effect,
   Off-Guard against that creature only, is built since 0.33.0); "Wrong-Footed TO a creature"
   on yourself cannot be said (the Condition goes on you; whom it is to is remembered); an Effect
   on you cannot end with ANOTHER creature's Opportunity; ends that are events ("until you Move,
-  Step or Attack", "until they Interact", Sustained, minutes) are by hand; "it takes -2 to its
+  Step or Attack", "until they Interact", Sustained, minutes) are by hand (a count of rounds is
+  read since 0.39.0, `UNTIL: 2 rounds`); "it takes -2 to its
   next Attack against you" from a Basic Maneuver's row needs an Effect that carries its own
   lines, which is not built; a result for each of several creatures (Hide, Sneak, Break Them) is
   one card with one target; damage, pushes and movement are prose; (since 0.34.0 a row's

@@ -100,6 +100,17 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
                  Condition's row alone for now. A Condition that counts as another inherits its
                  line: Restrained counts as Grabbed, so it needs none. A Defense rolled for its
                  own sake (a Wind check, Initiative) is not refused.
+                 A VALUE THAT DROPS (0.39.0): [EFFECT CHECK: -N condition; UNTIL: each round -1]
+                 on Frightened. For each round that passes since the Condition went on, its
+                 value falls by 1, and at 0 it is gone. Written after UNTIL: on ONE of the
+                 row's CHECK, SKILL, ATK, DEF or INIT lines, on a row whose Takes is N (also
+                 "each 2 rounds -1", "each round -2"). N is the Condition's one number: every
+                 line that reads -N follows it down. A ROUND IS COUNTED FROM WHEN THE THING
+                 GOES ON, never to the round's start or end: it has passed when the fighter
+                 whose Opportunity it was begins their first Opportunity of the next round.
+                 A raise starts the count again; lowering by hand does not. Only a fighter in
+                 a running encounter is counted. A row with no such line (Slowed, Stunned)
+                 cannot say its drop yet.
     System       Yes for the Conditions the system itself puts on and takes off (Dying, Wounded,
                  Spent, Preparing, the Bind's three, Exposed, Dead): the row holds their text.
     Listed?      Yes prints the row in the reference tables. A sheet without the column lists all.
@@ -541,7 +552,9 @@ ACTIONS WORKBOOKS (actions_maneuvers.xlsx, actions_activities.xlsx, actions_ende
     used on). IF: RESULT(<degree>) is the result of the action's check; with none the line stands
     whenever the action is used. IF: COST(<n>) is the version of the action that was used, by
     its listed cost (never a price a Condition raised), for a row that prints a table for each
-    cost. UNTIL: says how long: giver opportunity (until the
+    cost. A COUNT OF ROUNDS reads too since 0.39.0: UNTIL: 2 rounds (also after GIVE, and as an
+    ALTER's VALUE), counted from when the Maneuver was used; "round end" and "next round" do not.
+    UNTIL: says how long: giver opportunity (until the
     user's next Opportunity begins), giver opportunity end, recipient opportunity (through the
     end of the next Opportunity of the creature the Effect is on), recipient opportunity start,
     encounter; with none, until something takes it off. In Foundry an Effect on the user lands

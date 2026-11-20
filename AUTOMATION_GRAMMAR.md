@@ -78,7 +78,9 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `SKILL`, `ATK`, `DEF` and `INIT` (0.33.0), `IMMUNE: TRAIT(...)` (0.35.0), `COST` (0.37.0) and `CANNOT` (0.38.0) | 11 |
 | `[EFFECT COST: 1; IF: TRAIT(Concentrate)]` | on a **Condition's own row**: while a creature has the Condition, what it uses that carries the trait costs that many more actions (Heedless; 0.37.0) | 3 |
 | `[EFFECT CANNOT: evade]` | on a **Condition's own row**: while a creature has the Condition it cannot answer an attack, or a Maneuver's check, with that Defense (Grabbed; 0.38.0) | 3 |
-| `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
+| `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `<N> rounds`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
+| `; UNTIL: 2 rounds` | ... a duration in ROUNDS, counted from when the thing goes on (0.39.0) | 3 |
+| `[EFFECT CHECK: -N condition; UNTIL: each round -1]` | on a **Condition's own row**: the Condition's value drops by 1 for each round that passes since it went on (Frightened; 0.39.0) | 11 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
 | `; IF: RANK(roll = untrained)` | ... while the rank the roll is made at is that (the borrowed Constellation's when a `USE` stands; on a `USE` line itself, the check's own rank before the swap). A Defense's number is read with no roll in hand, so a line that reaches Defenses with this condition (a bare `CHECK`, a `DEF`) is never part of one: the build warns | 3 |
@@ -251,7 +253,7 @@ default when the swapped total is strictly higher (rulings 218 and 219; section 
 | `FOR: allies 15` | who receives it: `self` (the default), `allies`, `enemies`, `all`, `self+allies`, within that range of the owner; `FOR: self` takes no range |
 | `LIMIT: round` | the first time it would apply to each recipient in a round, and not again until the next round |
 | `LIMIT: encounter` | the first time in an encounter, and not again until the next. Outside an encounter either applies every time, said on the card |
-| `UNTIL: recipient opportunity 2` | after `GIVE`: the window in which the result may be used (the Window vocabulary below); with none, `giver opportunity`. After `APPLY` (0.32.0): how long the Effect stays, where the window may also name its edge (`giver opportunity end`, `recipient opportunity start`); with none the Effect stays until something takes it off. Every other tag refuses it by name, `REMOVE` included |
+| `UNTIL: recipient opportunity 2` | after `GIVE`: the window in which the result may be used (the Window vocabulary below); with none, `giver opportunity`. After `APPLY` (0.32.0): how long the Effect stays, where the window may also name its edge (`giver opportunity end`, `recipient opportunity start`); with none the Effect stays until something takes it off. Either may be counted in rounds, `UNTIL: 2 rounds` (0.39.0). On a **Condition's own row** a `CHECK`, `SKILL`, `ATK`, `DEF` or `INIT` line may say `UNTIL: each round -1`, which is the Condition's own value dropping (section 11). Every other tag refuses it by name, `REMOVE` included |
 | `VALUE: nothing` | after `ALTER` alone: what the property becomes, `nothing` for a result and a window for a duration (`VALUE: recipient opportunity 2`). Every other tag refuses it by name |
 
 Both `IF:` and `IFT:` accept every condition (FG's own users mix them); the idiomatic prefix is the
@@ -316,6 +318,39 @@ creature, and the window may name its edge, which a `GIVE` window never does:
 An Opportunity already running when the Effect is applied is never the one counted. A window is
 counted in an encounter, so a line with `UNTIL:` is not applied outside one, and its card says so
 (ruling 316). `start` may also be written `begin`.
+
+**Rounds** (0.39.0; rulings 393, 394 and 397). Mike, 2026-11-19: "durations like opportunities
+and rounds are always counted when it was applied. So if someone was 3rd in initiative, and the
+effect lasts for 1 round, it will last until their first turn in the next round."
+
+| window | it lasts |
+|---|---|
+| `1 round` | until the fighter whose Opportunity it was, when the thing went on, begins their FIRST Opportunity of the next round |
+| `2 rounds`, `<N> rounds` | until that fighter's first Opportunity of the Nth round after (1 to 99) |
+| `each round -1` | on a Condition's own row alone: the Condition's value drops by 1 at each such moment, and at 0 the Condition is gone |
+| `each 2 rounds -1`, `each round -2` | the same, every second round; or by 2 (1 to 9) |
+
+- **There is no round's end and no round's start.** `round end`, `end of the round`, `next
+  round` and the like are told to write a count.
+- **The book's own words read**: `for 2 rounds`, `for the next 2 rounds`, `the next 2 rounds`.
+  `round` and `rounds` read alike after any count, `every` reads as `each`, and the minus may be
+  the hyphen or the minus sign a word processor makes of it.
+- **A round holds several circuits of Opportunities**, so only that fighter's FIRST Opportunity
+  of a round counts. "1 round" is therefore not a fixed amount of play: put on late in a round
+  by the first fighter in the order, it ends as the next round opens.
+- **If that fighter is out of the fight** (defeated and passed over by the tracker, or removed
+  from it), the next fighter in the order stands in for them (ruling 397): the next one after
+  its place, wrapping to the top. With nobody left, or when nobody's Opportunity was running
+  as the thing went on, the count falls at the round's end.
+- **Counted from the Maneuver's use** (ruling 400): its check card remembers the round and whose
+  Opportunity it was, so an Apply or Give button pressed late does not move the count, and a
+  request that waited on its target is counted from when it was made. (A window of
+  Opportunities is still counted from the press, as before.)
+- **A window in rounds is read wherever a window is**: after `UNTIL:` on `APPLY` and `GIVE`, and
+  after `VALUE:` on an `ALTER` of a duration (`VALUE: 2 rounds`). `each round -1` is read on a
+  Condition's own row and nowhere else.
+- **A result given before the Combat has started** and lasting some rounds is counted from
+  round 0 with nobody's Opportunity, so `1 round` ends with round 1.
 
 **Property** (0.22.0). What an `ALTER` may change of the results a Maneuver gives, after the dot:
 `duration` (every result's window), `beneficial-duration` (the window of the results that give a
@@ -1545,7 +1580,7 @@ Frightened is shown as the one line it can be since 0.36.0; the three lines it w
   Condition      Takes  Includes               Automation
   Off-Guard                                    [EFFECT DEF: -2 situation, evade]
                                                [EFFECT DEF: -2 situation, guard]
-  Frightened     N                             [EFFECT CHECK: -N condition]
+  Frightened     N                             [EFFECT CHECK: -N condition; UNTIL: each round -1]   (0.39.0; to type)
   Fatigued       N                             [EFFECT DEF: -N condition]
                                                [EFFECT ATK: -N condition]
   Prone                 Off-Guard              [EFFECT ATK: -2 situation]
@@ -1562,7 +1597,8 @@ Frightened is shown as the one line it can be since 0.36.0; the three lines it w
 
 What these rows say that a line cannot yet: Supine's "except melee Attacks against adjacent
 creatures" (its -2 reaches those too), "cannot Move or Step" and "no action other than Escape"
-(`CANNOT` reads a Defense alone so far), a value that drops by 1 each round (Frightened, Slowed),
+(`CANNOT` reads a Defense alone so far), Slowed's value dropping (Frightened's is a line since
+0.39.0; Slowed has no line to carry one, its lost actions being the system's own),
 Stunned's and Slowed's lost actions, what Blinded and Deafened cannot
 perceive (their immunity to Visual and Auditory effects is a line since 0.35.0), and Fatigued's
 maximum, Wind check and rests, which stay the system's.
@@ -1994,9 +2030,24 @@ written on the Maneuver's row.
 | `<TAG> does not take <component>` | a component the tag has no use for (`IMMUNE does not take IF: CLAIM(...)`) |
 | `"<TAG>" is a tag and begins its own line; one effect per line` | two tags in one block |
 | `"<part>" is not a component: after the tag come IF:, IFT:, FOR: and LIMIT: (descriptors are separated by commas; a semicolon begins a component)` | what follows a semicolon is none of the four. The words in parentheses are added (0.21.0) when the part has no colon: most often a descriptor that followed a semicolon (`USE: Presence; Origin; aid`). After `GIVE` the list is `IF: and UNTIL:`, after `ALTER` it is `VALUE: and IF:` (0.22.0), so a `PRESERVE:` is not sent looking for a `FOR` |
-| `<TAG> does not take UNTIL` / `<TAG> does not take VALUE` | `UNTIL:` after any tag but `GIVE`, or `VALUE:` after any tag but `ALTER` (0.22.0) |
+| `<TAG> does not take UNTIL` / `<TAG> does not take VALUE` | `UNTIL:` after any tag but `GIVE` and `APPLY`, or `VALUE:` after any tag but `ALTER` (0.22.0) |
+| `<TAG> does not take UNTIL: a bonus lasts as long as the thing that carries it. How long an Effect lasts is written after APPLY (\`APPLY: Taking Cover; UNTIL: 2 rounds\`), and a Condition's own value drops by \`UNTIL: each round -1\` on its row of the Conditions workbook` | `UNTIL:` after `CHECK`, `SKILL`, `ATK`, `DEF`, `INIT` or `SPEED` on a Talent or a Maneuver (0.39.0) |
+| `<TAG> does not take UNTIL: a custom effect lasts as its Duration says (until removed, the next roll, or the encounter), and a count of rounds is not read there yet` | the same on a custom effect row of the Effects tab |
+| `UNTIL is a component, not a line of its own: it follows an effect after a semicolon, as in ... A row with no such line to carry it cannot say how its value drops yet` / `<WORD> is a component, not a line of its own: ...` | `[EFFECT UNTIL: each round -1]` or `[UNTIL each round -1]`; any of `IF`, `IFT`, `FOR`, `LIMIT`, `VALUE` written the same way (0.39.0) |
+| `<WORD> is a component and takes a colon: write \`<WORD>: ...\`` | `; UNTIL each round -1`: a component with its colon lost |
 | `UNTIL is given twice` / `VALUE is given twice` | one window, one value |
-| `a window is written \`giver opportunity\`, \`recipient opportunity <N>\` or \`encounter\`, not "<text>"` | the words after `UNTIL:`, or after `VALUE:` on an `ALTER` of a duration |
+| `a window is written \`giver opportunity\`, \`recipient opportunity <N>\`, \`<N> rounds\` or \`encounter\`, not "<text>"` | the words after `UNTIL:`, or after `VALUE:` on an `ALTER` of a duration |
+| `"<text>": a round is counted from when the effect goes on, never from the round's start or end: write how many rounds it lasts, as in \`1 round\`` | `round end`, `end of the round`, `round start`, `next round` (0.39.0; rulings 393 and 394) |
+| `"<text>": on a Condition's row write \`each round -1\`: its value drops for each round that passes since it went on, never at a round's start or end` | the same on a Condition's own row |
+| `"<word>" is not a count of rounds: write a whole number from 1 to 99, as in \`2 rounds\`` / `"<text>" does not say how many: write \`1 round\` or \`2 rounds\`` / `a duration in rounds is written \`<N> rounds\`, as in \`2 rounds\`, not "<text>"` | a count of rounds that is 0, above 99 or missing; anything else with the word `round` in it |
+| `` `each round -1` lowers a Condition's own value as rounds pass, and is written on that Condition's row of the Conditions workbook; here write how long it lasts, as in `2 rounds` (beside a Condition with a value APPLY takes no UNTIL at all: that Condition moves by its own row) `` | `each round -1`, or a drop in any other order, after `APPLY`, `GIVE` or as an `ALTER`'s value |
+| `on a Condition's row UNTIL says how its value drops as rounds pass: write \`each round -1\` (or \`each 2 rounds -1\`), not "<text>"` | on a Condition's row: anything after `UNTIL:` that reads as no window at all (`forever`, `each turn -1`, nothing) |
+| `"<text>": a value that drops is written \`each round -1\` (or \`each 2 rounds -1\`)` / `"<text>" does not say how much it drops: write \`each round -1\`` / `"<text>": the drop is a minus and a whole number from 1 to 9, as in \`each round -1\`` | on a Condition's row: `1 round -1`, `-1 per round`; `each round`; `each round 1`, `each round -10` |
+| `<TAG> on a Condition's row reads \`UNTIL: each round -1\`, which lowers the Condition's own value as rounds pass; how long the Condition itself lasts (<the window in words>) is not read on its row yet` | `UNTIL: 2 rounds` or `UNTIL: giver opportunity` on a Condition's own row (ruling 402) |
+| `` `UNTIL: each round -1` lowers a Condition's own value, and this Condition takes none: put N in the row's Takes cell `` | the drop on a row whose Takes is not N |
+| `<row>: lines <a> and <b>: two lines say different things of how the value drops (UNTIL: each ... on both). A Condition has one value and one clock: keep the UNTIL on one line` | the Conditions build: two lines of one row with different drops (ruling 398). It stops the build |
+| WARNING: `<row>: lines <a> and <b>: <N> lines carry the same UNTIL: each ... ; the Condition has one value, so once is enough` | the Conditions build: the same drop written on more than one line. It builds |
+| WARNING: `<row>: the row is marked System, and its value is told to drop as rounds pass (UNTIL: each ...): at 0 the clock would take the Condition off behind the system's own rules for it` | the Conditions build: a drop on a Condition the system itself runs (Dying). It builds |
 | `"<word>" is not a count of Opportunities: write a whole number from 1 to 9, as in \`recipient opportunity 2\`` | the count in a window |
 | `GIVE is written on the Maneuver's own row: it says what a result of that Maneuver's check gives. A Talent changes it with ALTER, as in \`[EFFECT ALTER: Aid.critical-failure; VALUE: nothing]\`` | a `GIVE` in a Talent's cell or on a custom effect row |
 | `GIVE says which result of the check gives it: add \`IF: RESULT(<degree>)\`, as in \`GIVE: 1 situation, chosen; IF: RESULT(success)\`` | a `GIVE` with no degree |
@@ -2323,6 +2374,12 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   answering (389). In the Combat window such a Defense cannot be picked while another can (387).
   The code's own rule for Grabbed and Restrained is now a guard for a world whose Conditions
   file cannot be read.
+- **0.39.0** (2026-11-19): durations in rounds (rulings 393 to 402). No kind, tag or hook point
+  is new: the window after `UNTIL:` learns `<N> rounds`, counted from when the thing goes on
+  (Mike: "durations like opportunities and rounds are always counted when it was applied"), and
+  on a Condition's own row a modifier line may say `UNTIL: each round -1`, the Condition's value
+  dropping as rounds pass (Frightened). A round's start and end are no endings. Everything the
+  clock changes is said in chat (396).
 
 ## 11. The Conditions workbook
 
@@ -2358,6 +2415,7 @@ an owner:
 [EFFECT IMMUNE: TRAIT(Visual)]                 Blinded: immune to anything with the Visual trait
 [EFFECT COST: 1; IF: TRAIT(Concentrate)]       Heedless: a Concentrate Maneuver takes 1 extra action
 [EFFECT CANNOT: evade]                         Grabbed: Evade cannot answer an attack or a check
+[EFFECT CHECK: -N condition; UNTIL: each round -1]   Frightened, with its value dropping (0.39.0)
 ```
 
 - **`N` is the Condition's own value.** `-N` on Frightened is -2 at Frightened 2 and -3 at
@@ -2374,8 +2432,23 @@ an owner:
   with nothing after it (section 4, `prevent`); `IMMUNE: <Condition>` is not read on a row yet.
   `COST` takes a whole number from 1 to 6 and one `IF: TRAIT(...)` (section 4, `cost`).
   `CANNOT` takes one Defense and nothing after it (section 4, `cannot`).
-  What else a Condition forbids (movement, a Maneuver, Reactions) and how it fades have no word
-  yet.
+  What else a Condition forbids (movement, a Maneuver, Reactions) has no word yet.
+- **A value that drops as rounds pass** (0.39.0; rulings 395 and 398). `UNTIL: each round -1`
+  after one of the five modifier lines, on a row whose Takes is `N`: for each round that passes
+  since the Condition went on (section 3, Rounds), its value falls by 1, and at 0 the Condition
+  is gone. `each 2 rounds -1` and `each round -2` read too.
+  - **N is the Condition's one number**, so it has one clock: every line that reads `-N`
+    follows the value down, and a line with a fixed number does not change. Write the `UNTIL`
+    on one line. Two lines that disagree stop the build.
+  - **A raise starts the count again**, and so does switching the Condition off and on, and
+    leaving the tracker and coming back. Lowering it by hand does not.
+  - **Only for a fighter in a running encounter.** Outside one no rounds pass and the
+    Condition stays until something takes it off.
+  - **Counted from the Maneuver's use** when a card's button put it on (ruling 400).
+  - **Chat says each drop**, to the table for a token everyone can see.
+  - How long a Condition ITSELF lasts (`UNTIL: 2 rounds` on its row) is not read yet, and a
+    row with no modifier line (Slowed, Stunned) has no line to carry a drop: `[EFFECT UNTIL:
+    ...]` on its own is told so.
 - **One Condition is one circumstance.** A creature that is Off-Guard three ways (the status,
   Prone, a Torso Wound) takes Off-Guard's -2 once. And since 0.36.0 (ruling 367) a row's own
   lines count once on a roll: where two of them reach it, the strongest penalty and the

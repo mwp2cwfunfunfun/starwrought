@@ -49,6 +49,7 @@ import { postCard } from "../../helpers/cards.mjs";
 import { sameBody, wasRerolled, writerFor } from "./give.mjs";
 import { linesFor, appliedRecord, appliedWindow, effectWords, lineWords, wordsToSay } from "../../rules/applied.mjs";
 import { untilWords } from "../../rules/operators.mjs";
+import { momentIn } from "../../rules/scene.mjs";
 import { applyEffectTo, removeEffectFrom, removeAppliedFrom } from "../../rules/effects-state.mjs";
 
 /** The `flags.starwrought.kind` of the record card. */
@@ -168,11 +169,16 @@ function wordsFor(recipient, giver, line, result, record) {
  * @param {string|null} [options.from]                  The check card, or null for a use with no check.
  * @param {boolean} [options.force]                     The user's own act: never prevented (ruling 315).
  * @param {string|null} [options.combat]                The Combat the check was rolled in, tried first.
+ * @param {object|null} [options.moment]                The moment the Maneuver was used, as its card
+ *                                                      kept it (0.39.0): what a window in rounds is
+ *                                                      counted from. With none, now.
  * @returns {Promise<Array<{line: object, result: object, words: string}>>}
  */
-export async function applyLinesTo(recipient, lines, { giver, maneuver, from = null, force = false, combat: preferred = null } = {}) {
+export async function applyLinesTo(recipient, lines, { giver, maneuver, from = null, force = false, combat: preferred = null, moment: stored = null } = {}) {
   const combat = runningCombat(giver, recipient, preferred);
   const combatantOf = actor => combat?.getCombatantsByActor?.(actor)?.[0]?.id ?? null;
+  // Rounds are counted from the Maneuver's use (ruling 400), in the Combat the window is counted in.
+  const moment = momentIn(combat, stored);
   const out = [];
   for (const line of lines ?? []) {
     let result;
@@ -182,14 +188,16 @@ export async function applyLinesTo(recipient, lines, { giver, maneuver, from = n
         result = await removeEffectFrom(recipient, line);
       } else {
         const until = (line.until && combat)
-          ? appliedWindow(line.until, { giverCombatant: combatantOf(giver), recipientCombatant: combatantOf(recipient) })
+          ? appliedWindow(line.until, { giverCombatant: combatantOf(giver), recipientCombatant: combatantOf(recipient), moment })
           : null;
         record = appliedRecord({
           effect: line.effect, maneuver,
           giver: { uuid: giver?.uuid ?? "", name: giver?.name ?? "" },
           combat: combat?.id ?? null, until, from
         });
-        result = await applyEffectTo(recipient, line, record, { force });
+        // The moment rides to a Condition whose own value drops as rounds pass, so its count
+        // too is from the Maneuver's use (ruling 400).
+        result = await applyEffectTo(recipient, line, record, { force, moment });
       }
     } catch (error) {
       console.error(`STARWROUGHT | ${effectWords(line.effect)} could not be written on ${recipient?.name}:`, error);
@@ -225,7 +233,7 @@ const applying = new Set();
  */
 async function applySide({ chat, flags, roller, recipient, who, lines, notes = [] }) {
   const maneuver = { slug: String(flags.applies?.maneuver?.slug ?? ""), name: String(flags.applies?.maneuver?.name ?? "") };
-  const done = await applyLinesTo(recipient, lines, { giver: roller, maneuver, from: chat.id, combat: flags.applies?.combat ?? null });
+  const done = await applyLinesTo(recipient, lines, { giver: roller, maneuver, from: chat.id, combat: flags.applies?.combat ?? null, moment: flags.applies?.moment ?? null });
   // A REMOVE that found nothing is not said beside a line that did something (0.32.1).
   const words = wordsToSay(done);
   if (!words.length && !notes.length) return { name: recipient.name, words };

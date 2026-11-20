@@ -950,6 +950,98 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.39.0 (Mike, 2026-11-19; rulings 393 to 402): durations in rounds, counted from when they are
+applied, and a Condition's value that drops.** Mike, of Frightened's "It does not yet drop by 1
+at the end of each round: lower it by hand", then: "there are going to be many talents and
+abilities with various durations... whats the best way to use an elegant system to accomodate
+them all?" A survey of the sheets first, then planned (`dazzling-floating-simon.md`; his
+decisions by question). **MIKE'S RULES, STANDING: (1) a duration is written ON THE LINE, after
+`UNTIL:`, never in a column and never as a block of its own ("what if there are two effects but
+you just want one to reduce?"); (2) "durations like opportunities and rounds are always counted
+when it was applied. So if someone was 3rd in initiative, and the effect lasts for 1 round, it
+will last until their first turn in the next round": THERE IS NO ROUND'S END AND NO ROUND'S
+START AS AN ENDING, and he is rewording the sheets' "end of the round" as "for # round(s)"; (3)
+"any time a condition or effect changes, it should show in chat, just like when other things
+change": A NEW TIMED CHANGE SAYS ITS LINE AND IS NEVER SILENT.** **No kind, tag or hook point
+is new.** **The grammar** (`module/rules/operators.mjs`): `readUntil(text, { edges, drops })`
+reads `<N> round(s)` (1 to 99; `for 2 rounds` and `for the next 2 rounds` too) as `{ who:
+"round", n }` wherever a window is read (after `UNTIL:` on APPLY and GIVE, as an ALTER's
+duration VALUE), and, with `drops`, `each [<N>] round(s) -<k>` as `{ who: "round", n, step,
+each: true }`; `readRounds` tells every near miss what to write, the retired round's end first;
+a Condition's row is told its ONE shape for anything else (`dropShape`); `untilWords` says "for
+2 rounds" and "its value drops by 1 each round". `readComponent` (`module/rules/effects.mjs`)
+lets `UNTIL:` follow `CHECK`, `SKILL`, `ATK`, `DEF`, `INIT` ON A CONDITION'S ROW alone
+(`CONDITION_DROP_TAGS`, `drops`), skips the `UNTIL` of a tag that row does not read (the grammar
+refuses the tag), and `componentAsBlock` answers a component written as a line of its own
+(`[EFFECT UNTIL: ...]`, `[UNTIL ...]`); `kinds/bonus.mjs` stores `until` on the rule ONLY WHEN
+SET (a rule with none is stored as it was), refuses a plain window on a Condition's row
+(ruling 402) and the drop off a Takes-N row. **The clock is `module/rules/clock.mjs`, pure,
+importing nothing**: a STAMP `{ combat, anchor, init, since }` (the Combat, the Combatant whose
+Opportunity was running, that fighter's Initiative, the round); `momentIn(combat, stored)` (the
+moment now, or a stored one of the same Combat; `rules/scene.mjs` hands it on and has
+`encounterMoment()`); `standIn(stamp, order)` (the anchor while it is in the fight, else the
+next after its place, ties by id and the unrolled last as Foundry sorts, wrapping to the top;
+null with nobody); `roundsPassed(stamp, change, order)` (`{ began, round }` counts only for the
+stand-in and only in a round later than `since`; `{ roundEnded }` is the last resort; a rewind
+counts nothing, a jump counts the difference). **A WINDOW IN ROUNDS** is `{ who: "round", n,
+anchor, init, since }` (with `combatant: null, begun: 0`) on a pending result or an applied
+Effect, under keys of its own, and is NEVER WRITTEN WHILE IT RUNS (`roundWindowOver`; `settle`
+in `rules/given.mjs` answers "keep" or "expire" alone for it); `normalUntil`, `pendingEntry({
+..., moment })`, `pendingWindowWords`, `appliedWindow(until, { ..., moment })` and
+`sameApplication` (the stamp is part of what an application is) each have the branch; the two
+older shapes are stored and settled exactly as before. **THE MOMENT IS THE MANEUVER'S USE
+(ruling 400)**: the check card keeps it (`flags.starwrought.given.moment`, `.applies.moment`;
+`cfg.moment ?? encounterMoment()` in `dice/check.mjs`), a check request keeps it
+(`record.moment`, handed to `resumeCheck`'s config and to the adversary's result card), and
+`applyLinesTo({ moment })` / `applyGive` count from it; a window of Opportunities is still
+counted from the press. **A CONDITION'S OWN CLOCK** is `flags.starwrought.clock` on the
+Condition's effect: the stamp, `count` and `holder` (the Combatant the creature fights as).
+`fadeOf(rules)` says what its row asks (`{ every, step }`); `conditionClockFor(actor, id,
+stored)` (`documents/actor/conditions.mjs`; the Combat by MEMBERSHIP, `fightOf`) stamps it as
+the Condition goes on, is RAISED or is switched back on, in `#writeCondition` and in two hooks
+of `starwrought.mjs` for the paths that bypass it (`preCreateActiveEffect` for the token
+palette, `preUpdateActiveEffect` for the Effects tab's switch). `settleConditionClocks`
+(`rules/effects-state.mjs`) sweeps the FIGHTERS of the Combat on each one's responsible client:
+a clock that is not running there (`clockRuns(clock, combat, holders)`: another Combat's, or a
+holder that is no longer one of the creature's Combatants, so a creature that left the tracker
+and came back starts again) is stamped with the fighter whose Opportunity just ended, never on
+a round's end alone; the dead lose their clock; `tickFade` counts; and the value is lowered by
+`setCondition(id, null, data, { drop, from })`, decided INSIDE the write queue and only on the
+clock the tick was worked out from (`sameClock`). **ONE CLOCK TO A CONDITION (ruling 398)**:
+`N` is one number, every `-N` line follows it, and `assets/lib/conditions_build.mjs` stops the
+build on two lines that disagree (`fadesDisagree`), warns on the same drop twice and on a drop
+on a row marked System. **THE CLOCK'S ONE ENTRY is `settleGivenResults(combat, change, { sink
+})`**: `{ ended, round }`, `{ began, round }` or `{ roundEnded }`; it runs the Bind's windows,
+the applied Effects, the Conditions' clocks and the pending results. `onTurnChange`
+(`documents/combat.mjs`) hands it the rounds, `endRound(combat, round, sink)` runs it ONCE for
+the round's end, and `settleLoneStep` / `onStepSocket` pass `combat.round`. **A new thing that
+counts time joins that sweep.** **WHAT THE CLOCK SAYS (ruling 396)**: every sweep puts a PLAIN
+line in a sink (`timedLines()`, `sayLine(sink, actor, text, { from, open })`), and the caller
+posts (`postTimedLines`, which imports `documents/cards/timed.mjs` only when there is something
+to say, so `effects-state.mjs` still loads in Node; `withSink` posts in a `finally` for a sweep
+called alone; `onTurnChange` makes one sink for the whole turn change). One card for each
+creature and audience (`flags.starwrought.kind: "timed"`, "As time passes" / "The encounter
+ends"). Said now, silent through 0.38.0: a Condition's drop, an applied Effect's or Condition's
+window closing (rounds or Opportunities), a pending result expiring unused, the Gain Control
+Off-Guard, a Posture's Exposed Zone at the round's end (`clearPostureExposed` returns the
+Zones), and at the encounter's end all of those and the custom effect rows of duration
+"encounter". `goneWords` says "is no longer" for a Condition, "loses" for a named Effect, and
+"still counts as" when the creature has the Condition another way (`stillCounts`, through
+`conditionSetOf`). **WHO SEES A LINE (ruling 401) is `audienceFor`, pure, in
+`effects-state.mjs`**: the audience of the card that put the thing on (`from`: the GM alone
+for a blind roll, the whisper and the author for a whispered one), the GM alone for a hidden
+token (asked of the fights' own tokens), the table for a thing the token shows (`open`), the
+owners and the GM when the card is gone and the token does not show it, else `tableFor`.
+**LEFT QUIET, and told to Mike**: a raised shield coming down, the "(used)" marker lapsing, a
+Condition toggled by hand on a token and a death (the last two are the next release, by his
+choice). **SLOWED AND STUNNED ARE NOT IN THIS RELEASE**: neither has a line to carry an `UNTIL`
+(the next word would be something like `[EFFECT ACTIONS: -N; UNTIL: each round -1]`). **The
+release carries the code alone**: Frightened's cell (`[EFFECT CHECK: -N condition; UNTIL: each
+round -1]`) and its reworded Effect are printed in the 0.39.0 changelog entry for Mike to
+paste, and until he saves it nothing drops. **The Conditions sheet was built as he saved it**
+(Notes cells alone had changed: "Hard-coded"): 26 Conditions, 13 rules on 9 rows. His four
+workbooks in progress were not converted, built, staged or written.
+
 **0.38.0 (Mike, 2026-11-19; rulings 385 to 392): a Condition may take a Defense away, the
 `CANNOT` word, for Grabbed.** Mike: "Grabbed currently is hard-coded to 'cannot Evade' ... I
 would like to make that an automation grammar to prevent the use of a Defense." Planned first
@@ -2633,7 +2725,9 @@ content build writes them again.
   `INIT`, with `-N` for its own value, since 0.35.0 `IMMUNE` for a trait (`[EFFECT IMMUNE:
   TRAIT(Visual)]`), since 0.37.0 `COST` for a cost raised by a trait (`[EFFECT COST: 1; IF:
   TRAIT(Concentrate)]`), and since 0.38.0 `CANNOT` for a Defense taken away (`[EFFECT CANNOT:
-  evade]`); a row's lines count once on a roll, the stronger (0.36.0); Includes is how
+  evade]`), and since 0.39.0 a modifier line may end `; UNTIL: each round -1`, the Condition's
+  own value dropping for each round that passes since it went on, on a row whose Takes is N;
+  a row's lines count once on a roll, the stronger (0.36.0); Includes is how
   one Condition counts as another, with
   `against X` (`AUTOMATION_GRAMMAR.md`, section 11). **`node assets/build_all.mjs --conditions`
   (`sync_conditions.cmd`) builds this workbook alone.** The handbook still prints its Conditions
@@ -2969,14 +3063,41 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
+- **0.39.0 leaves to the table or to Mike** (durations in rounds): **Frightened's cell waits
+  for him to paste** into `data/conditions.xlsx` (the 0.39.0 changelog entry: `[EFFECT CHECK: -N
+  condition; UNTIL: each round -1]`, and its Effect reworded, since it no longer drops "at the
+  end of each round"); until then nothing drops. He is rewording the sheets' "end of the round"
+  and "beginning of the round" as "for # round(s)" himself. Rulings 397 to 402 are Claude's
+  readings and his to overrule (`assets/open_decisions.json`); the two to know are 397 (when
+  the stand-in is the first fighter the count falls as the next round opens, up to a circuit
+  early) and 399 (outside an encounter no rounds pass, so Frightened keeps its value). **The
+  survey's 11 "round" rows cannot use the word yet**: nine are Talents (APPLY is read on a
+  Maneuver's own row alone) and two need an Effect that carries its own lines. Not built:
+  Slowed's and Stunned's drops (no line to carry one; an `ACTIONS` word is the next step, with
+  him); `UNTIL: 2 rounds` on a Condition's own row; a count of rounds on a custom effect row;
+  the survey's other endings (events, "used" on an applied Effect, clock time, a night's rest,
+  Sustain); APPLY from a Talent's own row. **Chat, the next release (his choice)**: a Condition
+  toggled by hand on a token, and a death (a pop-up only today); the audit skips a Condition's
+  own effect and `#writeCondition`'s writes are not all marked, so that release must mark every
+  system write of a Condition first. Still quiet and his to say: a raised shield coming down,
+  the "(used)" marker lapsing. Stated by the review and not changed: the older window shapes
+  keep a round window's `anchor`, `init`, `since` after a refresh by merge (harmless: `who`
+  decides the branch); a stand-in wraps to the top of the order. Not driven live: a table with
+  no GM, a lone fighter, a rewind or a jump of rounds, a defeated and skipped anchor, a reroll,
+  an adversary's result card. The test world was driven on 0.39.0 with a GM tab and a player
+  tab, Frightened's line given to the registry IN MEMORY (no file written), and left as found
+  but for one "Content synced" card (442 messages): Mike's Combat with testpc8 active at round
+  4, the Bandit Prone, the fixtures of earlier releases untouched, Foundry running on 0.39.0
+  with the GM joined. To try 0.39.0 there once the cell is in the sheet and synced: start a
+  Combat with Tess, Wren and the Bandit, toggle Frightened on the Bandit's token, set its value
+  to 2 on its Effects tab, and step through the rounds.
 - **0.38.0 leaves to the table or to Mike** (a Condition takes a Defense away): **Grabbed's
   line is in his sheet and built** (`[EFFECT CANNOT: evade]`, pasted at 20:11 on 2026-11-19;
   Restrained needs none). Its Notes cell still says "Evade is marked unavailable by the
   system" (a sentence to put there is in the 0.38.0 changelog entry; nothing reads the cell).
   **If the line ever leaves the sheet, Grabbed and Restrained take no Defense away**, which
   the code held through 0.37.0; the Conditions build then warns every time. The
-  `0.38.0-grabbed-cell` row of `assets/open_decisions.json` is marked decided: delete it at
-  the next build.
+  `0.38.0-grabbed-cell` row of `assets/open_decisions.json` was deleted with 0.39.0.
   Rulings 388 to 392 are Claude's readings and his to overrule; the one to know is 391 (an
   answer is judged at the reveal and stands: a Condition or a Head Wound that arrives after it
   takes nothing away, and a reroll meets the same answer). Not built: `CANNOT` for anything but
@@ -3470,6 +3591,34 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (durations in rounds, system 0.39.0; rulings 393 to 402 in the 0.39.0
+changelog entry; planned in `dazzling-floating-simon.md` after a survey of the sheets, Mike's
+decisions by question: the duration on the line, rounds counted from when applied, `UNTIL: each
+round -1` and `UNTIL: 2 rounds`, both built now, every change shown in chat with the timed ones
+in this release): Frightened's "Reduce by 1 at the end of each round", lowered by hand, now
+`UNTIL: each round -1` on its row's line, the value dropping for each round that passes since
+the Condition went on, on a clock kept on the Condition's own effect; no way to say an Effect
+or a result lasts some rounds, now `UNTIL: 2 rounds` after APPLY and GIVE and as an ALTER's
+duration, a window that is never written while it runs; a round's end offered as an ending,
+withdrawn at his word and refused by name; every sweep of the clock silent ("a window closing
+is not an event"), now one "As time passes" card for each creature and audience, sent to
+whoever saw the thing go on. Checked by 282 self-test checks, `node --check` on every module,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13), the
+smoke test, the Conditions build on the sheet as saved, a second reader on the design before
+the plan was shown, an independent review by two readers (no wrong count and no wrong stored
+rule; the medium findings were a Condition's clock stamped at a late press and not at the
+use, a clock that caught up every missed round after being switched off and on or after
+leaving the tracker, and messages on a Condition's row that named shapes the row does not
+read; all mended but two stated) and live in the test world with a GM tab and a player tab,
+before the review and again for its mends (the 0.39.0 changelog entry lists what, and what was
+not driven). One thing Mike was told wrongly and then corrected: that 11 rows could use a
+round's ending at once; on the day only Frightened does. Not built, and said so: Slowed's and
+Stunned's drops, hand toggles and a death in chat, the survey's other endings, APPLY from a
+Talent's row. The release carries the code alone: Frightened's cell is his to paste. His four
+workbooks in progress were not converted, built, staged or written. No handbook moved and
+`data/SYNC.json` is untouched. Committed on 2026-11-20 at his word and tagged `v0.39.0`, his
+edits to the four workbooks and the v4.24 draft left out; not pushed until he says.
 
 Cleared 2026-11-19 (a Condition takes a Defense away, system 0.38.0; rulings 385 to 392 in the
 0.38.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:

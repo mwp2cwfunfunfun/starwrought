@@ -45,6 +45,8 @@ import { SCOPES, scopeReaches } from "../../foundry/starwrought/module/rules/kin
 // 0.38.0: the two Conditions the code took Evade away for, and what a Condition counts as.
 import { EVADE_BY_HAND } from "../../foundry/starwrought/module/rules/cannot.mjs";
 import { closeConditions, heldIds } from "../../foundry/starwrought/module/rules/condition-set.mjs";
+// 0.39.0: what a row says of its own value as rounds pass (`UNTIL: each round -1`).
+import { fadesOf, fadesDisagree } from "../../foundry/starwrought/module/rules/clock.mjs";
 
 /** The words of a kind of roll, for a message. */
 const KIND_WORDS = Object.freeze({ check: "checks", initiative: "Initiative", attack: "attacks", defense: "Defenses" });
@@ -262,6 +264,22 @@ export function buildConditions({ staged, resolve = null } = {}) {
       const pairs = meets.map(m => `lines ${m.a} and ${m.b} both reach ${m.what}`).join("; ");
       warnings.push(`${where}: ${pairs}. A Condition counts once on a roll, so only the stronger of two such lines applies there`
         + (meets.some(m => m.covers) ? "; a bare CHECK reaches every roll and Threshold, so a line of the same size beside it can go" : ""));
+    }
+    // ONE CLOCK TO A CONDITION (0.39.0; ruling 398). `UNTIL: each round -1` lowers the Condition's
+    // own value, which is one number, so two lines that say different things of it cannot both
+    // be right: the build stops rather than pick one. Two that agree are one too many, and said.
+    const fades = fadesOf(parsed.rules);
+    const fadeLines = parsed.rules.filter(rule => rule?.until?.each === true).map(rule => rule.line).join(" and ");
+    if (fadesDisagree(parsed.rules)) {
+      errors.push(`${where}: lines ${fadeLines}: two lines say different things of how the value drops (UNTIL: each ... on both). A Condition has one value and one clock: keep the UNTIL on one line`);
+    } else if (fades.length > 1) {
+      warnings.push(`${where}: lines ${fadeLines}: ${fades.length} lines carry the same UNTIL: each ... ; the Condition has one value, so once is enough`);
+    }
+    // A Condition THE SYSTEM RUNS (Dying, Wounded: its row says System) is put on and taken off
+    // by the system's own rules. A value that drops as rounds pass would take it off at 0 behind
+    // those rules, so it is said (the review of 0.39.0), and it still builds: the row is the word.
+    if (fades.length && (row.system === true)) {
+      warnings.push(`${where}: the row is marked System, and its value is told to drop as rounds pass (UNTIL: each ...): at 0 the clock would take the Condition off behind the system's own rules for it`);
     }
     parsedRows.push({ row, name, takes, where, includes, rules: parsed.errors.length ? [] : parsed.rules });
   }

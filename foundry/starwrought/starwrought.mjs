@@ -10,6 +10,9 @@
 import * as SW from "./module/config.mjs";
 // The `prevent` rules on the token palette's path (0.13.0): asked in preCreateActiveEffect below.
 import { preventersFor, sayPrevented, spendSkips } from "./module/rules/prevent.mjs";
+// 0.39.0: the clock a Condition takes as it goes on, for one toggled from the token.
+import { conditionClockFor } from "./module/documents/actor/conditions.mjs";
+import { CLOCK_FLAG } from "./module/rules/clock.mjs";
 import { SwCharacterData, SwNpcData } from "./module/data/actor.mjs";
 // THE PARTY (0.7.0): a third Actor type, GM-owned with Observer players, extending TypeDataModel
 // directly so the combat machinery never sees one (party-sheet-plan.md, phase 1).
@@ -951,12 +954,32 @@ function registerExposedStatuses() {
     const preventer = automatic[0];
     if (!preventer) {
       spendSkips(actor, marks);
+      // 0.39.0: a Condition whose value drops as rounds pass takes its clock as it goes on, here
+      // for one toggled from the token (SwActor#setCondition stamps its own creates).
+      const clock = conditionClockFor(actor, id);
+      if (clock && !effect.flags?.[SW.SYSTEM_ID]?.[CLOCK_FLAG]) effect.updateSource({ [`flags.${SW.SYSTEM_ID}.${CLOCK_FLAG}`]: clock });
       return;
     }
     sayPrevented(actor, preventer, game.i18n.localize(SW.conditionNameKey(id)))
       .then(() => spendSkips(actor, [...marks, ...(preventer.mark ? [preventer.mark] : [])]))
       .catch(err => console.error(`STARWROUGHT | ${actor.name}: the prevented ${id} could not be said`, err));
     return false;
+  });
+
+  // 0.39.0 (ruling 398; the review): a Condition SWITCHED BACK ON from a sheet's Effects tab is
+  // an update of `disabled`, which never reaches SwActor#setCondition. Its clock starts again
+  // here, on the client making the change: counted from now for a fighter, and cleared for a
+  // creature in no fight, so a count from before the switch never catches up in one drop.
+  Hooks.on("preUpdateActiveEffect", (effect, changes, options, userId) => {
+    if ((userId !== game.user.id) || (changes?.disabled !== false) || !effect.disabled) return;
+    const actor = effect.parent;
+    if (!(actor instanceof Actor)) return;
+    const statuses = [...(effect.statuses ?? [])];
+    if ((statuses.length !== 1) || !SW.CONDITIONS[statuses[0]]?.numeric) return;
+    const path = `flags.${SW.SYSTEM_ID}.${CLOCK_FLAG}`;
+    if (foundry.utils.hasProperty(changes, path)) return;
+    const clock = conditionClockFor(actor, statuses[0]);
+    if (clock || effect.flags?.[SW.SYSTEM_ID]?.[CLOCK_FLAG]) foundry.utils.setProperty(changes, path, clock);
   });
 
   Hooks.on("updateActor", (actor, changes, options, userId) => {

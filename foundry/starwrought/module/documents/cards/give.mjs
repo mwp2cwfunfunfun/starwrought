@@ -51,7 +51,7 @@ import { enabledConstellations } from "../../helpers/content.mjs";
 import { pendingEntry, resultWords, windowWords, degreeName, signedValue } from "../../rules/given.mjs";
 import { givenResults } from "../../rules/engine.mjs";
 import { writeGiven } from "../../rules/effects-state.mjs";
-import { encounterContext } from "../../rules/scene.mjs";
+import { encounterContext, momentIn } from "../../rules/scene.mjs";
 
 /** The `flags.starwrought.kind` of the card a give posts. */
 export const GIVEN_CARD = "given";
@@ -460,7 +460,13 @@ async function giveOnce(request, userId) {
     combat: combat?.id ?? null,
     giverCombatant: combatantOf(roller),
     recipientCombatant: combatantOf(recipient),
-    message: chat.id
+    message: chat.id,
+    // 0.39.0: a window in rounds is counted from the Maneuver's use, as its card kept it
+    // (ruling 400), and only in a Combat that has started.
+    // In a Combat that has not started yet there is no Opportunity to count from: the stamp is
+    // round 0 with nobody, so "for 1 round" ends with round 1 and not with the whole encounter
+    // (the review of 0.39.0).
+    moment: momentIn(combat, flags.given.moment ?? null) ?? (combat ? { anchor: null, init: null, round: 0 } : null)
   });
   if (!entry.maneuver || !entry.value) return refused("nothing");
 

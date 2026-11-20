@@ -33,6 +33,8 @@
  */
 
 import { untilWords, untilEdge, titled, DEGREE_NAMES } from "./operators.mjs";
+// 0.39.0: a window counted in rounds from when the result was given (./clock.mjs, pure).
+import { isRoundWindow, roundWindowOver, stampOf, endsInRound } from "./clock.mjs";
 
 /** The four degrees, in the Result table's order. */
 export const GIVE_DEGREES = Object.freeze(["critSuccess", "success", "fail", "critFail"]);
@@ -186,10 +188,18 @@ export function sameGiven(a, b, degree) {
     && (JSON.stringify(a?.notes?.[degree] ?? []) === JSON.stringify(b?.notes?.[degree] ?? []));
 }
 
-/** A window as stored: `{ who, n }`, the default when none or a broken one was given. */
+/**
+ * A window as stored: `{ who, n }`, the default when none or a broken one was given. A window in
+ * rounds (0.39.0) passes through as `{ who: "round", n }`: the drop a Condition's row may write
+ * (`each`, `step`) is no window of a result and is left behind.
+ */
 function normalUntil(until) {
   const who = until?.who;
   if (who === "encounter") return { who: "encounter", n: 0 };
+  if (who === "round") {
+    const rounds = Number(until?.n);
+    return { who: "round", n: (Number.isInteger(rounds) && (rounds >= 1)) ? rounds : 1 };
+  }
   if ((who !== "giver") && (who !== "recipient")) return { ...DEFAULT_UNTIL };
   const n = Number(until?.n);
   return { who, n: (Number.isInteger(n) && (n >= 1)) ? n : 1 };
@@ -215,9 +225,13 @@ function normalUntil(until) {
  * @param {string|null} [options.giverCombatant]      The giver's Combatant id in that Combat.
  * @param {string|null} [options.recipientCombatant]  The recipient's Combatant id in that Combat.
  * @param {string|null} [options.message]             The check card's id, the event the give answers.
+ * @param {{anchor?: string|null, init?: number|null, round?: number}|null} [options.moment]
+ *        Where in the fight the Maneuver was used (0.39.0): whose Opportunity was running, that
+ *        fighter's Initiative, and the round. What a window in ROUNDS is counted from; with
+ *        none it cannot be counted and lasts the encounter, as a window with no Combatant does.
  * @returns {object}
  */
-export function pendingEntry({ result, to, maneuver, giver, combat = null, giverCombatant = null, recipientCombatant = null, message = null }) {
+export function pendingEntry({ result, to, maneuver, giver, combat = null, giverCombatant = null, recipientCombatant = null, message = null, moment = null }) {
   const slug = String(maneuver?.slug ?? "");
   const maneuverName = String(maneuver?.name ?? titled(slug));
   const byName = String(giver?.name ?? "");
@@ -225,9 +239,18 @@ export function pendingEntry({ result, to, maneuver, giver, combat = null, giver
   if (combat) {
     const window = normalUntil(result?.until);
     const combatant = window.who === "giver" ? giverCombatant : window.who === "recipient" ? recipientCombatant : null;
-    until = ((window.who === "encounter") || !combatant)
-      ? { who: "encounter", combatant: null, n: 0, begun: 0 }
-      : { who: window.who, combatant: String(combatant), n: window.n, begun: 0 };
+    if (window.who === "round") {
+      // Rounds (0.39.0): the stamp and `n`, under keys of their own, so no reader of the two
+      // older shapes mistakes it and nothing is written while it runs.
+      const stamp = moment ? stampOf({ combat, anchor: moment.anchor, init: moment.init, round: moment.round }) : null;
+      until = stamp
+        ? { who: "round", combatant: null, n: window.n, begun: 0, anchor: stamp.anchor, init: stamp.init, since: stamp.since }
+        : { who: "encounter", combatant: null, n: 0, begun: 0 };
+    } else {
+      until = ((window.who === "encounter") || !combatant)
+        ? { who: "encounter", combatant: null, n: 0, begun: 0 }
+        : { who: window.who, combatant: String(combatant), n: window.n, begun: 0 };
+    }
   }
   return {
     id: `${GIVEN_PREFIX}${slug}`,
@@ -461,13 +484,22 @@ export function limitOf(rule, alterations = []) {
  * the recipient's; the end is read before the beginning, so a lone fighter's turn change ends one
  * Opportunity before it counts the next. An Opportunity already running when the result is given
  * is never counted: the window is of UPCOMING Opportunities.
+ *
+ * A WINDOW IN ROUNDS (0.39.0; ./clock.mjs) is counted from the moment the thing was given: it is
+ * over when its anchor begins its first Opportunity `n` rounds later, or, with nobody to count
+ * for it, when that round ends (`roundEnded`). It is never written while it runs, so the answer
+ * is "keep" or "expire" alone. `order` is the turn order now, for who stands in.
  * @param {object} entry
- * @param {{combat?: string|null, ended?: string|null, began?: string|null}} change
+ * @param {{combat?: string|null, ended?: string|null, began?: string|null, round?: number|null, roundEnded?: number|null, order?: object[]}} change
  * @returns {"keep"|"expire"|{begun: number}}
  */
-export function settle(entry, { combat = null, ended = null, began = null } = {}) {
+export function settle(entry, { combat = null, ended = null, began = null, round = null, roundEnded = null, order = [] } = {}) {
   const until = entry?.until;
   if (!until || !entry.combat || (entry.combat !== combat)) return "keep";
+  if (isRoundWindow(until)) {
+    const change = ((roundEnded !== null) && (roundEnded !== undefined)) ? { combat, roundEnded } : { combat, began, round };
+    return roundWindowOver(until, entry.combat, change, order) ? "expire" : "keep";
+  }
   if ((until.who !== "giver") && (until.who !== "recipient")) return "keep";
   if (!until.combatant) return "keep";
   const begun = Math.max(0, Number(until.begun) || 0);
@@ -530,6 +562,8 @@ export function windowWords(until, { giver, recipient, encounter = true } = {}) 
 export function pendingWindowWords(entry, { giver, recipient } = {}) {
   const until = entry?.until;
   if (!until) return "until it is used";
+  // 0.39.0: rounds are counted from when it was given, so the round it ends in is what is left.
+  if (isRoundWindow(until)) return `${untilWords({ who: "round", n: until.n })}, until round ${endsInRound(until)}`;
   if ((until.who !== "giver") && (until.who !== "recipient")) return "until the encounter ends";
   const left = Math.max(0, (Number(until.n) || 1) - (Number(until.begun) || 0));
   if ((until.who === "recipient") && (left === 0)) return `through ${recipient ?? "the recipient"}'s Opportunity`;

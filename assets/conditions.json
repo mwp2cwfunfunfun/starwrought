@@ -44,7 +44,7 @@
    "system": true,
    "listed": true,
    "icon": "",
-   "notes": "The system's own: the Bind.",
+   "notes": "Hard-coded",
    "builtIn": true
   },
   {
@@ -59,7 +59,7 @@
    "system": true,
    "listed": true,
    "icon": "",
-   "notes": "The system's own: the Bind.",
+   "notes": "Hard-coded",
    "builtIn": true
   },
   {
@@ -74,7 +74,7 @@
    "system": true,
    "listed": true,
    "icon": "",
-   "notes": "The system's own: the Bind.",
+   "notes": "Hard-coded",
    "builtIn": true
   },
   {
@@ -118,7 +118,7 @@
    "system": true,
    "listed": true,
    "icon": "",
-   "notes": "The system's own: the Dying count, the Recovery check, death.",
+   "notes": "Hard-coded: the Dying count, the Recovery check, death.",
    "builtIn": true
   },
   {
@@ -133,7 +133,7 @@
    "system": true,
    "listed": true,
    "icon": "",
-   "notes": "The system's own: one status for each Zone, which mirror the Zones. This one row describes all four.",
+   "notes": "Hard-coded: one status for each Zone, which mirror the Zones. This one row describes all four.",
    "builtIn": true
   },
   {
@@ -191,7 +191,7 @@
    "system": false,
    "listed": true,
    "icon": "",
-   "notes": "The numbers are this row's lines. The maximum of 3, the Wind check, the rests that end it and the lock to Travel are the system's.",
+   "notes": "The numbers are this row's lines. The maximum of 3, the Wind check, the rests that end it and the lock to Travel are Hard-coded.",
    "builtIn": true
   },
   {
