@@ -11,7 +11,8 @@
 
 import * as SW from "../../config.mjs";
 import { ruleModifiers } from "../../rules/engine.mjs";
-import { ARMS_WOUND_PENALTY, unavailableEvade, heldConditions } from "./shared.mjs";
+import { ARMS_WOUND_PENALTY } from "./shared.mjs";
+import { unusableDefenses } from "../../rules/cannot.mjs";
 
 /**
  * The four Defenses. Each is a Constellation, so each is Attribute Bonus + Proficiency Bonus +
@@ -163,9 +164,14 @@ export function prepareDefenses(data) {
       unavailable: null
     };
   }
-  // "Evade is unavailable while you are Grabbed or Restrained. You cannot slip what is already
-  // holding you." Guard's own exceptions (unaware of the attack, or nothing in hand and no hand
-  // free) are not things the sheet can see, so they stay with the table. Recorded, not enforced.
-  // Asked of what the creature HAS since 0.33.0: a Condition that includes Grabbed counts.
-  data.defenses.evade.unavailable = unavailableEvade(heldConditions(data.parent));
+  // THE DEFENSES THIS CHARACTER CANNOT USE (0.38.0; rulings 385 to 392): what the rows of the
+  // Conditions it has say, `[EFFECT CANNOT: evade]` on Grabbed (module/rules/cannot.mjs). Through
+  // 0.37.0 the code itself took Evade away while Grabbed or Restrained; that stands only for a
+  // Condition no row describes. Any of the four may be named. It is about ANSWERING an attack or
+  // a check read against the Defense (ruling 389): the Wind check, an Initiative rolled with
+  // Awareness and a Defense rolled for its own sake never ask. Guard's own exceptions in the book
+  // (unaware of the attack, nothing in hand and no hand free) are not things the sheet can see,
+  // so they stay with the table.
+  const unusable = unusableDefenses(data.parent);
+  for (const key of Object.keys(data.defenses)) data.defenses[key].unavailable = unusable[key] ?? null;
 }

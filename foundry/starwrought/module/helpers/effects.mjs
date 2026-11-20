@@ -37,7 +37,7 @@ export { armClaim as armClaimLine } from "../rules/claims.mjs";
  * Maneuver gives) are switched as any line; a result PENDING on the character is a `give` rule
  * too, on a carrier of its own, and is listed apart without a switch (`givenContext`).
  */
-export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter", "permit", "subordinate", "apply", "cost"]);
+export const EFFECT_KINDS = Object.freeze(["bonus", "prevent", "mark", "reroll", "ignore", "substitute", "give", "alter", "permit", "subordinate", "apply", "cost", "cannot"]);
 
 const L = key => game.i18n.localize(key);
 const F = (key, data) => game.i18n.format(key, data);

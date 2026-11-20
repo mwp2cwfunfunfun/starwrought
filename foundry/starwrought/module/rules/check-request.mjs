@@ -53,9 +53,10 @@ export function validRequest(request, { isGM = false, ownsUser = false, userIsCh
 }
 
 /**
- * The Defenses of those a row names that the target can use now. Evade is the one that can be
- * taken away (Grabbed, Restrained, Unconscious); with none usable every one named is offered, and
- * the read then says the Defense is unavailable, as it does for a row that names one.
+ * The Defenses of those a row names that the target can use now. Which Defense a creature cannot
+ * use is what the rows of the Conditions it has say (0.38.0: `[EFFECT CANNOT: evade]` on Grabbed,
+ * which Restrained counts as; any of the four; ./cannot.mjs). With none usable every one named is
+ * offered, and the read then says the Defense cannot be used, as it does for a row that names one.
  * @param {string[]} named
  * @param {(key: string) => unknown} [unavailable]  Truthy when the target cannot use that Defense.
  * @returns {string[]}

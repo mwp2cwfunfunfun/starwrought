@@ -19,7 +19,8 @@ import { collectRules, conditionModifiers } from "../rules/engine.mjs";
 // 0.34.0: an adversary's number for a check, typed and in effect.
 import { adversaryCheck } from "../rules/check-request.mjs";
 // The character's derived-data passes, one module each (0.10.1), called in order by
-// SwCharacterData#prepareDerivedData below; the adversary shares the Evade availability.
+// SwCharacterData#prepareDerivedData below. The Defenses a creature cannot use are asked of
+// ../rules/cannot.mjs by the character's Defense pass and by the adversary's model alike (0.38.0).
 import { prepareConstellations } from "./character/constellations.mjs";
 import { prepareAttributes } from "./character/attributes.mjs";
 import { prepareArmor } from "./character/armor.mjs";
@@ -28,7 +29,7 @@ import { prepareWind } from "./character/wind.mjs";
 import { prepareVigor } from "./character/vigor.mjs";
 import { prepareActions } from "./character/actions.mjs";
 import { prepareOffense } from "./character/offense.mjs";
-import { unavailableEvade, heldConditions } from "./character/shared.mjs";
+import { unusableDefenses } from "../rules/cannot.mjs";
 import { ownedReactions } from "../helpers/answers.mjs";
 
 /** Re-exported so the canvas can import the ranges list from the model that derives it (0.5.1). */
@@ -990,8 +991,10 @@ export class SwNpcData extends SwActorData {
     this.attackShift = attackLines.total;
     for (const attack of this.attacks) attack.inEffect = (Number(attack.threshold) || 0) + this.attackShift;
     const statuses = this.parent.statuses ?? new Set();
-    // Asked of what the creature HAS since 0.33.0: a Condition that includes Grabbed counts.
-    this.defenses.evade.unavailable = unavailableEvade(heldConditions(this.parent));
+    // The Defenses the Conditions it has take away (0.38.0; module/rules/cannot.mjs), as a
+    // character's are: a row's `[EFFECT CANNOT: evade]`, any of the four.
+    const unusable = unusableDefenses(this.parent);
+    for (const key of Object.keys(this.defenses)) this.defenses[key].unavailable = unusable[key] ?? null;
 
     // An adversary's Reactions are the GM's to declare, so every answer stands available unless
     // a Head Wound, or the Head's Critical Hit effect until a Recenter (0.26.0), forbids them. No

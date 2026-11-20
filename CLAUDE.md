@@ -950,6 +950,74 @@ spending into the template and holding Next until named, `onCreateItem` promptin
 Talent or the template Constellation and deleting it on Cancel, **Name this Lore** on a template's
 Constellations row and "Lore (unnamed)" there and on the party's Skills grid.
 
+**0.38.0 (Mike, 2026-11-19; rulings 385 to 392): a Condition may take a Defense away, the
+`CANNOT` word, for Grabbed.** Mike: "Grabbed currently is hard-coded to 'cannot Evade' ... I
+would like to make that an automation grammar to prevent the use of a Defense." Planned first
+(`dazzling-floating-simon.md`; his decisions by question: the word is CANNOT; Grabbed keeps
+taking Evade away, by its row, and he pastes the line; in the Combat window an unusable Defense
+is DISABLED). **The `cannot` kind, the twenty-seventh, has NO HOOK POINT**
+(`module/rules/kinds/cannot.mjs`; `cannot` in `EFFECT_TAGS`, `CONDITION_ROW_TAGS` and
+`EFFECT_KINDS`): `[EFFECT CANNOT: <Defense>]`, read ON A CONDITION'S ROW ALONE, one of the four
+Defenses by name (`defenseKeyOf` in `rules/check.mjs`), no component; stored FLAT, `{ kind:
+"cannot", defense, name }`; As read "cannot use Evade". **What was written decides the message,
+never the number of commas** (`wordsOf`: `move, step` is "not read yet", `evade guard` is "one
+Defense to a line", a value first and a Defense with words beside it have messages of their
+own). The kind's file imports nothing that reaches the registry. **The reader is
+`module/rules/cannot.mjs`**: `unusableDefenses(actor)` answers, for each of the four Defenses,
+the id of the Condition that takes it away, or null (Condition carriers alone through
+`rulesOfKind`; an "against X" carrier passed over; `reasonOf(item, held)` walks the creature's
+own set up to the Condition it HAS, ruling 392). **IT RUNS INSIDE BOTH DEFENSE PASSES AND NEVER
+THROWS.** The two passes (`prepareDefenses` in `data/character/defenses.mjs`, the npc model in
+`data/actor.mjs`) write its answer onto `system.defenses[key].unavailable` for ALL FOUR
+Defenses, where every reader of an unusable Defense already looked, each generic over the key;
+`unavailableEvade` and `heldConditions` are gone from `data/character/shared.mjs`. **THE ROW IS
+THE WORD (ruling 386; ruling 329's rule): a Condition whose row carries no `CANNOT` line takes
+no Defense away, Grabbed included. THE OLD RULE IS A GUARD** (`EVADE_BY_HAND` in
+`rules/cannot.mjs`): Evade while Grabbed or Restrained stands for each of the two only while
+THAT Condition has no row (the Conditions file could not be read). **IT IS ABOUT ANSWERING**
+(ruling 389): an attack, or a Maneuver's check read against the Defense; nothing outside an
+answer reads `unavailable`, so the Wind check, the default Initiative, a Search and a Defense
+rolled from the sheet never ask. **One rule for "may this Defense answer"** is in
+`helpers/answers.mjs` (pure): `unusableReason`, `usableAnswers` (with NONE usable every one
+permitted stands, basic and alone, ruling 390) and `refusedDefense`; `legalAnswers` offers no
+Reaction and no Posture on an unusable Defense and `isLegalAnswer` refuses a refused one, so
+the Combat window and the coordinator cannot disagree. **The Combat window**
+(`apps/combat-prompt.mjs`, `templates/apps/combat-prompt.hbs`): the option is `disabled`, with
+its OWN number (`#basicThreshold` with `[d]`); a draft whose Defense became refused is cleared
+with its answer and Zone; the window redraws on `createActiveEffect`, `updateActiveEffect` and
+`deleteActiveEffect`, by a timer; **`#onCommit` reads the draft BEFORE `this.render()`** (a
+render prepares its context at once, and that clears a refused draft). **The coordinator**
+(`combat/attack-coordinator.mjs`): `#commitDefense` refuses with the reason `unusableDefense`
+(`STARWROUGHT.Attack.unusableDefense`). **AN ANSWER IS JUDGED ONCE, AT THE REVEAL, AND STANDS
+(ruling 391)**: `defenseThresholdFor({ ..., frozen })` in `documents/actor/defense.mjs`; frozen,
+the Defense, the Reaction and the Posture stand as given (no move off an unusable Defense, no
+Head Wound drop, no "Talent since removed" drop) and only the numbers are read as they are
+now. `#reveal` reads UNFROZEN and stores the Reaction and Posture only if the read kept them,
+with the note, which the attack card now prints (`revealed.note`; `combat/attack-card.mjs`,
+`templates/chat/attack-workflow-card.hbs`); `#thresholdFor` hands `reaction` and `posture`
+back; `#resolvePairing` and `thresholdForCard` (a reroll) read FROZEN with the one Defense
+permitted, and a card with no Defense a reader knows is read as `resolveAgainst` reads it (the
+Reaction's own Defense, else Evade). **A new caller that reads a Threshold for an answer
+already revealed passes `frozen: true`.** Mended with it, older than the release: the note was
+stored and printed nowhere; a Reaction or Posture on a Defense that moved was still revealed,
+charged and its Zone Exposed; a reroll moved to Awareness (all four Defenses were permitted);
+the warned option printed the other Defense's number; a Head Wound between the reveal and the
+die took the Reaction's +2 off while it was still charged; a request card naming two Defenses
+is redrawn when a Condition moves on its target. **The sheets** mark an unusable Defense
+(`cannotTip`, `sw-defense-cannot`; `overview.hbs`, `npc-statblock.hbs`). **The build**:
+`assets/lib/conditions_build.mjs` warns when no `CANNOT: evade` line reaches Grabbed or
+Restrained (asked of what each counts as), and when a `CANNOT` line sits on a Condition that
+takes X (it reaches everyone); their rows in `RULES` are filed under "Automation" and sit ABOVE
+the older rows that hold the word "cannot" (the table is case blind, first match wins); the
+red-cell tool's hints come before the immunity hints and tell a misspelt Defense "did you
+mean". **GRABBED'S LINE IS IN HIS SHEET** (he pasted `[EFFECT CANNOT: evade]` at 20:11 on
+2026-11-19, before the commit), so Grabbed and Restrained take Evade away as they did; a sheet
+in which no such line reaches them has lost the rule, and the Conditions build warns every
+time. **The Conditions sheet was built as he saved it at 20:11 on 2026-11-19**: 26 Conditions,
+13 rules on 9 rows; Grabbed carries its line; Heedless carries its `COST` line (he pasted
+it) and a reworded Effect; Controlled and Controlling write `[X]`. His four workbooks in
+progress were not converted, built, staged or written.
+
 **0.37.0 (Mike, 2026-11-19; rulings 375 to 384): a Condition may raise what a thing costs, the
 `COST` word, for Heedless.** Mike, of the Heedless row ("Maneuvers with Concentrate take 1 extra
 action"): "how should we automate Heedless?", then "Yes, plan it". Planned first
@@ -1377,8 +1445,8 @@ the including Condition (`flags.starwrought.applied.by`), and a hand-toggled one
 (`unknown`); the answer does not depend on the order of the statuses, and an included Condition
 is every applier's (`bys`). `effectList` reads the same closure (`conditions`, `against`, `by`,
 `bys`, `via`, `direct`), `listHas(list, ref, { by, viewer })` and `effectHolds` pass the VIEWER (the roller
-for `IFT:`, the other party for `IF:`), `situationOf` and `unavailableEvade(heldConditions(actor))`
-read it too; `APPLY` and `REMOVE` stay on the raw statuses. **The carrier**: `collectRules` adds
+for `IFT:`, the other party for `IF:`), `situationOf` and (through 0.37.0) `unavailableEvade(heldConditions(actor))`
+read it too (since 0.38.0 a row's `CANNOT` line says which Defense is taken away, `unusableDefenses`); `APPLY` and `REMOVE` stay on the raw statuses. **The carrier**: `collectRules` adds
 `conditionCarriers(actor)`, one `{ id: "condition:<id>", type: "condition", condition: { id,
 value, against, via, direct } }` for each Condition held that carries lines, named for what it
 comes through ("Off-Guard (Prone)", "Off-Guard (Torso)"), so the `bonus` kind's `modifiers` hook
@@ -2563,8 +2631,9 @@ content build writes them again.
   may not be deleted (the build refuses). A Condition's row reads `CHECK` (with no target every
   roll and Threshold, 0.36.0), `SKILL` (0.36.0), `ATK`, `DEF` and
   `INIT`, with `-N` for its own value, since 0.35.0 `IMMUNE` for a trait (`[EFFECT IMMUNE:
-  TRAIT(Visual)]`), and since 0.37.0 `COST` for a cost raised by a trait (`[EFFECT COST: 1; IF:
-  TRAIT(Concentrate)]`); a row's lines count once on a roll, the stronger (0.36.0); Includes is how
+  TRAIT(Visual)]`), since 0.37.0 `COST` for a cost raised by a trait (`[EFFECT COST: 1; IF:
+  TRAIT(Concentrate)]`), and since 0.38.0 `CANNOT` for a Defense taken away (`[EFFECT CANNOT:
+  evade]`); a row's lines count once on a roll, the stronger (0.36.0); Includes is how
   one Condition counts as another, with
   `against X` (`AUTOMATION_GRAMMAR.md`, section 11). **`node assets/build_all.mjs --conditions`
   (`sync_conditions.cmd`) builds this workbook alone.** The handbook still prints its Conditions
@@ -2755,11 +2824,11 @@ content build writes them again.
   (`config/exchange.mjs`) and its i18n strings.
 - **The next rule kind comes from the next Talent** (`automation-plan.md`, `AUTOMATION_GRAMMAR.md`).
   (0.31.0 added no kind: it gave the grammar a condition, `EFFECT(<name>)`, and `requires` three
-  words.) Twenty-six kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
+  words.) Twenty-seven kinds ship (sixteen since 0.16.0, `substitute` since 0.21.0, `give` and `alter` since
   0.22.0, `permit` since 0.24.0, `subordinate` since 0.25.0, `requires` since 0.28.0, `reach` since 0.30.0,
-  `apply` since 0.32.0, `check` since 0.34.0, `cost` since 0.37.0): the effect
+  `apply` since 0.32.0, `check` since 0.34.0, `cost` since 0.37.0, `cannot` since 0.38.0): the effect
   kinds `bonus`, `prevent`, `mark`, `reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`,
-  `subordinate`, `apply`, `cost`, the creation kinds `grant` and `aura`,
+  `subordinate`, `apply`, `cost`, `cannot`, the creation kinds `grant` and `aura`,
   the feature kinds `trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`,
   `talent`, `choice`, and `requires` and `check`, the blocks on a Maneuver's own row that the
   Maneuvers tab and the use read; the
@@ -2900,10 +2969,38 @@ content build writes them again.
   his: a `### Kestrel Reach` heading twice was not rechecked; "One activity per day" beside
   "Endeavor". Building Chapter 6 and the Maneuver reference from the sheets is a later task he
   named; `assets/build_phb.js` is the nearest generator.
-- **0.37.0 leaves to the table or to Mike** (a Condition raises a cost): **Heedless's cell waits
-  for him to paste** into `data/conditions.xlsx` in place of the `N/A` (the 0.37.0 changelog
-  entry: `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`), then `build_all.mjs --conditions` and Sync
-  content; until then Heedless changes nothing. Rulings 380 to 384 are Claude's readings and his
+- **0.38.0 leaves to the table or to Mike** (a Condition takes a Defense away): **Grabbed's
+  line is in his sheet and built** (`[EFFECT CANNOT: evade]`, pasted at 20:11 on 2026-11-19;
+  Restrained needs none). Its Notes cell still says "Evade is marked unavailable by the
+  system" (a sentence to put there is in the 0.38.0 changelog entry; nothing reads the cell).
+  **If the line ever leaves the sheet, Grabbed and Restrained take no Defense away**, which
+  the code held through 0.37.0; the Conditions build then warns every time. The
+  `0.38.0-grabbed-cell` row of `assets/open_decisions.json` is marked decided: delete it at
+  the next build.
+  Rulings 388 to 392 are Claude's readings and his to overrule; the one to know is 391 (an
+  answer is judged at the reveal and stands: a Condition or a Head Wound that arrives after it
+  takes nothing away, and a reroll meets the same answer). Not built: `CANNOT` for anything but
+  a Defense (movement, a Maneuver, Reactions, "no action other than Escape": the next words of
+  the same tag, one at a time with him); `CANNOT` on a Talent, a Maneuver or a custom effect; a
+  Condition held only against one creature taking a Defense away against that creature. Stated
+  by the review and not changed: a Defense's name is read loosely (`"evade"`, `Evade!`); on a
+  Talent's cell a component's slip is told before the off-row refusal, as with `COST`; As read
+  stays "cannot use Evade", the words Mike was shown; a card from before 0.38.0 of a defender
+  who had committed a Defense it could not use is rerolled against the Defense the card names.
+  A Defense rolled from the sheet for its own sake offers its Reactions as ever (389). Not
+  driven live: a Blast's pair and a Reaction Strike against a Grabbed defender (the self-test's
+  and the reviewer's run of the real coordinator), a table with no GM. The test world was
+  driven on 0.38.0 with a GM tab and a player tab, the line given to the registry IN MEMORY (no
+  file written), then checked once more with the line from the built sheet itself, and left
+  as found but for two "Content synced" cards (441 messages): its content and Conditions are
+  level with these sources (Heedless's and Grabbed's lines live there), Mike's Combat with testpc8 is the active one at round 4, the Bandit is Prone as
+  found, the fixtures of earlier releases are untouched, and Foundry is running on 0.38.0 with
+  the GM joined. To try 0.38.0 there: toggle Grabbed
+  on Tess's token, start a Combat with her and the Bandit in it, open the Bandit's sheet,
+  target Tess and attack with its Club: her Evade is greyed out in the Combat window.
+- **0.37.0 leaves to the table or to Mike** (a Condition raises a cost): **Heedless's line is in
+  his sheet since 18:45 on 2026-11-19 and was built with 0.38.0** (`[EFFECT COST: 1; IF:
+  TRAIT(Concentrate)]`), so Heedless is live after a Sync content. Rulings 380 to 384 are Claude's readings and his
   to overrule (`assets/open_decisions.json`); the one to know is the word's reach: a Maneuver
   paid from its own row, and Recenter. Not reached, and the build warns when a `COST` line names
   a trait one carries: Strikes, Casts, movement, Reactions (rows and Talents), Raise a Shield,
@@ -3041,8 +3138,8 @@ content build writes them again.
   for melee Attacks against adjacent creatures; "cannot Move or Step" and "no action other than
   Escape" are by hand; Frightened and Slowed do not drop by 1 at a round's end; Stunned
   does nothing (Heedless has its word since 0.37.0, `COST`, and Deafened its line since
-  2026-11-19); Evade unavailable while Grabbed is still code
-  (`unavailableEvade`), as are Slowed's lost actions, Blinded's sight, Hidden and Undetected, and
+  2026-11-19, and Grabbed's Evade its word since 0.38.0, `CANNOT`, which reads a Defense alone
+  so far); still code are Slowed's lost actions, Blinded's sight, Hidden and Undetected, and
   Fatigued's maximum, Wind check and rests. **Five things wait in `assets/open_decisions.json`**:
   Claude's readings (rulings 325, 327 to 329, 331, 332, 334, 335), of which 329 is the one to
   know (the row is the word: emptying the Off-Guard, Frightened or Fatigued row's Automation
@@ -3373,6 +3470,37 @@ content build writes them again.
   gear by name and never its numbers, which the GM may want a setting for; the Token HUD's
   counter-scale is capped at 4×, and the pane's smallest zoom (0.57 on the test scene) was the only
   one driven.
+
+Cleared 2026-11-19 (a Condition takes a Defense away, system 0.38.0; rulings 385 to 392 in the
+0.38.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question:
+the word is CANNOT, Grabbed keeps taking Evade away by its row, the Combat window disables a
+Defense that cannot be used): "Evade is unavailable while Grabbed or Restrained", written in the
+system's code, now `[EFFECT CANNOT: evade]` on Grabbed's row (the `cannot` kind, the
+twenty-seventh, with no hook point), read by one reader for all four Defenses, with the code's
+rule kept as a guard for a Condition no row describes; an unusable Defense only marked in the
+Combat window and silently answered with the other, now disabled there for a player, for the
+GM's row for an adversary and for an absent player, refused by the coordinator by name, with no
+Reaction or Posture offered on it, and struck through on both sheets; an answer judged again
+at every read, now judged once at the reveal and standing from then on. Mended beside it, older
+than the release, four found by the second reader of the design and two by the review: the
+attack card never printed why a Defense was switched; a Reaction on a Defense that moved was
+still revealed, charged and its Zone Exposed; a reroll could be read against Awareness; the
+warned option printed the other Defense's number; a Head Wound between the reveal and the die
+took a Reaction's +2 off while it was still charged; a request card's disabled button outlived
+its Condition. Checked by 271 self-test checks, `node --check` on every module,
+`build_all.mjs --check`, the style check (one failure, the em-dash in Dwarf Lore B13), the
+smoke test, the Conditions build on the sheet as saved (Heedless's line, which he pasted, is
+live with it), a second reader on the design before the plan was shown, an independent review
+of the finished change by two readers (no wrong stored rule and no fault in how the flow
+refuses a Defense; fifteen findings, one about the release as it stands and the rest low, all
+mended but four stated) and live in the test world with a GM tab and a player tab, before the
+review and again for its mends (the 0.38.0 changelog entry lists what, and what was not
+driven). Mike pasted Grabbed's line at 20:11 the same day and it is built into the release; a
+sheet without it loses the rule, and the build warns. Not built, and said so: `CANNOT` for anything but a Defense; on a Talent, a
+Maneuver or a custom effect. His four workbooks in progress were not converted, built, staged
+or written. No handbook moved and `data/SYNC.json` is untouched. Committed on 2026-11-19 at
+his word ("After I paste", once the line was in the sheet) and tagged `v0.38.0`, his edits to
+the four workbooks and the v4.24 draft left out; not pushed until he says.
 
 Cleared 2026-11-19 (a Condition raises a cost, system 0.37.0; rulings 375 to 384 in the 0.37.0
 changelog entry; planned in `dazzling-floating-simon.md`, Mike's decisions by question: Prepared

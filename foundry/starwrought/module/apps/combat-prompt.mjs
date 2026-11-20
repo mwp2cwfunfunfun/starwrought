@@ -38,7 +38,7 @@ import * as SW from "../config.mjs";
 import { AttackCoordinator } from "../combat/attack-coordinator.mjs";
 import { AttackWorkflow } from "../combat/attack-workflow.mjs";
 import { mayControl, statusLine } from "../combat/attack-card.mjs";
-import { legalAnswers, describeAnswer, postureNeedsZone } from "../helpers/answers.mjs";
+import { legalAnswers, describeAnswer, postureNeedsZone, refusedDefense, unusableReason } from "../helpers/answers.mjs";
 import { describe, meleeAnswers } from "../combat/attack-source.mjs";
 import { threatContext } from "../rules/scene.mjs";
 
@@ -133,6 +133,23 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     if (SwCombatPrompt.#registered) return;
     SwCombatPrompt.#registered = true;
     Hooks.on("starwrought.attack", event => SwCombatPrompt.#onAttackEvent(event));
+    // A Defense may become unusable, or usable again, while the window is open (0.38.0; a
+    // Condition's `CANNOT` line): redraw when a Condition comes to an Actor or goes, so a
+    // disabled option never outlives its Condition (Escape frees the defender and Evade is
+    // back). Through 0.37.0 the window was drawn on attack events alone.
+    for (const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"]) {
+      Hooks.on(hook, effect => SwCombatPrompt.#onConditionMoved(effect));
+    }
+  }
+
+  static #conditionTimer = null;
+
+  /** A Condition moved on some Actor: redraw an open window, once for a burst. A timer, never a frame (the header). */
+  static #onConditionMoved(effect) {
+    const prompt = SwCombatPrompt.#instance;
+    if (!prompt?.rendered || (effect?.parent?.documentName !== "Actor")) return;
+    clearTimeout(SwCombatPrompt.#conditionTimer);
+    SwCombatPrompt.#conditionTimer = setTimeout(() => { if (prompt.rendered) prompt.render(); }, 150);
   }
 
   /**
@@ -500,8 +517,14 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     const draft = this.#draft(key);
     const options = SwCombatPrompt.#answerOptions(wf);
     const permitted = options.permitted;
-    // A Defense no longer permitted (the record changed under a draft) is no choice.
-    if (draft.defense && !permitted.includes(draft.defense)) draft.defense = null;
+    // A Defense no longer permitted (the record changed under a draft) is no choice, and neither
+    // is one the defender can no longer use while another can be (0.38.0; ruling 387: a
+    // Condition came on under the draft). The answer and the Zone picked on it go with it.
+    if (draft.defense && (!permitted.includes(draft.defense) || refusedDefense(actor, draft.defense, permitted))) {
+      draft.defense = null;
+      draft.answer = "none";
+      draft.zone = "";
+    }
     const chosen = !!draft.defense;
     const legal = chosen ? legalAnswers(actor, draft.defense, options) : { none: true, reactions: [], postures: [] };
     // The Zone and the preview are shown to a player for their own character, and to the GM
@@ -516,17 +539,27 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const defenses = permitted.map(d => {
       const def = SW.DEFENSES[d];
-      const row = actor.system?.defenses?.[d] ?? {};
-      const blocked = row.unavailable ? game.i18n.localize(SW.conditionNameKey(row.unavailable)) : null;
+      // A DEFENSE THE DEFENDER CANNOT USE (0.38.0; rulings 387 and 390; a Condition's `CANNOT`
+      // line, as Grabbed's). DISABLED while another Defense the attack permits can be used
+      // (Mike: "Disable it"), so the defender always chooses for themself; with none usable
+      // every one stays pickable, marked, and answers basic and alone. Through 0.37.0 the option
+      // was only marked, and picking it had the system answer with the other Defense.
+      const reason = unusableReason(actor, d);
+      const blocked = reason ? game.i18n.localize(SW.conditionNameKey(reason)) : null;
+      const disabled = !!refusedDefense(actor, d, permitted);
+      const label = game.i18n.localize(def.label);
       return {
         key: d,
-        label: game.i18n.localize(def.label),
+        label,
         hint: blocked
-          ? game.i18n.format("STARWROUGHT.Defense.unavailableNote", { reason: blocked })
+          ? game.i18n.format(disabled ? "STARWROUGHT.Defense.unusable" : "STARWROUGHT.Defense.unusableAll", { defense: label, reason: blocked })
           : game.i18n.localize(def.hint),
-        threshold: showThresholds ? this.#basicThreshold(actor, d, permitted, answered, attackerRef) : null,
+        // Its OWN number: with the whole pair permitted the read moved off an unusable Defense
+        // and the option printed the other one's Threshold.
+        threshold: showThresholds ? this.#basicThreshold(actor, d, [d], answered, attackerRef) : null,
         active: d === draft.defense,
-        unavailable: blocked
+        unavailable: blocked,
+        disabled
       };
     });
     // A spell's Threat names a pair other than Evade and Guard: say which, and why.
@@ -881,17 +914,22 @@ export class SwCombatPrompt extends HandlebarsApplicationMixin(ApplicationV2) {
     // from every Posture, so Commit was enabled for those two and did nothing).
     if (posture && !posture.zone && postureNeedsZone(this.#actorForTask(task), posture)) return;
 
+    // THE CHOICE IS READ BEFORE THE WINDOW IS DRAWN AGAIN (the review of 0.38.0): a render
+    // prepares its context at once, and that now clears a draft whose Defense can no longer be
+    // used. Read after it, the request went out with no Defense (refused in words about a
+    // Defense with no name) and an accepted one was remembered as "Your choice: null".
+    const defense = draft.defense;
     this.#busy.add(task.key);
     this.render();
     try {
       const reply = await AttackCoordinator.request("commitDefense", {
         workflowId: task.workflowId,
         expectedRevision: task.revision,
-        payload: { targetId: task.targetId, defense: draft.defense, reaction, posture }
+        payload: { targetId: task.targetId, defense, reaction, posture }
       });
       if (reply?.ok) {
         this.#mine.set(`${task.workflowId}|${task.targetId}`, {
-          defense: draft.defense, reaction, posture, revision: task.revision
+          defense, reaction, posture, revision: task.revision
         });
       } else if (reply?.reason === "stale") {
         // The attack moved on under us: say so on the task and let the next render read the live state.

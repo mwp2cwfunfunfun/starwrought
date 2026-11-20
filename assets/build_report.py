@@ -179,6 +179,27 @@ RULES = [
     (r"Takes is N, and the system keeps no value for", "Error", "Data",
      "This Condition carries no value in the system, so -N would always count 1: clear the Takes cell and write whole numbers, "
      "or ask Claude to give the Condition a value."),
+    # 0.38.0: a Defense a Condition takes away. ABOVE the row below and the immunity rows: the
+    # table is case blind and the first match wins, and those rows hold the word "cannot" and the
+    # words "is read on a Condition's row for now".
+    # Two warnings of the Conditions build, so "Automation" and never "Automation cell" (a warning
+    # of that step filed there is taken out of the report in favour of the Red cells analysis).
+    (r"no CANNOT line takes Evade away while", "Fix", "Automation",
+     "Put [EFFECT CANNOT: evade] in the Grabbed row's Automation cell of data/conditions.xlsx (in place of N/A), then run "
+     "sync_conditions.cmd and Sync content. Through 0.37.0 the system made Evade unusable while Grabbed or Restrained in its own "
+     "code; since 0.38.0 the row says it, and until the line is there neither Condition takes a Defense away. Restrained needs "
+     "no line of its own: it counts as Grabbed. If Grabbed should NOT take Evade away, tell Claude and this reminder goes."),
+    (r"a CANNOT line on a Condition that takes X takes the Defense away against everyone", "Decision", "Automation",
+     "The line is read for whoever has the Condition, against every attacker. If it should hold only against the creature X, "
+     "say so and Claude will plan the word; otherwise nothing to do."),
+    (r"`CANNOT:` says what a creature cannot use and is read on a Condition's row for now", "Fix", "Automation cell",
+     "What a creature cannot use is read on a row of data/conditions.xlsx alone for now (Grabbed: [EFFECT CANNOT: evade]). "
+     "If a Talent or a Maneuver should take a Defense away, say which, and the word comes with it; mark the cell N/A meanwhile."),
+    (r"CANNOT is written `CANNOT: <Defense>`|CANNOT names one Defense to a line|CANNOT names a Defense for now|CANNOT: a comma with nothing beside it|CANNOT takes no value and no type|CANNOT takes one Defense and nothing beside it|CANNOT does not take",
+     "Fix", "Automation cell",
+     "Write the line as [EFFECT CANNOT: evade]: one Defense (Evade, Guard, Endure or Awareness) and nothing after it. A second "
+     "Defense is a second line. What else a creature cannot do (move, use a Maneuver, use Reactions) has no word yet: say what "
+     "is wanted and Claude will propose it."),
     (r"cannot name a Condition|the name reads as a named Effect|would read the name as something else|the name cannot be written in a cell|cannot read the name",
      "Error", "Data", "Rename the Condition: the name already means something else where a cell is read (a REQUIRES word, a weapon or a "
      "creature phrase, Exposed), so nothing could ever ask for it."),
@@ -247,7 +268,7 @@ RULES = [
      "Write the line alone, as [EFFECT IMMUNE: TRAIT(Visual)]: it acts for whoever has the Condition. If the immunity should be "
      "limited or conditional, say how and Claude will propose the word."),
     (r"is not read on a Condition's row yet|on a Condition's row does not take|on a Condition's row yet|a Condition's row takes", "Fix", "Automation cell",
-     "A Condition's row reads CHECK, SKILL, ATK, DEF and INIT lines, IMMUNE: TRAIT(...) written alone, and COST: <n>; IF: TRAIT(...), all of which act for whoever has "
+     "A Condition's row reads CHECK, SKILL, ATK, DEF and INIT lines, IMMUNE: TRAIT(...) written alone, COST: <n>; IF: TRAIT(...) and CANNOT: <Defense>, all of which act for whoever has "
      "the Condition. What this line asks for has no word there yet: say what the Condition should do and Claude will propose it, and "
      "mark the cell N/A meanwhile."),
     (r"is a Condition's own value|this Condition takes none", "Fix", "Automation cell",

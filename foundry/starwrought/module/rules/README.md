@@ -1,4 +1,48 @@
-# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0; a bare CHECK is every roll, 0.36.0; the `cost` kind, 0.37.0)
+# The automation framework (system 0.9.0; the first kind, `bonus`, 0.10.0; Fantasy Grounds' shape, 0.16.0; every line in brackets, 0.17.0; the `substitute` kind, 0.21.0; the `give` and `alter` kinds, 0.22.0; the `permit` kind, 0.24.0; the `subordinate` kind, 0.25.0; the `requires` kind, 0.28.0; Effects read by name, 0.31.0; the `apply` kind, 0.32.0; the Conditions workbook, 0.33.0; the `check` kind, 0.34.0; immunity to a trait, 0.35.0; a bare CHECK is every roll, 0.36.0; the `cost` kind, 0.37.0; the `cannot` kind, 0.38.0)
+
+**0.38.0 (2026-11-19).** ONE NEW KIND, `cannot`, WITH NO HOOK POINT (rulings 385 to 392). Mike:
+"Grabbed currently is hard-coded to 'cannot Evade' ... I would like to make that an automation
+grammar to prevent the use of a Defense." `[EFFECT CANNOT: evade]` on a CONDITION'S ROW (and
+nowhere else this release, as `IMMUNE: TRAIT(...)` and `COST` began): whoever has the Condition
+cannot answer an attack, or a Maneuver's check, with that Defense.
+
+- **The kind** (`kinds/cannot.mjs`): tag `CANNOT` in `EFFECT_TAGS`, `CONDITION_ROW_TAGS` and
+  `EFFECT_KINDS`; one Defense by name (`defenseKeyOf` in `check.mjs`), no component; stored
+  FLAT, `{ kind: "cannot", defense, name }`. WHAT WAS WRITTEN DECIDES THE MESSAGE, never the
+  number of commas: the words after the tag are read one by one (`wordsOf`), so `move, step`
+  is "not read yet" and `evade guard` is "one Defense to a line". The file imports nothing
+  that reaches the registry.
+- **The reader is `cannot.mjs`** (this folder): `unusableDefenses(actor)` answers, for each of
+  the four Defenses, the id of the Condition that takes it away, or null. Condition carriers
+  alone through `rulesOfKind`; an "against X" carrier passed over; `reasonOf(item, held)`
+  walks the creature's own set up to the Condition it has itself. IT RUNS INSIDE BOTH DEFENSE
+  PASSES, SO IT NEVER THROWS: an entry of a shape it does not know is passed over. **The old
+  rule is a guard here** (`EVADE_BY_HAND`): Evade while Grabbed or Restrained, for each only
+  while that Condition has no row. THE ROW IS THE WORD: with a row and no line, nothing.
+- **The two Defense passes** (`data/character/defenses.mjs`, the npc model in `data/actor.mjs`)
+  write the answer onto `system.defenses[key].unavailable` for all four Defenses, where every
+  reader of an unusable Defense already looked; each of those is generic over the key.
+  `unavailableEvade` and `heldConditions` left `data/character/shared.mjs`.
+- **IT IS ABOUT ANSWERING** (ruling 389): nothing outside an answer reads `unavailable`. The
+  Wind check, the default Initiative, a Search and a Defense rolled from the sheet never ask.
+- **One rule for "may this Defense answer"**, in `helpers/answers.mjs`: `unusableReason`,
+  `usableAnswers` (with none usable every one permitted stands, ruling 390) and
+  `refusedDefense`. `legalAnswers` offers no Reaction and no Posture on an unusable Defense;
+  `isLegalAnswer` refuses a refused one. The Combat window draws from them and the
+  coordinator's `#commitDefense` refuses by them (`unusableDefense`), so the two cannot
+  disagree, though each reads its own copy of the actor.
+- **AN ANSWER IS JUDGED ONCE, AT THE REVEAL** (ruling 391). `defenseThresholdFor({ ..., frozen
+  })`: frozen, the Defense, the Reaction and the Posture stand as given (no "cannot be used"
+  move, no Head Wound drop, no "Talent since removed" drop) and only the numbers are read as
+  they are now. `#reveal` reads UNFROZEN and stores what the read kept; `#resolvePairing` and
+  `thresholdForCard` (a reroll) read FROZEN, with the one Defense permitted. **A new caller
+  that reads a Threshold for an answer already revealed passes `frozen: true`.**
+- **The Combat window reads the draft BEFORE it renders** (`#onCommit`): a render prepares its
+  context at once, and that clears a draft whose Defense has become refused. It redraws on
+  the three ActiveEffect hooks, by a timer.
+- **The build** (`assets/lib/conditions_build.mjs`) warns when no `CANNOT: evade` line reaches
+  Grabbed or Restrained (the rule the code used to hold), and when a `CANNOT` line sits on a
+  Condition that takes X (it reaches everyone).
 
 **0.37.0 (2026-11-19).** ONE NEW KIND, `cost`, WITH NO HOOK POINT (rulings 375 to 384). Mike, of
 the Heedless row ("Maneuvers with Concentrate take 1 extra action"): "how should we automate
@@ -386,7 +430,7 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `effects.mjs` | The effect line (0.16.0; section 3): `effectTagOf`, `readEffectLine(text, { context })` reading `TAG: value type, descriptors` and the components `IF:`, `IFT:`, `FOR:`, `LIMIT:` with their conditions (`RANK`, `SEEN`, `ALLIES`, `CLAIM`, `RESULT`, `TRAIT`, `MARKED`, the Threat words, `CHECK`) into the same `ops` record the 0.13.0 reader filled (`EFFECT_TAGS`, `MODIFIER_TAGS`, `COMPONENTS`, `CONDITIONS`). `EFFECT_TAGS` ends with `use: "substitute"` since 0.21.0: a tag that is not a modifier tag hands its kind descriptors alone. Pure. |
 | `operators.mjs` | The shared vocabularies and readings (the 0.13.0 reader `readLine` is gone with the form, 0.17.0): `emptyOps`, `splitOperands`, `readRank`, `readRange`, `readWho`, `readDegree`, `readIf`, `readFor`, `readWhile`, `readAgainst`, `splitComparison`; `readTargetName(written, resolve)` (0.21.0), the one reading of a target's name that `bonus`, `reroll` and `substitute` share (through 0.20.1 `bonus` and `reroll` each kept a copy): with the caller's resolver the canonical name, the slug and the type, the resolver's own record under `found` (its `group` and `parent` a kind's to read, never to store), or null when the resolver knows nothing by the name; without one the name as written, the slug made here (a Maneuver's glyphs never reach it) and a null type; the refusals stay each kind's own; `refuseComponents` and `refuseOutcome` for a kind's refusals; and for the hooks `rankMeets`, `whoMatches`, `compare`, `hasTrait`, `traitKey`, `againstHolds`, `markedHolds`, `needsMoment`, `summarizeOperators`. `OPERATORS` stays for the document gate on section 9. Pure. |
 | `scene.mjs` | The one Foundry-aware file here (0.13.0): `sceneContextFor(actor, token?)` (the tokens on the scene with `relation`, `gap` and, since 0.14.0, `sees`, line of sight by `canSeeToken`), `encounterContext()`, `threatContext(maneuver)` (the Threat, its reach and the attack's `traits`), `writeRuleMarks(actor, marks)` (written here when this client may, else relayed as `rules:marks` over the system socket to the GM's client or an active owner's; `onRulesSocket` serves it, 0.18.1). The callers put what it builds on the roll context; the engine and the kinds read it and never import this file. |
-| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the twenty-five kinds. |
+| `kinds/index.mjs` | The registry: `KINDS`, `registerKind`, `kindOf`, `knownKinds`, `KIND_WORD`. Registers the twenty-seven kinds. |
 | `kinds/bonus.mjs` | The `bonus` kind: a typed bonus or penalty to a Constellation's or a Maneuver's roll, or to a scope of rolls (Defenses, Checks, Attacks, Initiative, Speed), made by the tags `CHECK`, `ATK`, `DEF`, `INIT`, `SPEED` in an `[EFFECT ...]` block. |
 | `kinds/grant.mjs` | The `grant` kind (0.13.0): Talent Points at creation, `[POINT ...]` and `[<Constellation> trained]` (0.16.0, a directed point carrying `constellation`); `toGrantField` is the wizard's field. No hook. |
 | `kinds/aura.mjs` | The `aura` kind (0.13.0): the ring on the map, `[AURA ...]`; `toAuraField` is `system.aura`. No hook. |
@@ -403,12 +447,14 @@ root is the design record; the rulings are in the 0.9.0 and 0.10.0 changelog ent
 | `kinds/requires.mjs` | The `requires` kind (0.28.0): what a Maneuver needs before it can be used, by the block `[REQUIRES <condition> or <condition>]` on the Maneuver's own row. No hook: the Maneuvers tab reads the rule. |
 | `requires.mjs` | The pure half of it (0.28.0), and of the tab: `readRequires` (the words), `requireWords` and `termWords` (the same in English), `checkCondition` (true, false, or null for "cannot tell"), `availability` (a block fails only when every alternative is known false), `requiresFor(rules, engine)` (the row's own blocks, else the engine's), `maneuverStatus(row, situation)` (the four reasons a row is left out), `freeHands` and `arrangeManeuvers` (Favorites first, no row twice). Imports `syntax.mjs` and the config. |
 | `kinds/cost.mjs` | The `cost` kind (0.37.0): what a creature uses costs more actions while it has a Condition, by the tag `COST` on a Condition's row (`[EFFECT COST: 1; IF: TRAIT(Concentrate)]`). No hook, and no import that reaches the registry: its parse, its summary and `COST_RAISE_MAX`. |
+| `kinds/cannot.mjs` | The `cannot` kind (0.38.0): a creature that has a Condition cannot answer with a Defense, by the tag `CANNOT` on a Condition's row (`[EFFECT CANNOT: evade]`). No hook, and no import that reaches the registry: its parse and its summary. |
+| `cannot.mjs` | The reader of it (0.38.0): `unusableDefenses(actor)` (each Defense's Condition, or null), `reasonOf(item, held)`, and `EVADE_BY_HAND`, the old rule as a guard for a Condition with no row. Imports the registry first, then the engine, `condition-set.mjs` and the config. The two Defense passes and the Conditions build import it. |
 | `cost.mjs` | The reader and the reach of it (0.37.0): `costRaise(actor, traits)` with `carriesTrait`, `raiseWords` and `raiseReason`; `costRoad(item, { actorType, owned })` (the road a Maneuver's cost takes) and `rowRaise` (the one answer the charge and the sheets share); `raisedCosts`; the build's `costCensus` and `builtInTraitNotes`; `paidElsewhere`. Imports the registry first, then the engine, `immunity.mjs`, the config and `documents/maneuvers.mjs` (which imports nothing). |
 | `kinds/check.mjs` | The `check` kind (0.34.0): the check a Maneuver rolls, by the block `[CHECK <Constellation> or <Constellation> vs <Defense> or <Defense>]` on the Maneuver's own row (`relevant` on the left for any Constellation, a number on the right for a fixed Threshold). No hook: `SwItem` reads the plan. |
 | `check.mjs` | The pure half of it (0.34.0): `readCheck`, `checkWords` and `checkSummary`, `defenseKeyOf`, `planOf(rules, stored)` (the row's rule, else the three stored fields), `storedCheck(plan)` (what the build writes back into those fields), `userPicks(plan)` and `targetPicks(plan)` (who is asked). Imports `syntax.mjs` and the config. |
 | `check-request.mjs` | The pure half of the two card flows (0.34.0): `usableDefenses(named, unavailable)`, `validAnswer(request, answer, { ownsTarget, ownsUser, isGM })`, `standingAnswer(request, answers)` (the first valid one), `requestState` (open, answered, rolled, withdrawn, lapsed), `userDegree(degree)` (a player's roll read from the adversary's side) and `adversaryCheck(typed, shift)` (an adversary's number: blank 10, plus what its Conditions move). Imports the config alone; `documents/cards/check-request.mjs` and the npc model import it. |
 | `effect-list.mjs` | The Effects list (0.31.0), pure: `effectList({ statuses, conditionValue, effects, rows })` (a creature's Conditions with their values, and its named Effects by slug), `effectsOn(actor)` (the same, gathered from an Actor: `statuses`, `appliedEffects` else `effects`, the custom effect rows), `readEffectName(written)` (a Condition first, else a named Effect; the name's shape, the reserved words, an Exposed Zone refused), `listHas(list, ref)` (true, false, or null with no list), `namedEffects(list)`, `effectSlug`, `conditionTitle`. Imports `syntax.mjs` and the config; `requires.mjs`, `effects.mjs`, `operators.mjs` and `kinds/bonus.mjs` import it. |
-| `condition-set.mjs` | What a creature HAS (0.33.0), pure: `closeConditions({ direct, torso }, registry)` (its Conditions closed over what each includes; `held`, `against` by uuid, `unknown`), `conditionSetOf(actor)`, `holdsCondition(set, id, viewer)`, `heldIds`, `heldIdsFor`. Imports the config alone; `effect-list.mjs`, `engine.mjs`, `data/character/shared.mjs` and `helpers/effects.mjs` import it. |
+| `condition-set.mjs` | What a creature HAS (0.33.0), pure: `closeConditions({ direct, torso }, registry)` (its Conditions closed over what each includes; `held`, `against` by uuid, `unknown`), `conditionSetOf(actor)`, `holdsCondition(set, id, viewer)`, `heldIds`, `heldIdsFor`. Imports the config alone; `effect-list.mjs`, `engine.mjs`, `cannot.mjs` and `helpers/effects.mjs` import it. |
 | `maneuver-move.mjs` | The pure half of it (0.24.0): `moveRecord`, `recordLive(record, encounter)`, `moveRoleFor(tokenId, { records, used, encounter })` (the user's own Move, the permitted one, or neither) and `asManeuverMove(move, held)` (a Move however short, never a Rush, a Step only with the alteration, the user's prepaid), `usedNonces` and `withUsed` (the ally's mark, a short list of the uses it has moved for). Imports nothing. The record is taken off its holder when its Opportunity ends by `endManeuverMoves` in `effects-state.mjs` (every turn change, a lone fighter's step, the Combat's end). |
 | `given.mjs` | The pure half of both (0.22.0): `buildTable(lines, alterations)` (the results by degree), `alterationTouches`, `pendingEntry` (what the recipient holds), `pendingRule` and `givenCarrier` (the one-roll carrier the engine indexes it through), `settle(entry, { combat, ended, began })` (what a turn change does to its window), `appliesNow`, and the words (`resultWords`, `windowWords`, `pendingWindowWords`). Since 0.25.0 also the used Effect (`usedEntry(entry, moment, holder)`, what a roll leaves when it uses a result up, or null; `usedLive(record, encounter)`; `usedOf`, `usedEffects`, `isUsedKey`, `usedFlagKey`) and `limitOf(rule, alterations)` (the LIMIT that stands once the owner's `ALTER: <Maneuver>.limit` is read, with the marks a Skip owes). Imports `operators.mjs` alone. |
 | `claims.mjs` | The arm pin for `CLAIM` (0.15.0): `claimsOf`, `isArmed`, `armClaim`. The sheet's; the roll reads the flag through the `bonus` hook. |

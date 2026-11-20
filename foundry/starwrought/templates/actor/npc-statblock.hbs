@@ -7,8 +7,8 @@
     <p class="sw-note">{{localize "STARWROUGHT.Hint.npcThresholds"}}</p>
     <div class="sw-defense-grid">
       {{#each defenses as |def|}}
-      <div class="sw-defense sw-npc-defense">
-        <span class="sw-defense-name" data-tooltip="{{def.hint}}">{{def.label}}</span>
+      <div class="sw-defense sw-npc-defense{{#if def.cannotTip}} sw-defense-cannot{{/if}}">
+        <span class="sw-defense-name" data-tooltip="{{def.hint}}">{{def.label}}{{#if def.cannotTip}} <i class="fa-solid fa-ban sw-defense-cannot-mark" data-tooltip="{{def.cannotTip}}"></i>{{/if}}</span>
         {{!-- The field is the Threshold as TYPED; the Conditions the creature has never write to it
              (0.33.0). The number in effect is shown beside it while they move it. --}}
         <input type="number" name="system.thresholds.{{def.key}}" value="{{def.base}}">

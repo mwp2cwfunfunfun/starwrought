@@ -7,7 +7,8 @@
  *
  *   1. every Automation cell parsed with the system's grammar, as a Condition's row
  *      (`itemType: "condition"`: CHECK, SKILL, ATK, DEF, INIT, with `-N` for the Condition's own value;
- *      and since 0.35.0 `IMMUNE: TRAIT(<Trait>)`);
+ *      since 0.35.0 `IMMUNE: TRAIT(<Trait>)`, since 0.37.0 `COST: <n>; IF: TRAIT(<Trait>)` and since
+ *      0.38.0 `CANNOT: <Defense>`);
  *   2. the rows laid over the system's own Conditions (`registerConditions`), which refuses a row
  *      it cannot take and says which rows made NEW Conditions;
  *   3. the checks only the whole sheet can make: every Condition the system has must have a row,
@@ -41,6 +42,9 @@ import {
 } from "../../foundry/starwrought/module/config.mjs";
 // Which rolls a scope reaches (0.36.0), for the "counts once" warning.
 import { SCOPES, scopeReaches } from "../../foundry/starwrought/module/rules/kinds/bonus.mjs";
+// 0.38.0: the two Conditions the code took Evade away for, and what a Condition counts as.
+import { EVADE_BY_HAND } from "../../foundry/starwrought/module/rules/cannot.mjs";
+import { closeConditions, heldIds } from "../../foundry/starwrought/module/rules/condition-set.mjs";
 
 /** The words of a kind of roll, for a message. */
 const KIND_WORDS = Object.freeze({ check: "checks", initiative: "Initiative", attack: "attacks", defense: "Defenses" });
@@ -318,6 +322,32 @@ export function buildConditions({ staged, resolve = null } = {}) {
   if (errors.length || !answer) {
     registerConditions([]);
     return { errors, warnings, created: [], json: null, block: null, rules: 0, cells: 0 };
+  }
+
+  // 3b. A DEFENSE A CONDITION TAKES AWAY (0.38.0; rulings 386 and 388). Two things said, neither
+  //     of which stops the build.
+  //  - Through 0.37.0 the system's own code made Evade unusable while Grabbed or Restrained. The
+  //    row says it now (`[EFFECT CANNOT: evade]`), so a sheet in which no such line reaches one
+  //    of the two has lost that rule without a word: said once, naming whichever it is. Asked of
+  //    what each COUNTS AS (Restrained includes Grabbed), with the rows just registered.
+  //  - A `CANNOT` line on a Condition that takes X takes the Defense away against everyone.
+  const lost = [];
+  for (const id of EVADE_BY_HAND) {
+    if (!REGISTRY[id]) continue;
+    let held = [];
+    try { held = [...heldIds(closeConditions({ direct: [[id, { value: 1 }]] }, REGISTRY))]; } catch { held = [id]; }
+    const reached = held.some(h => (REGISTRY[h]?.rules ?? []).some(rule => (rule?.kind === "cannot") && (rule.defense === "evade")));
+    if (!reached) lost.push(conditionLabel(id));
+  }
+  if (lost.length) {
+    warnings.push(`${source.join(", ") || "data/conditions.xlsx"} / Conditions: no CANNOT line takes Evade away while ${lost.join(" or ")}. `
+      + `Through 0.37.0 the system did that in its own code; the row says it now, so as built ${lost.join(" and ")} take${lost.length === 1 ? "s" : ""} no Defense away. `
+      + `Write [EFFECT CANNOT: evade] in the Grabbed row's Automation cell (a Condition that counts as Grabbed inherits it), or leave it if that is meant`);
+  }
+  for (const p of parsedRows) {
+    if ((p.takes === "x") && p.rules.some(rule => rule?.kind === "cannot")) {
+      warnings.push(`${p.where}: a CANNOT line on a Condition that takes X takes the Defense away against everyone, not against X alone (which has no word yet)`);
+    }
   }
 
   // 4. The outputs.

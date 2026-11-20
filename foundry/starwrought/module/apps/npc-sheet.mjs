@@ -125,6 +125,10 @@ export class SwNpcSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       label: game.i18n.localize(def.label),
       hint: game.i18n.localize(def.hint),
       moved: !!def.shift,
+      // A Defense a Condition takes away (0.38.0): marked, with the reason.
+      cannotTip: def.unavailable
+        ? game.i18n.format("STARWROUGHT.Defense.cannotUse", { defense: game.i18n.localize(def.label), reason: game.i18n.localize(SW.conditionNameKey(def.unavailable)) })
+        : "",
       inEffect: game.i18n.format("STARWROUGHT.Conditions.inEffect", { n: def.threshold }),
       inEffectHint: game.i18n.format("STARWROUGHT.Conditions.inEffectHint", { typed: def.base, n: def.threshold, by: movedBy(def.conditions) })
     }));

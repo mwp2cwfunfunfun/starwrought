@@ -12,7 +12,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-attack: "0.37.0"; }
+:root { --sw-css-version-attack: "0.38.0"; }
 
 /* --------------------------------------------------------------------------
    The attack flow (0.5.0): the Combat Prompt window and the attack card.
@@ -110,8 +110,14 @@
 /* A Posture ⓿↺: free, and a Zone Exposed for it. */
 .starwrought .sw-prompt-option.sw-prompt-posture { border-color: rgba(192, 122, 216, 0.45); }
 .starwrought .sw-prompt-option.sw-prompt-posture.sw-active { border-color: var(--sw-presence); box-shadow: 0 0 8px rgba(192, 122, 216, 0.3); }
-/* A Defense the rules say you cannot use right now: shown, never enforced. */
+/* A Defense the defender cannot use right now (a Condition's CANNOT line): marked; and since 0.38.0
+   disabled while another Defense the attack allows can be used (the rule below). */
 .starwrought .sw-prompt-option.sw-unavailable { border-style: dashed; opacity: 0.85; }
+/* Why a defender's answer is not the one committed (0.38.0), under the answer on the attack card. */
+.starwrought .sw-attack-target .sw-attack-answer-note { margin: 0; font-size: 0.72rem; color: #d9534f; }
+/* A Defense the defender cannot use while another can be (0.38.0): it cannot be picked. */
+.starwrought .sw-prompt-option.sw-disabled { opacity: 0.45; cursor: not-allowed; }
+.starwrought .sw-prompt-option.sw-disabled input { cursor: not-allowed; }
 /* The basic Threshold beside a player's Defense. */
 .starwrought .sw-prompt-option em {
   flex: 0 0 auto;
@@ -151,7 +157,7 @@
 /* The small notes under a task: a Reaction Strike's basic-Defense rule, a spell's Threat line,
    "choose a Defense first" (0.12.0: nothing is pre-selected). */
 .starwrought .sw-prompt-hint { margin: 0; font-size: 0.68rem; }
-/* The warning mark on a Defense the rules say is unavailable right now (the table decides). */
+/* The warning mark on a Defense the defender cannot use right now. */
 .starwrought .sw-prompt-warn { color: #d9534f; font-size: 0.7rem; }
 /* The GM's rows for absent players' characters (0.12.0): explicit answers, secondary in the list. */
 .starwrought .sw-prompt-absent-heading {

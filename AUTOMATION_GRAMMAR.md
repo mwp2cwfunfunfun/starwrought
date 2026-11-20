@@ -75,8 +75,9 @@ Every block the cell reads, one example each. Case never matters.
 | `[EFFECT APPLY: off-guard; UNTIL: giver opportunity; IF: RESULT(critical failure)]` | ... or on yourself, at once, for a time | 3 |
 | `[EFFECT APPLY: Taking Cover]` | ... or whenever the Maneuver is used, when no result is named | 3 |
 | `[EFFECT REMOVE: prone]` | on a Maneuver's own row: using it takes the Condition or the named Effect off (0.32.0) | 3 |
-| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `SKILL`, `ATK`, `DEF` and `INIT` (0.33.0), `IMMUNE: TRAIT(...)` (0.35.0) and `COST` (0.37.0) | 11 |
+| `[EFFECT DEF: -N condition]` | on a **Condition's own row** of `data/conditions.xlsx`: what the Condition does to whoever has it, with `N` for its own value (Frightened 2 is -2). A Condition's row reads `CHECK`, `SKILL`, `ATK`, `DEF` and `INIT` (0.33.0), `IMMUNE: TRAIT(...)` (0.35.0), `COST` (0.37.0) and `CANNOT` (0.38.0) | 11 |
 | `[EFFECT COST: 1; IF: TRAIT(Concentrate)]` | on a **Condition's own row**: while a creature has the Condition, what it uses that carries the trait costs that many more actions (Heedless; 0.37.0) | 3 |
+| `[EFFECT CANNOT: evade]` | on a **Condition's own row**: while a creature has the Condition it cannot answer an attack, or a Maneuver's check, with that Defense (Grabbed; 0.38.0) | 3 |
 | `; UNTIL: recipient opportunity 2` | ... a GIVE's window: `giver opportunity` (the default), `recipient opportunity <N>`, `encounter`. After APPLY, how long the Effect lasts, with `end` or `start` for the edge | 3 |
 | `; VALUE: nothing` | ... what an ALTER's property becomes | 3 |
 | `; IF: RANK(Origin >= trained)` | ... while the owner's rank is at least that | 3 |
@@ -199,8 +200,9 @@ The **tag** names what is modified. A **modifier tag** (`CHECK`, `SKILL`, `ATK`,
 `SPEED`, `GIVE`) takes a signed whole number and a bonus type (`situation`, `condition` or `gear`, the
 book's three; FG's `[bonus]`), then at most one descriptor after a comma (`GIVE` exactly one). The
 other tags (`IMMUNE`, `MARK`, `REROLL`, `IGNORE`, `USE`, `ALTER`, `PERMIT`, `SUBORDINATE`, `APPLY`,
-`REMOVE`, `COST`) take descriptors alone; `USE` takes exactly three, `ALTER`, `PERMIT`, `SUBORDINATE`
-and `COST` exactly one (`COST`'s is its number of extra actions), `APPLY` and `REMOVE` one or two,
+`REMOVE`, `COST`, `CANNOT`) take descriptors alone; `USE` takes exactly three, `ALTER`, `PERMIT`,
+`SUBORDINATE`, `COST` and `CANNOT` exactly one (`COST`'s is its number of extra actions, `CANNOT`'s a
+Defense), `APPLY` and `REMOVE` one or two,
 and never a value or a type. No bonus is untyped.
 
 | tag | modifies | descriptor | stored kind |
@@ -223,6 +225,7 @@ and never a value or a type. No bonus is untyped.
 | `APPLY: prone, target` | using this Maneuver puts a Condition or a named Effect on a creature: `APPLY: <Effect>[, self \| target]`. With `IF: RESULT(<degree>)` on that result of its check, with none whenever it is used; `UNTIL:` says how long. On yourself it lands at once; on a target by a button on the card. Written on the Maneuver's own row (0.32.0) | the Effect (a Condition, `frightened 2` for one with a value, or a name of your own), then `self` (the default) or `target` | `apply` |
 | `REMOVE: prone` | using this Maneuver takes a Condition or a named Effect off a creature: `REMOVE: <Effect>[, self \| target]`, with the same `IF:` components and no `UNTIL:`. Written on the Maneuver's own row (0.32.0) | the Effect, then `self` (the default) or `target` | `apply` |
 | `COST: 1` | while a creature has this Condition, what it uses costs that many MORE actions: `COST: <n>; IF: TRAIT(<Trait>)`. A whole number from 1 to 6, and the one condition it takes, the trait of the thing being used. Written on a Condition's own row and nowhere else yet (0.37.0; Heedless). Not the condition `COST(<n>)` below, which asks which version of a Maneuver was used | the number of extra actions | `cost` |
+| `CANNOT: evade` | while a creature has this Condition it cannot use that Defense to answer an attack, or a Maneuver's check read against it: `CANNOT: <Defense>`, one of Evade, Guard, Endure, Awareness. No component follows it. Written on a Condition's own row and nowhere else yet (0.38.0; Grabbed) | the Defense | `cannot` |
 
 **The Subordinate Maneuver rule** (Mike, 2026-11-15; ruling 245). When a Maneuver says to perform
 another Maneuver as part of it, the other is done at the first Maneuver's listed cost: it costs no
@@ -1090,7 +1093,8 @@ check card, with its APPLY buttons. Nothing is paid until that roll is made.
 
 - **No Defense is ever chosen by the system.** A request has buttons and no default, and the
   first answer from the target's side stands. Only when the target can use exactly ONE of the
-  Defenses named (Evade is unavailable while Grabbed) is nobody asked, and that one is read.
+  Defenses named (Evade cannot be used while Grabbed, by its row's `CANNOT` line) is nobody asked,
+  and that one is read.
 - **One Defense named is the one read**, even when the target cannot use it, and the card says
   so. Through 0.33.0 such a check moved by itself to another Defense.
 - **The user picks first, the target answers second**, knowing the pick: declare, then defend.
@@ -1190,6 +1194,69 @@ in its own code, and the build warns when a `COST` line names a trait one of the
   is a plain row of its sheet, and is raised);
 - a row whose rule acts when it is used or from a card's button (`MARK`, `PERMIT`,
   `SUBORDINATE`, `REROLL`, a Reaction's `IMMUNE`), and a Maneuver performed as part of another.
+
+### `cannot`
+
+A Defense a Condition takes away (0.38.0; rulings 385 to 392). Mike: "Grabbed currently is
+hard-coded to 'cannot Evade' ... I would like to make that an automation grammar to prevent the
+use of a Defense." The word is his choice.
+
+```
+[EFFECT CANNOT: <Defense>]
+
+[EFFECT CANNOT: evade]                                                          Grabbed
+```
+
+- **`<Defense>`** is one of the four, by name: Evade, Guard, Endure, Awareness. One Defense to a
+  line; a second Defense is a second line.
+- **Nothing follows it**: no `IF:`, `IFT:`, `FOR:` or `LIMIT:`.
+- **Read on a Condition's row alone** (ruling 388). The line acts for whoever has the Condition,
+  a character or an adversary. On a Talent, a Maneuver or a custom effect it is refused and
+  told so.
+- **Not read yet**, each refused by name: anything but a Defense. Movement, a Maneuver,
+  Reactions and "no action other than Escape" have no word yet; `CANNOT` was chosen so that
+  they can follow.
+
+Stored `{ kind: "cannot", defense, name }`. As read: `cannot use Evade`. No hook point: the two
+Defense passes ask one reader (`unusableDefenses`, in `module/rules/cannot.mjs`) and write its
+answer onto the Defense, where every reader of an unusable Defense already looks.
+
+**What it does.** It is about ANSWERING (ruling 389).
+
+- **In the Combat window** the Defense is disabled and cannot be picked, with the reason on
+  hover, while another Defense the attack allows can be used (ruling 387). This holds for a
+  player, for the GM answering for an adversary and for the GM answering for an absent
+  player. The coordinator refuses such a commitment by name, whatever the window sent.
+- **With no usable Defense among those the attack allows**, every one stays pickable, marked,
+  and answers basic and alone (ruling 390). The card says so.
+- **Reactions and Postures go with their Defense**: none is offered on a Defense that cannot be
+  used.
+- **A Maneuver's check** asks the target only among the Defenses it can use, and a request
+  card's button for one it cannot is disabled (0.34.0, unchanged). One Defense named is still
+  the one read, and the card says it could not be used.
+- **An answer is judged when the answers are revealed, and stands from then on** (ruling 391).
+  A Defense that became unusable after it was committed is answered with the other one, basic,
+  and the attack card says so. After the reveal a new Condition takes nothing away, and a
+  reroll meets the Defense the first die met.
+- **The sheets mark it**: the Defense's name is struck through on the character's Overview and
+  on the adversary's stat block, with the reason on the mark.
+- **The Condition named is the one the creature has** (ruling 392): a creature that is only
+  Restrained reads "Restrained", though the line is Grabbed's row's.
+
+**What it does not touch.** A Defense rolled for its own sake: the Wind check's Endure,
+Initiative rolled with Awareness, a Search, a Recovery, a Defense rolled from the sheet. A
+Condition held only against one creature (Wrong-Footed's kind of inclusion) takes no Defense
+away: such a carrier is passed over.
+
+**The row is the word.** A Condition whose row carries no `CANNOT` line takes no Defense away,
+Grabbed included. Through 0.37.0 the code made Evade unusable while Grabbed or Restrained;
+that stands for each of the two only while no row of the workbook describes it (the Conditions
+file could not be read). The build warns of a sheet in which no `CANNOT: evade` line reaches
+Grabbed or Restrained.
+
+**An answer already revealed is not judged again** (ruling 391): neither its Defense nor its
+Reaction or Posture. A Head Wound that lands between the reveal and the die takes nothing off
+it, and a reroll meets what the first die met.
 
 ### `grant`
 Talent Points at creation: `[POINT ...]` by scope, `[<Constellation> trained]` directed at one Root.
@@ -1484,18 +1551,18 @@ Frightened is shown as the one line it can be since 0.36.0; the three lines it w
   Prone                 Off-Guard              [EFFECT ATK: -2 situation]
                                                [EFFECT DEF: 2 situation, evade; IFT: RANGED]
   Supine                Off-Guard              (the same two lines)
-  Grabbed               Off-Guard              N/A
-  Restrained            Grabbed                N/A
+  Grabbed               Off-Guard              [EFFECT CANNOT: evade]              (0.38.0)
+  Restrained            Grabbed                N/A      (it counts as Grabbed, so it cannot Evade either)
   Blinded               Off-Guard              [EFFECT IMMUNE: TRAIT(Visual)]      (0.35.0)
   Deafened                                     [EFFECT IMMUNE: TRAIT(Auditory)]    (0.35.0; to type)
   Unconscious           Prone                  N/A
   Wrong-Footed   X      Off-Guard against X    N/A
-  Heedless                                     [EFFECT COST: 1; IF: TRAIT(Concentrate)]   (0.37.0; to type)
+  Heedless                                     [EFFECT COST: 1; IF: TRAIT(Concentrate)]   (0.37.0)
 ```
 
 What these rows say that a line cannot yet: Supine's "except melee Attacks against adjacent
-creatures" (its -2 reaches those too), "cannot Move or Step", Evade being unavailable while
-Grabbed (the system marks that itself), a value that drops by 1 each round (Frightened, Slowed),
+creatures" (its -2 reaches those too), "cannot Move or Step" and "no action other than Escape"
+(`CANNOT` reads a Defense alone so far), a value that drops by 1 each round (Frightened, Slowed),
 Stunned's and Slowed's lost actions, what Blinded and Deafened cannot
 perceive (their immunity to Visual and Auditory effects is a line since 0.35.0), and Fatigued's
 maximum, Wind check and rests, which stay the system's.
@@ -1632,7 +1699,7 @@ written on the Maneuver's row.
   ground. A region the GM hides carries no terrain for anyone (Foundry's rule), so a terrain region
   is never hidden to keep it secret; players toggle their own overlay instead.
 - **A `prevent` of a Condition** refuses the write wherever the system sets the Condition (Drop
-  Flat at the reveal, the final Legs Wound, the token palette, the Effects tab) and posts one card
+  Flat once its attack has resolved, the final Legs Wound, the token palette, the Effects tab) and posts one card
   saying which Talent prevented it. **A `prevent` of `expose`** is answered on the resolution card:
   the Expose widget shows the Reaction's button for each ally whose Maneuver reaches the attacker;
   pressed, the ally's cost is paid, the card says "It Exposes nothing", and the Expose widget is
@@ -1801,6 +1868,10 @@ written on the Maneuver's row.
   Casts, movement, Reactions and the other Maneuvers the system runs itself are not raised. A
   Maneuver already Prepared is not charged again when the Condition comes on, and nothing is
   returned when it goes.
+- **A Condition may take a Defense away** (0.38.0; the `cannot` kind). Grabbed: Evade. It is
+  about answering an attack or a Maneuver's check. A Defense rolled for its own sake (the Wind
+  check, Initiative with Awareness, a roll from the sheet) is not refused. What else a
+  Condition forbids (movement, a Maneuver, Reactions) is still the table's.
 - **Nothing reads a Talent's Effect text.** What the cell does not say, the system does not do:
   every clause with no line for it is the table's.
 - **Adversaries.** A rule on an adversary's Item is indexed but no adversary roll asks for
@@ -1886,6 +1957,13 @@ written on the Maneuver's row.
 | `WARNING: COST with TRAIT(<Trait>): only Maneuvers that cost no actions carry the trait "<trait>" (<names>), so nothing costs more yet (asked by ...)` | not a failure: only Activities or Endeavors carry the trait, and they cost no actions |
 | `WARNING: COST with TRAIT(<Trait>) does not reach <Name> (<why>), ...: a COST line raises a Maneuver paid from its own row, and Recenter (asked by ...)` | not a failure: the things named carry the trait and are paid for in the system's own code, so they cost what they always cost |
 | `WARNING: Recenter: the traits kept for when its row cannot be read (...) differ from the row's (...); update BUILT_IN_TRAITS ...` | not a failure, and Claude's to mend: the row's traits are what the system reads; the kept list only stands in when the row cannot be read |
+| `` `CANNOT:` says what a creature cannot use and is read on a Condition's row for now (the Conditions sheet, as Grabbed's `[EFFECT CANNOT: evade]`); a Talent's or a Maneuver's own is not read yet `` | a `CANNOT` line on a Talent, a Maneuver or a custom effect (0.38.0) |
+| `CANNOT is written \`CANNOT: <Defense>\`, as in \`[EFFECT CANNOT: evade]\`: name the Defense, ...` / `CANNOT names one Defense to a line: write \`[EFFECT CANNOT: evade]\` and a second line for a second Defense` | a `CANNOT` with no Defense, or with two however they are joined (`evade, guard`, `evade or guard`, `evade guard`, `evade/guard`), or `all`, `both`, `any Defense` |
+| `CANNOT names a Defense for now (...), as in \`[EFFECT CANNOT: evade]\`: "move" is not read yet. What else a creature cannot do (move, use a Maneuver, use Reactions) has no word yet` | a `CANNOT` in which nothing written is one of the four Defenses (`move`, `move, step`, a Defense misspelt) |
+| `CANNOT takes one Defense and nothing beside it: write \`[EFFECT CANNOT: evade]\`` / `CANNOT takes no value and no type, only the Defense: write \`[EFFECT CANNOT: evade]\`` | a Defense with words beside it (`evade 2`, `use, evade`), or the shape of a bonus line (`CANNOT: -2 situation, evade`) |
+| `CANNOT: a comma with nothing beside it; CANNOT takes one Defense, ..., so take the comma out` / `CANNOT does not take <component>` | `CANNOT: evade,`, or `IF:`, `IFT:`, `FOR:`, `LIMIT:` after a `CANNOT` |
+| `WARNING: ... / Conditions: no CANNOT line takes Evade away while Restrained or Grabbed. Through 0.37.0 the system did that in its own code; the row says it now, so as built ... take no Defense away. Write [EFFECT CANNOT: evade] in the Grabbed row's Automation cell ..., or leave it if that is meant` | not a failure: the sheet builds, and Grabbed (or Restrained) takes no Defense away until a line reaches it |
+| `WARNING: ... / <Condition>: a CANNOT line on a Condition that takes X takes the Defense away against everyone, not against X alone (which has no word yet)` | not a failure: the line is read for whoever has the Condition, against every attacker |
 | `<TAG> does not take IF: COST(<n>)` | `COST` on any line but an `APPLY` or a `REMOVE`; a bonus line adds "the version of a Maneuver that was used is read by APPLY and REMOVE" |
 | `"end": a window's edge is written after APPLY alone; here a giver's window ends as that Opportunity begins and a recipient's as it ends` | `end`, `start` or `begin` in a `GIVE` window or an `ALTER` of a duration |
 | `"APPLY" is a tag and begins its own line; one effect per line, ...` | `APPLY:` written as a component of another line (a draft of Coordinated Footwork's did) |
@@ -1991,7 +2069,7 @@ written on the Maneuver's row.
 | `[AURA ... visible]: every ring is preview-only and the Auras window shows one; drop the word` | drop `visible` |
 | `"N" is a Condition's own value and is written on that Condition's row of the Conditions workbook, as in \`DEF: -N condition\` on Frightened; here write a whole number` | `-N` on a Talent, a Maneuver or a custom effect (0.33.0) |
 | `\`-N\` is the Condition's own value, and this Condition takes none: put N in the row's Takes cell, or write a whole number` | `-N` on a row of the Conditions workbook whose Takes is not N |
-| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
+| `<TAG> is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST, CANNOT` / `a Condition's row takes \`[EFFECT ...]\` lines (CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST, CANNOT); this block is not read on a Condition's row yet` | another tag, or a feature block, on a Condition's row |
 | `SKILL takes no descriptor: to name a Constellation or a Maneuver write \`CHECK: 1 situation, stealth\`` | a target after `SKILL` (0.36.0) |
 | `for checks that are no attack and no Defense write the tag: \`SKILL: 1 situation\`` | `skill` or `skill checks` written as the target of a `CHECK` |
 | `"<word>" is a scope word; CHECK takes a Constellation or a Maneuver, or no descriptor for every roll and Threshold (SKILL, ATK, DEF and INIT are the narrower tags)` | `rolls`, `checks`, `attacks`, `defenses` or `initiative` as the target of a `CHECK` |
@@ -2238,6 +2316,13 @@ And the old kind lines: `bonus: +1, Condition, Aid` is `[EFFECT CHECK: 1 conditi
   `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`. No hook point. On a `COST` line `TRAIT(...)` is the
   trait of the thing being used. The condition `COST(<n>)` is now said to be the version of the
   Maneuver used, never a raised price (380).
+- **0.38.0** (2026-11-19): a Condition may take a Defense away. The `cannot` kind, the
+  twenty-seventh (rulings 385 to 392; Mike: "Grabbed currently is hard-coded to 'cannot Evade'
+  ... I would like to make that an automation grammar to prevent the use of a Defense"), with
+  the tag `CANNOT` on a Condition's row: `[EFFECT CANNOT: evade]`. No hook point. It is about
+  answering (389). In the Combat window such a Defense cannot be picked while another can (387).
+  The code's own rule for Grabbed and Restrained is now a guard for a world whose Conditions
+  file cannot be read.
 
 ## 11. The Conditions workbook
 
@@ -2260,8 +2345,9 @@ follows. One sheet, `Conditions`, one row for each Condition:
 | Notes | yours: what the code still does for the row, or does not do yet. The system never reads it |
 
 **A row's lines act for whoever has the Condition**, a character or an adversary. So a row reads
-the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), `IMMUNE: TRAIT(...)` (0.35.0)
-and `COST: <n>; IF: TRAIT(...)` (0.37.0), and nothing that asks about an owner:
+the five modifier tags (`CHECK`, `SKILL`, `ATK`, `DEF`, `INIT`), `IMMUNE: TRAIT(...)` (0.35.0),
+`COST: <n>; IF: TRAIT(...)` (0.37.0) and `CANNOT: <Defense>` (0.38.0), and nothing that asks about
+an owner:
 
 ```
 [EFFECT DEF: -2 situation, evade]              Off-Guard
@@ -2271,6 +2357,7 @@ and `COST: <n>; IF: TRAIT(...)` (0.37.0), and nothing that asks about an owner:
 [EFFECT DEF: 2 situation, evade; IFT: RANGED]  Prone: +2 Evade against a ranged Attack
 [EFFECT IMMUNE: TRAIT(Visual)]                 Blinded: immune to anything with the Visual trait
 [EFFECT COST: 1; IF: TRAIT(Concentrate)]       Heedless: a Concentrate Maneuver takes 1 extra action
+[EFFECT CANNOT: evade]                         Grabbed: Evade cannot answer an attack or a check
 ```
 
 - **`N` is the Condition's own value.** `-N` on Frightened is -2 at Frightened 2 and -3 at
@@ -2285,8 +2372,10 @@ and `COST: <n>; IF: TRAIT(...)` (0.37.0), and nothing that asks about an owner:
   `LIMIT:`, `IF: CLAIM(...)`, `IFT: MARKED`, `EFFECT(...)`, any other tag (`SPEED`, `APPLY`)
   and every feature block are refused by name. `IMMUNE` is read in its `TRAIT(...)` form alone,
   with nothing after it (section 4, `prevent`); `IMMUNE: <Condition>` is not read on a row yet.
-  `COST` takes a whole number above 0 and one `IF: TRAIT(...)` (section 4, `cost`).
-  What a Condition forbids (movement, Reactions, a Defense) and how it fades have no word yet.
+  `COST` takes a whole number from 1 to 6 and one `IF: TRAIT(...)` (section 4, `cost`).
+  `CANNOT` takes one Defense and nothing after it (section 4, `cannot`).
+  What else a Condition forbids (movement, a Maneuver, Reactions) and how it fades have no word
+  yet.
 - **One Condition is one circumstance.** A creature that is Off-Guard three ways (the status,
   Prone, a Torso Wound) takes Off-Guard's -2 once. And since 0.36.0 (ruling 367) a row's own
   lines count once on a roll: where two of them reach it, the strongest penalty and the

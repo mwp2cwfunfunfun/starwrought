@@ -15,7 +15,7 @@
    ========================================================================== */
 
 /* The stale-copy stamp: see the note in starwrought.css. */
-:root { --sw-css-version-sheet: "0.37.0"; }
+:root { --sw-css-version-sheet: "0.38.0"; }
 
 /* --------------------------------------------------------------------------
    Frame
@@ -366,6 +366,10 @@
   white-space: nowrap;
 }
 .starwrought .sw-action-glyph .sw-cost-react { font-size: 0.62em; }
+/* A Defense a Condition takes away (0.38.0; a row's CANNOT line): its name struck and marked, the
+   reason on the mark. On the character's Overview and the adversary's stat block alike. */
+.starwrought .sw-defense.sw-defense-cannot .sw-defense-name { text-decoration: line-through; text-decoration-color: var(--sw-blood); }
+.starwrought .sw-defense-cannot-mark { color: var(--sw-blood); font-size: 0.8em; cursor: help; text-decoration: none; }
 
 .starwrought .sw-trait {
   display: inline-flex;

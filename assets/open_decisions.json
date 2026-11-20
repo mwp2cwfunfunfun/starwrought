@@ -1,13 +1,33 @@
 [
   {
-    "id": "0.37.0-heedless-cell",
+    "id": "0.38.0-grabbed-cell",
+    "since": "2026-11-19",
+    "status": "decided",
+    "category": "Data",
+    "where": "data/conditions.xlsx, the Grabbed row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.38.0)",
+    "question": "Since 0.38.0 a Condition's row says which Defense its holder cannot use: [EFFECT CANNOT: evade]. Through 0.37.0 the system's own code made Evade unusable while Grabbed or Restrained. A sheet in which no such line reaches Grabbed or Restrained has lost that rule, and the Conditions build warns of it.",
+    "recommendation": "Type [EFFECT CANNOT: evade] in the Grabbed row's Automation cell in place of the N/A (Restrained needs nothing: it counts as Grabbed), double-click sync_conditions.cmd, then run Sync content in the open world. Do this before a world is played on 0.38.0. Its Notes cell can then read: Off-Guard comes through Includes. Evade is taken away by this row's CANNOT line; \"can't Move or Step\" is the table's.",
+    "decidedBy": "Mike, 2026-11-19: the line is on the Grabbed row as saved at 20:11 (ruling 386), built with 0.38.0. Delete this row at the next build. (The row's Notes cell still says the system marks Evade unavailable; nothing reads it.)"
+  },
+  {
+    "id": "0.38.0-claudes-readings",
     "since": "2026-11-19",
     "status": "open",
+    "category": "Rules decision",
+    "where": "foundry/starwrought/CHANGELOG.md, 0.38.0, rulings 388 to 392",
+    "question": "Readings 0.38.0 makes that Mike did not rule on. 388: CANNOT is read on a Condition's row only, one Defense to a line, nothing after it. 389: it is about ANSWERING an attack or a Maneuver's check; a Defense rolled for its own sake (the Wind check's Endure, Initiative with Awareness, a roll from the sheet) is not refused. 390: when no Defense the attack allows can be used, each may still be picked and answers basic and alone, with no Reaction or Posture. 391: an answer is judged once, when the answers are revealed, and stands from then on: a Condition or a Head Wound that arrives after the reveal takes nothing away from it, and a reroll meets the same Defense and answer. 392: the Condition named as the reason is the one the creature has (Restrained, though the line is Grabbed's).",
+    "recommendation": "Leave them. The one to know is 391: before the reveal a Condition that arrives changes the answer (the other Defense, basic, and the card says so); after it, nothing does. Say if a Head Wound landing between the reveal and the die should still take a Reaction away.",
+    "decidedBy": ""
+  },
+  {
+    "id": "0.37.0-heedless-cell",
+    "since": "2026-11-19",
+    "status": "decided",
     "category": "Data",
     "where": "data/conditions.xlsx, the Heedless row's Automation cell; printed in foundry/starwrought/CHANGELOG.md (0.37.0)",
     "question": "Since 0.37.0 a Condition's row may raise what a thing costs: [EFFECT COST: 1; IF: TRAIT(Concentrate)]. Heedless's Automation cell is still N/A, so Heedless changes nothing until the line is in the sheet.",
     "recommendation": "Type [EFFECT COST: 1; IF: TRAIT(Concentrate)] in place of the N/A, double-click sync_conditions.cmd, then run Sync content in the open world. Its Notes cell can then say that the extra action is the row's line.",
-    "decidedBy": ""
+    "decidedBy": "Mike, 2026-11-19: the line is in the sheet as saved at 18:45 (ruling 375), built with 0.38.0. Delete this row at the next build."
   },
   {
     "id": "0.37.0-claudes-readings",
@@ -42,12 +62,12 @@
   {
     "id": "conditions-x-cells",
     "since": "2026-11-19",
-    "status": "open",
+    "status": "decided",
     "category": "Data",
     "where": "data/conditions.xlsx, the Effect cells of Bound, Controlled, Controlling and Wrong-Footed; printed in foundry/starwrought/CHANGELOG.md (0.35.1)",
     "question": "Since 0.35.1 [X] in a Condition's Effect is the creature the Condition is about, and the sheet's tooltip and the token's hover card print its name. The four rows that take a creature still write a bare X (or 'that creature'), so nothing is filled in yet and the build warns on three of them.",
     "recommendation": "In those four Effect cells write [X] for each X (Wrong-Footed: 'Off-Guard against [X] only.'), save, double-click sync_conditions.cmd, then run Sync content in the open world.",
-    "decidedBy": ""
+    "decidedBy": "Mike, 2026-11-19: Bound, Controlled and Controlling write [X] (rulings 361 to 365), built with 0.38.0; Wrong-Footed reads 'that creature', which is his wording. Delete this row at the next build."
   },
   {
     "id": "0.35.1-claudes-readings",
@@ -86,7 +106,7 @@
     "category": "Data",
     "where": "data/conditions.xlsx, the About sheet",
     "question": "Three sentences of the About sheet describe the sheet as it was before the Effect column: 'Description: the text players read ...' (that is Effect now; Description is the flavor line), and the Automation sentence, which lists CHECK, ATK, DEF and INIT and not IMMUNE for a trait.",
-    "recommendation": "Reword when convenient; nothing reads the About sheet. Suggested wording is in the 0.35.0 changelog entry, under Worth knowing. Since 0.35.1 it also wants one sentence under Effect for [X] (the 0.35.1 changelog entry has it).",
+    "recommendation": "Reword when convenient; nothing reads the About sheet. Suggested wording is in the 0.35.0 changelog entry, under Worth knowing. Since 0.35.1 it also wants one sentence under Effect for [X] (the 0.35.1 changelog entry has it). Since 0.37.0 and 0.38.0 the Automation sentence also wants COST for a trait and CANNOT for a Defense.",
     "decidedBy": ""
   },
   {
@@ -146,7 +166,7 @@
     "category": "Rules decision",
     "where": "data/conditions.xlsx, the Supine row's Automation cell",
     "question": "Supine's Effect says -2 Situation to Attacks 'except melee Attacks against adjacent creatures, Grapples included'. The grammar has no word for the exception, so the row's [EFFECT ATK: -2 situation] reaches those attacks too. Supine also does not stop movement yet (no word for what a Condition forbids).",
-    "recommendation": "Keep the line for now and hold the exception at the table, or delete the ATK line from the Supine row until the exception has a word (then nothing is taken off a Supine creature's attacks). The words for what a Condition forbids are the next release, one at a time.",
+    "recommendation": "Keep the line for now and hold the exception at the table, or delete the ATK line from the Supine row until the exception has a word (then nothing is taken off a Supine creature's attacks). Since 0.38.0 CANNOT says what a Condition forbids, for a Defense so far; movement and Maneuvers are later words of the same tag, one at a time.",
     "decidedBy": ""
   },
   {

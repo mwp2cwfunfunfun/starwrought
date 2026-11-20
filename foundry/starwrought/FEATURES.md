@@ -9,11 +9,12 @@ the 0.23.0 entry 231 to 238, the 0.24.0 entry 239 to 244, the 0.25.0 entry 245 t
 entry 269 to 280, the 0.28.0 entry 281 to 289, the 0.29.0 entry 290 to 296, the 0.30.0 entry
 297 to 304, the 0.31.0 entry 305 to 310, the 0.32.0 entry 311 to 321, the 0.33.0 entry 322
 to 336, the 0.34.0 entry 337 to 349, the 0.35.0 entry 350 to 360, the 0.35.1 entry 361 to
-365, the 0.36.0 entry 366 to 374 and the 0.37.0 entry 375 to 384). Since
+365, the 0.36.0 entry 366 to 374, the 0.37.0 entry 375 to 384 and the 0.38.0 entry 385 to
+392). Since
 v4.25 the handbook no longer prints what each Talent and each Maneuver says, and since
 2026-11-15 it no longer prints the armor, shield and weapon tables either: `data/*.xlsx` is
 their only source. Since 2026-11-18 `data/conditions.xlsx` is the only source for a Condition
-too (section 5). System version **0.37.0**.
+too (section 5). System version **0.38.0**.
 Developed against **Foundry VTT v14**, which is the manifest's verified version.
 
 This file is about behaviour, not content. What is *in* the compendia is listed in
@@ -274,10 +275,14 @@ A Strike is a Blow, so the stance (below) is a choice between Evade and Guard; A
 are rolled from the Defense grid, or when a rule names one. The rule that Guard answers a ranged
 Blow only with a shield Raised is in the Threat hint and is the table's to apply.
 
-**Unavailability is shown, not enforced.** Evade is unavailable while Grabbed or Restrained: the
-chip goes dashed with a warning mark, an Attack on you is answered with Guard, and the card says
-why. Guard's own exceptions (unaware of the attack, or nothing to ward with) are not things the
-sheet can see, so they stay with the table.
+**A Defense a Condition takes away** (0.38.0; rulings 385 to 392). A Condition's row may say a
+creature cannot use a Defense: `[EFFECT CANNOT: evade]` on Grabbed, which Restrained counts as.
+The Defense's name is struck through on the sheet, with the reason on its mark, and it cannot
+be the answer to an attack or to a Maneuver's check (below). It is about answering: a Defense
+rolled from this grid for its own sake is not refused. Through 0.37.0 the system's own code
+made Evade unusable while Grabbed or Restrained, and only showed it. Guard's own exceptions in
+the book (unaware of the attack, or nothing to ward with) are not things the sheet can see, so
+they stay with the table.
 
 ### Attacks and Defense rolls: the Exchange
 
@@ -1107,16 +1112,27 @@ the field. Awareness and Endure answer a Blast, a Blight or a Beguilement by nam
   because the choice is not theirs, and no Defense or Threshold, because knowing which would be
   playing the character sheet rather than the character. The card then names the Defense, the
   Reaction behind it and the Threshold, and says why if the defender was answered with something
-  other than the Defense they named (Evade while Grabbed). Nothing forces a Defense from code any
+  other than the Defense they named (a Condition took it away after it was committed; 0.38.0
+  prints the note, which was stored and shown nowhere before). Nothing forces a Defense from code any
   more: `rollAttack`'s `defense` option went with the stance, since a Defense the attacker picks is
   exactly what the rule forbids.
 - **A Reaction is spent when it is used.** The ❶ comes off the defender's six as the attack
   resolves.
-- **Unavailable Defenses are shown, not enforced.** "Evade is unavailable while you are Grabbed or
-  Restrained." A Grabbed defender's Evade radio in the prompt carries a warning mark; committed
-  anyway, the attack is answered with the other permitted Defense (and an Evade Reaction or
-  Posture falls away with it), and the card says "Evade is unavailable while Grabbed; answered with
-  Guard". Guard's own exceptions are not things the sheet can see, so they stay with the table.
+- **A Defense the defender cannot use is disabled** (0.38.0; ruling 387, Mike: "Disable it"). A
+  Grabbed defender's Evade radio in the prompt is greyed out and cannot be picked, with the
+  reason on hover, for a player, for the GM's row for an adversary and for the GM's row for an
+  absent player; the coordinator refuses such a commitment by name whatever the window sent.
+  No Reaction and no Posture is offered on it. When no Defense the attack allows can be used,
+  every one stays pickable, marked, and answers basic and alone (ruling 390). The window
+  follows the Condition: Escape frees the defender and Evade is back at once; Grabbed arrives
+  and a draft on Evade is cleared with its answer and its Zone.
+- **An answer is judged when the answers are revealed, and stands from then on** (ruling 391).
+  A Defense that became unusable after it was committed (another defender was still choosing)
+  is answered at the reveal with the other one, basic, and the attack card says "Evade cannot
+  be used while Grabbed; answered with Guard, with no Reaction or Posture." After the reveal a
+  new Condition, or a Head Wound, takes nothing away from the answer, and a reroll meets the
+  Defense and the answer the first die met. Guard's own exceptions are not things the sheet
+  can see, so they stay with the table.
 
 Postures, the ⓿↺ answers (PHB v4.21, the Posture trait), are offered by the prompt from the
 Reactions table: the Posture each Defense's Training root grants in its own text, **Give Ground
@@ -2443,8 +2459,9 @@ Visual. Deafened's row waits for `[EFFECT IMMUNE: TRAIT(Auditory)]`.
 Beyond the sheet's lines the system still runs these itself (a failed Wind check raises
 Fatigued one step at a time to its maximum of 3; every ten minutes of rest lower it by 1, as the
 row says since 2026-11-19, and the table says when those have passed: the Ten minutes' rest
-button lowers it, a night's rest ends it, and the Combat's end does neither); Grabbed and Restrained make Evade
-unavailable; Slowed N takes its actions at the start of the round. The system keeps
+button lowers it, a night's rest ends it, and the Combat's end does neither); Slowed N takes its
+actions at the start of the round. (Evade being unusable while Grabbed or Restrained left this
+list in 0.38.0: Grabbed's row says it, `[EFFECT CANNOT: evade]`.) The system keeps
 Dying, Wounded, Spent, Bound, Controlled, Controlling, Preparing and the four Exposed in step
 between the sheet and the token, sets Prone from a final Legs Wound, Unconscious from Dying and
 Dead at Dying 5, and clears Spent when Vigor returns. Every condition effect sits under a static
@@ -2493,19 +2510,19 @@ Without it, a stale stylesheet looks exactly like a bug in the new one.
 
 ---
 
-## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-six kinds
+## 7. Automation: the framework, the grammar in Fantasy Grounds' shape, and the twenty-seven kinds
 
 **What it is, and what it is not** (0.9.0 to 0.16.0, 0.21.0 for the seventeenth kind, 0.22.0 for
 the eighteenth and nineteenth, 0.24.0 for the twentieth, 0.25.0 for the twenty-first, 0.28.0
 for the twenty-second, 0.30.0 for the twenty-third, 0.32.0 for the twenty-fourth, 0.34.0 for
-the twenty-fifth and 0.37.0 for the twenty-sixth; rulings 118
-to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289, 301, 311 to 321, 337 to 349, 375 to 384). Since
+the twenty-fifth, 0.37.0 for the twenty-sixth and 0.38.0 for the twenty-seventh; rulings 118
+to 124, 164 to 188, 215 to 230, 239 to 251, 281 to 289, 301, 311 to 321, 337 to 349, 375 to 392). Since
 0.9.0 every
 Talent sheet in `data/*.xlsx` may carry an
 **Automation** column, as the action sheets already did, and the system has a framework for
 reading it: the column is parsed, stored on the Item, indexed on the Actor and shown on the Item
-sheet. Twenty-six kinds read it: twelve effect kinds that act in play (`bonus`, `prevent`, `mark`,
-`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, `apply`, `cost`), two creation kinds
+sheet. Twenty-seven kinds read it: thirteen effect kinds that act in play (`bonus`, `prevent`, `mark`,
+`reroll`, `ignore`, `substitute`, `give`, `alter`, `permit`, `subordinate`, `apply`, `cost`, `cannot`), two creation kinds
 (`grant`, `aura`), ten feature kinds
 (`trait`, `size`, `speed`, `reach`, `vigor`, `sense`, `language`, `maneuver`, `talent`, `choice`) that say
 what owning the Talent does to the character, and `requires` (0.28.0), a block on a Maneuver's own
@@ -2670,8 +2687,8 @@ build lists those rows once. What a player and a GM see:
   with Guard") with a Roll button for Tess's player. The roll is the normal check card, with its
   APPLY buttons and rerolls. The user picks first and the target answers knowing the pick, the
   order of an attack: declare, then defend.
-- **Nobody is asked when only one of the Defenses named can be used** (Evade is unavailable
-  while Grabbed): that one is read.
+- **Nobody is asked when only one of the Defenses named can be used** (Evade cannot be used
+  while Grabbed, by its row's `CANNOT` line): that one is read.
 - **A row that names one Defense reads that Defense even when the target cannot use it**, and
   the card and the roll window say so. Through 0.33.0 such a check was read against another
   Defense with nothing said, the one place the system chose a Defense by itself.
@@ -2967,6 +2984,17 @@ narrow meaning meanwhile.
   Strikes, Casts, movement, Reactions, the other Maneuvers the system runs itself (Raise a
   Shield, the visor, Reload, Gain Control, Pass), a row whose rule acts when it is used or from
   a card's button, and a Maneuver performed as part of another.
+- **A Condition may take a Defense away** (0.38.0; rulings 385 to 392; Mike: "Grabbed currently
+  is hard-coded to 'cannot Evade' ... I would like to make that an automation grammar to prevent
+  the use of a Defense"). The `cannot` kind, on a Condition's row alone: `[EFFECT CANNOT:
+  evade]`, one Defense to a line, nothing after it. Whoever has the Condition cannot answer an
+  attack, or a Maneuver's check, with that Defense: the Combat window disables it, the
+  coordinator refuses it, no Reaction or Posture is offered on it, a request card's button for
+  it is disabled, and both sheets strike its name through. A Condition that counts as another
+  inherits its line (Restrained counts as Grabbed), and the Condition named is the one the
+  creature has. THE ROW IS THE WORD: with no line Grabbed takes no Defense away, and the build
+  warns of a sheet in which nothing takes Evade away while Grabbed or Restrained. The code's
+  old rule stands only for a Condition no row describes.
 - **Each roll takes an every-roll line once.** It is folded into each Defense's number on the
   sheet, so a Defense roll, a Defense rolled as a check (the Wind roll, a Recovery) and an
   Initiative rolled with Awareness carry it through that number and never again. This settles
@@ -3489,8 +3517,8 @@ before; the sources and the index are.
   attack flow takes one answer per attack, which is the one Trigger the system can identify.
   Elsewhere it cannot tell which Trigger a Reaction answers (an Intercept, a Reaction row used from
   the sheet), so a second Reaction to one Trigger is neither refused nor remarked on.
-- **What the Conditions workbook leaves to the table** (0.33.0): what a Condition FORBIDS and how
-  it FADES have no word yet, so Supine does not stop movement, its -2 to attacks has no
+- **What the Conditions workbook leaves to the table** (0.33.0): what a Condition FORBIDS, beyond
+  a Defense (0.38.0, `CANNOT`), and how it FADES have no word yet, so Supine does not stop movement, its -2 to attacks has no
   exception for melee Attacks against adjacent creatures, Grabbed's and Restrained's "cannot
   Move or Step" and "no action other than Escape" are by hand, Frightened and Slowed do not drop
   by 1 at a round's end, Stunned takes no actions, and Blinded and Deafened stop no perception
@@ -3503,9 +3531,18 @@ before; the sources and the index are.
   Blow, so Prone's +2 Evade does not reach a Blast thrown from range. "Blind" and "Deaf" are
   names of Blinded and Deafened now, so a hand-made effect merely called either is read by
   nothing. A reroll of an adversary's Gain Control reads its Conditions as they then stand. A
-  Condition's row reads CHECK, SKILL, ATK, DEF and INIT and nothing that asks about an owner. An
+  Condition's row reads CHECK, SKILL, ATK, DEF, INIT, IMMUNE for a trait, COST and CANNOT, and
+  nothing that asks about an owner. An
   adversary's own Talents stay unread. Fatigued's maximum of 3 is kept only where the system
   raises it.
+- **What `CANNOT` leaves to the table** (0.38.0): it is about answering, so a Defense rolled for
+  its own sake (the Wind check's Endure, Initiative with Awareness, a Search, a Recovery, a roll
+  from the sheet's grid) is not refused, and the Reactions offered in that roll's own window
+  are not held back; anything but a Defense (movement, a Maneuver, Reactions, "no action other
+  than Escape") has no word yet; a Condition held only against one creature takes no Defense
+  away; a `CANNOT` line on a Condition that takes X reaches everyone, and the build says so;
+  a card from before 0.38.0 of a defender who had committed a Defense it could not use is
+  rerolled against the Defense the card names, since the card did not record what its die met.
 - **What `COST` leaves to the table** (0.37.0): a Strike, a Cast, a drag, a Reaction and the
   Maneuvers the system runs itself (but Recenter) cost what they always cost, whatever their
   traits; the price is settled at the click, so a Maneuver already Prepared, or waiting on its

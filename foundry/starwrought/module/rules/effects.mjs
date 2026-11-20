@@ -17,7 +17,7 @@
  * A MODIFIER tag (CHECK, ATK, DEF, INIT, SPEED, GIVE) is `TAG: <value> <type>, <descriptor>`: a
  * signed whole number, the bonus type (situation, condition or gear; FG's `[bonus]`), then
  * descriptors by commas. The other tags (IMMUNE, MARK, REROLL, IGNORE, USE, ALTER, PERMIT,
- * SUBORDINATE, COST) take descriptors alone. The components:
+ * SUBORDINATE, COST, CANNOT) take descriptors alone. The components:
  * `IF: <condition>` (the owner, or the roll) and `IFT: <condition>` (the other party, or the
  * attack), `FOR: <who> [<N>]` (the recipients), `LIMIT: round | encounter`, and (0.22.0) `UNTIL:
  * <window>` after GIVE and `VALUE: <value>` after ALTER. The conditions:
@@ -68,7 +68,10 @@ export const EFFECT_TAGS = Object.freeze({
   // 0.37.0: `COST: <n>; IF: TRAIT(<Trait>)` on a Condition's row: what a creature uses costs more
   // actions while it has the Condition (Heedless). Not the CONDITION word `COST(<n>)`, which is
   // read inside IF: and asks which version of a Maneuver was used.
-  cost: "cost"
+  cost: "cost",
+  // 0.38.0: `CANNOT: <Defense>` on a Condition's row: a creature that has the Condition cannot
+  // answer with that Defense (Grabbed: `CANNOT: evade`).
+  cannot: "cannot"
 });
 
 /** The modifier tags: a value and a bonus type come first. */

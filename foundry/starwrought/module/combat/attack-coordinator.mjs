@@ -32,7 +32,7 @@ import * as SW from "../config.mjs";
 import { AttackWorkflow, ACTIONS, TERMINAL_PHASES } from "./attack-workflow.mjs";
 import { renderAttackCard, updateAttackCard, mayControl } from "./attack-card.mjs";
 import { SwCheck } from "../dice/check.mjs";
-import { isLegalAnswer, postureName, postureBonus, postureZone, postureRule } from "../helpers/answers.mjs";
+import { isLegalAnswer, refusedDefense, postureName, postureBonus, postureZone, postureRule } from "../helpers/answers.mjs";
 import { gapBetween } from "../canvas/geometry.mjs";
 import { AttackSocket, SOCKET } from "./attack-socket.mjs";
 import { resolveSource, maneuverFrom, costOf, meleeAnswers, attackThreshold, describe, resolveArgs, rollBlind } from "./attack-source.mjs";
@@ -69,6 +69,7 @@ const REASONS = Object.freeze({
   noSpell: "STARWROUGHT.Cast.notASpell",
   npcCast: "STARWROUGHT.Cast.npc",
   illegalDefense: "STARWROUGHT.Attack.illegalDefense",
+  unusableDefense: "STARWROUGHT.Attack.unusableDefense",
   basicOnly: "STARWROUGHT.Reaction.basicOnly",
   badRoll: "STARWROUGHT.Attack.badRoll",
   timeout: "STARWROUGHT.Attack.timeout",
@@ -1071,6 +1072,14 @@ export class AttackCoordinator {
     if (!profile.defenses.includes(defense)) {
       return { ok: false, reason: "illegalDefense", reasonData: { name: actor.name, defense: defenseLabel, threat: localize(SW.THREATS[workflow.maneuver?.threat]?.label ?? SW.THREATS.blow.label) } };
     }
+    // A Defense this defender cannot use now, while another the Threat permits can be used
+    // (0.38.0; ruling 387; a Condition's `CANNOT` line): refused by name. The window disables
+    // the option from its own copy of the actor, which may be a moment behind this one, so the
+    // rule is asked again here (helpers/answers.mjs, `refusedDefense`, the window's own).
+    const unusable = refusedDefense(actor, defense, profile.defenses);
+    if (unusable) {
+      return { ok: false, reason: "unusableDefense", reasonData: { name: actor.name, defense: defenseLabel, reason: localize(SW.conditionNameKey(unusable)) } };
+    }
     if (profile.basicOnly && (reaction || posture)) return { ok: false, reason: "basicOnly" };
     // A Reaction that answers a melee Blow only (Slip the Line, Parry, Deflecting Palms;
     // SW.REACTIONS `melee`) is refused against an arrow or a spell, by name.
@@ -1382,10 +1391,17 @@ export class AttackCoordinator {
       const actor = resolveActor(target.actorUuid);
       const reading = AttackCoordinator.#thresholdFor(actor, commitment, permitted, threatContext(workflow.maneuver),
         resolveTokenDoc(workflow.attacker?.tokenUuid) ?? resolveActor(workflow.attacker?.actorUuid));
+      // THE ANSWER IS JUDGED HERE, ONCE (0.38.0; ruling 391), and what the read says stands is
+      // what is revealed: the Defense it settled on, and the Reaction or the Posture only if the
+      // read kept it. A Defense that became unusable after it was committed (Grabbed arrived
+      // while another defender was still choosing) is answered with the other one, basic, and
+      // the card says so. Through 0.37.0 the Defense moved while the committed Reaction and
+      // Posture were revealed as they were, so the Reaction was paid for and the Posture's Zone
+      // Exposed for an answer the Threshold had thrown away, and the note was printed nowhere.
       target.revealed = {
         defense: reading?.key ?? commitment.defense,
-        reaction: commitment.reaction ?? null,
-        posture: commitment.posture ?? null,
+        reaction: (reading && !reading.reaction) ? null : (commitment.reaction ?? null),
+        posture: (reading && !reading.posture) ? null : (commitment.posture ?? null),
         note: reading?.note ?? null,
         // The revision this reveal happened at: the owning clients apply its Postures once, keyed on it.
         revision: workflow.revision
@@ -1463,18 +1479,23 @@ export class AttackCoordinator {
    * coordinator once the pairing resolves (never at the reveal, which may be read again).
    * @returns {{key: string, threshold: number, note: string|null, marks: Array}|null}
    */
-  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null, attacker = null, { conditionShift = null } = {}) {
+  static #thresholdFor(actor, { defense, reaction = null, posture = null } = {}, permitted = null, threat = null, attacker = null, { conditionShift = null, frozen = false } = {}) {
     if (!actor) return null;
     const allowed = (Array.isArray(permitted) && permitted.length) ? permitted : [...SW.THREATS.blow.defenses];
     if (typeof actor.defenseThresholdFor === "function") {
       // `attacker` (0.15.0): the other party, for a rule about who is attacking (`MARKED`).
       // `conditionShift` (0.33.0): a reroll's, the total an adversary's Conditions put on the
       // first reading; the answer's own is handed back for the card to keep.
-      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: allowed, threat, attacker, conditionShift });
+      // `frozen` (0.38.0; ruling 391): a revealed answer, or a resolved card read again. The read
+      // stays on the Defense given and re-judges nothing about whether it can be used.
+      const reading = actor.defenseThresholdFor({ defense, reaction, posture, permitted: frozen ? [defense] : allowed, threat, attacker, conditionShift, frozen });
       if (reading && Number.isFinite(Number(reading.threshold))) {
         return {
           key: reading.key ?? defense, threshold: Number(reading.threshold),
-          note: reading.note ?? reading.unavailable ?? null, marks: reading.marks ?? [],
+          // What stands of the answer (0.38.0): the read drops a Reaction or a Posture it cannot
+          // honour (the Defense cannot be used, a Head Wound, a Talent since removed).
+          reaction: reading.reaction ?? null, posture: reading.posture ?? null,
+          note: [reading.unavailable, reading.note].filter(Boolean).join(" ") || null, marks: reading.marks ?? [],
           conditionShift: Number.isFinite(reading.conditionShift) ? reading.conditionShift : null
         };
       }
@@ -1482,9 +1503,14 @@ export class AttackCoordinator {
     const defenses = actor.system?.defenses ?? {};
     let key = allowed.includes(defense) ? defense : allowed[0];
     let note = null;
-    if (defenses[key]?.unavailable) {
+    // Not judged again once `frozen`, and what was built on a Defense that cannot be used falls
+    // away, as in the authority above (0.38.0). The note is a Condition's name, never its id.
+    if (!frozen && defenses[key]?.unavailable) {
+      const reason = defenses[key].unavailable;
       key = allowed.find(d => (d !== key) && !defenses[d]?.unavailable) ?? key;
-      note = defenses[defense]?.unavailable ?? null;
+      note = localize(SW.conditionNameKey(reason));
+      reaction = null;
+      posture = null;
     }
     const def = defenses[key];
     let threshold = Number(def?.threshold ?? 10);
@@ -1501,7 +1527,7 @@ export class AttackCoordinator {
         threshold += SW.resolveModifiers(extra).total;
       }
     }
-    return { key, threshold, note, marks: [] };
+    return { key, threshold, reaction, posture, note, marks: [] };
   }
 
   /** An adversary's Attack Threshold: the attack row's own number (attack-source.mjs). */
@@ -1553,14 +1579,22 @@ export class AttackCoordinator {
     if (!flags) return null;
     if (flags.kind === "attack") {
       const defender = resolveActor(flags.defenderUuid);
-      // The card's Defense is the one the die met; every Defense is permitted for a reread.
+      // The card's Defense is the one the die met, and a reroll meets it again (0.38.0; ruling
+      // 391): it alone is permitted and nothing about whether it can be used is judged again.
+      // Through 0.37.0 all four were permitted, so a Defense the creature had since become
+      // unable to use moved to the first other one, Awareness, and lost its Reaction's bonus.
       // The Threat the first die answered and what the defender's Conditions put on its Threshold
       // then (0.33.0, ruling 335): both from the card, so the reroll meets the same number. A card
       // from before 0.33.0 carries neither and is read as it stands, as it always was.
+      // A card with no Defense a reader knows (an old or a hand-made one) is read as the result
+      // card itself reads it: the Reaction's own Defense, else Evade (dice/check.mjs,
+      // `resolveAgainst`). With the one Defense permitted, an unknown one had the read throw.
+      const defense = SW.DEFENSES[flags.defense] ? flags.defense
+        : (SW.DEFENSES[SW.REACTIONS[flags.reaction]?.defense] ? SW.REACTIONS[flags.reaction].defense : "evade");
       const reading = AttackCoordinator.#thresholdFor(defender, {
-        defense: flags.defense, reaction: flags.reaction ?? null, posture: flags.posture ?? null
-      }, Object.keys(SW.DEFENSES), flags.threat ?? null, resolveActor(flags.actorUuid),
-      { conditionShift: Number.isFinite(flags.conditionShift) ? flags.conditionShift : null });
+        defense, reaction: flags.reaction ?? null, posture: flags.posture ?? null
+      }, [defense], flags.threat ?? null, resolveActor(flags.actorUuid),
+      { conditionShift: Number.isFinite(flags.conditionShift) ? flags.conditionShift : null, frozen: true });
       return Number.isFinite(reading?.threshold) ? reading.threshold : null;
     }
     if (flags.kind === "defense") {
@@ -1800,7 +1834,9 @@ export class AttackCoordinator {
     let conditionShift = null;
     if (target.roller === "attacker") {
       kind = "attack";
-      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threat, attackerToken ?? attacker);
+      // `frozen`: the answer was revealed and stands (0.38.0; ruling 391). The numbers are read as
+      // they are now; which Defense answers, and with what, is no longer judged.
+      const reading = AttackCoordinator.#thresholdFor(defender, revealed, profile.defenses, threat, attackerToken ?? attacker, { frozen: true });
       conditionShift = reading?.conditionShift ?? null;
       threshold = reading?.threshold ?? target.threshold ?? 10;
       target.threshold = threshold;

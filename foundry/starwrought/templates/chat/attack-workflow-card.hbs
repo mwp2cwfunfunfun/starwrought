@@ -42,6 +42,8 @@
         {{#if t.threshold}}<span class="sw-attack-vs" data-sw-threshold-for="{{t.actorUuid}}">{{t.threshold}}</span>{{/if}}
       </div>
       {{#if t.answer}}<p class="sw-card-note sw-attack-answer">{{t.answer}}</p>{{/if}}
+      {{!-- Why the answer is not the one committed (0.38.0): the Defense could not be used. --}}
+      {{#if t.note}}<p class="sw-card-note sw-attack-answer-note"><i class="fa-solid fa-triangle-exclamation"></i> {{t.note}}</p>{{/if}}
       {{!-- The pairing's die: the attacker's Attack roll against this defender, or the Defense roll
            of a player-controlled defender of an adversary's Blow. --}}
       {{#if t.roll}}<p class="sw-card-note sw-attack-roll"><i class="fa-solid fa-dice-d20"></i> {{t.roll}}</p>{{/if}}

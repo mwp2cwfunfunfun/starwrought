@@ -29,6 +29,54 @@ import * as SW from "../config.mjs";
  */
 export const BLOW_DEFENSES = Object.freeze([...SW.THREATS.blow.defenses]);
 
+/* -------------------------------------------- */
+/*  A Defense the defender cannot use (0.38.0)  */
+/* -------------------------------------------- */
+
+/**
+ * Why this actor cannot use a Defense now: the id of the Condition that takes it away
+ * (`system.defenses[key].unavailable`, written by the Defense passes from the rows of the
+ * Conditions it has; module/rules/cannot.mjs), or null.
+ * @param {Actor} actor
+ * @param {string} defense  A key of SW.DEFENSES.
+ * @returns {string|null}
+ */
+export function unusableReason(actor, defense) {
+  return actor?.system?.defenses?.[defense]?.unavailable || null;
+}
+
+/**
+ * The Defenses of those an attack permits that this actor can use now. WITH NONE USABLE EVERY ONE
+ * PERMITTED STANDS (ruling 390): something must answer, so each may be picked, basic and alone,
+ * and the card says it could not be used (`usableDefenses` in rules/check-request.mjs is the
+ * same rule for a Maneuver's check).
+ * @param {Actor} actor
+ * @param {string[]} [permitted]
+ * @returns {string[]}
+ */
+export function usableAnswers(actor, permitted = BLOW_DEFENSES) {
+  const allowed = (Array.isArray(permitted) && permitted.length ? permitted : BLOW_DEFENSES).filter(d => SW.DEFENSES[d]);
+  const usable = allowed.filter(d => !unusableReason(actor, d));
+  return usable.length ? usable : allowed;
+}
+
+/**
+ * MAY THIS DEFENSE NOT BE PICKED (0.38.0; ruling 387, Mike: "Disable it")? The Condition's id when
+ * the actor cannot use it AND another Defense the attack permits can be used; null otherwise.
+ * The one rule the Combat window draws from and the coordinator refuses by, so the two cannot
+ * disagree (they may still read different copies of the actor, which is why the coordinator
+ * asks again).
+ * @param {Actor} actor
+ * @param {string} defense
+ * @param {string[]} [permitted]
+ * @returns {string|null}
+ */
+export function refusedDefense(actor, defense, permitted = BLOW_DEFENSES) {
+  const reason = unusableReason(actor, defense);
+  if (!reason) return null;
+  return usableAnswers(actor, permitted).includes(defense) ? null : reason;
+}
+
 /** The Reaction key a Talent is, by the slug of its plain name, or null when the table has no row. */
 export function reactionKeyOf(item) {
   if (item?.type !== "talent") return null;
@@ -99,6 +147,12 @@ export function legalAnswers(actor, defense, { permitted = BLOW_DEFENSES, basicO
   const allowed = Array.isArray(permitted) && permitted.length ? permitted : BLOW_DEFENSES;
   if (!actor || !allowed.includes(defense) || !SW.DEFENSES[defense]) return none;
   if (basicOnly) return none;
+  // A Defense the actor cannot use (0.38.0; ruling 390): a Reaction and a Posture are Talents of
+  // their Defense, so neither stands on one that cannot be used. It may still be the answer when
+  // nothing else the attack permits can be used, and then it answers basic and alone. (Through
+  // 0.37.0 they were offered and accepted, and the Threshold read then threw them away while the
+  // Reaction was still paid for and the Posture's Zone still Exposed.)
+  if (unusableReason(actor, defense)) return none;
 
   const reactions = actor.system?.reactions ?? {};
   // A Head Wound: no Reactions and no Postures at all; only the basic Defense answers.
@@ -219,6 +273,8 @@ export function postureName(actor, posture) {
 export function isLegalAnswer(actor, defense, { reaction = null, posture = null } = {}, options = {}) {
   const allowed = Array.isArray(options.permitted) && options.permitted.length ? options.permitted : BLOW_DEFENSES;
   if (!allowed.includes(defense) || !SW.DEFENSES[defense]) return false;
+  // A Defense the actor cannot use, while another the attack permits can be used (0.38.0).
+  if (refusedDefense(actor, defense, allowed)) return false;
   if (reaction && posture) return false;
   const legal = legalAnswers(actor, defense, options);
   if (reaction) return legal.reactions.includes(reaction);

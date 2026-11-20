@@ -462,6 +462,22 @@ def why(message, text, data, vocab, item_name=""):
         return "no kind yet", "this asks for something no tag or keyword of the grammar does; a kind would have to be written for it"
     if "is not a trait word" in low:
         return "mis-typed", "a trait is letters, digits, spaces, apostrophes and hyphens"
+    # A Defense a Condition takes away (0.38.0), read on a row of data/conditions.xlsx alone. Before
+    # the immunity hints, whose wording ("is read on a Condition's row for now") this one shares.
+    if low.startswith("`cannot:` says what a creature cannot use"):
+        return "not yet readable", "what a creature cannot use is read on a row of data/conditions.xlsx alone for now; mark this cell N/A until a Talent's is built"
+    if low.startswith("cannot names a defense for now"):
+        # A Defense misspelt (`evad`, `gaurd`) is a slip, not a wish for a new word (the review of
+        # 0.38.0: it was reported as "no kind yet", a Decision to author a kind).
+        quoted = re.search(r': "([^"]+)" is not read yet', message)
+        near = close(quoted.group(1).strip(), ["Evade", "Guard", "Endure", "Awareness"], cutoff=0.7) if quoted else None
+        if near:
+            return "mis-typed", f"did you mean \"{near}\"? Write `[EFFECT CANNOT: {near.lower()}]`"
+        return "no kind yet", "CANNOT reads a Defense alone for now (Evade, Guard, Endure or Awareness); what else a creature cannot do has no word yet"
+    if (low.startswith("cannot is written `cannot: <defense>") or low.startswith("cannot names one defense")
+            or low.startswith("cannot: a comma") or low.startswith("cannot does not take")
+            or low.startswith("cannot takes no value") or low.startswith("cannot takes one defense")):
+        return "wrong shape", "write `[EFFECT CANNOT: evade]`: one Defense and nothing after it; a second Defense is a second line"
     # A cost raised by a Condition (0.37.0), read on a row of data/conditions.xlsx alone. Before the
     # immunity hints, whose wording a COST line's messages share.
     if low.startswith("`cost:` raises what a thing costs"):

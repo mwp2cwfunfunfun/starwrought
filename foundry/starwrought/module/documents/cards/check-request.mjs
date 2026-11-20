@@ -774,7 +774,10 @@ export function registerCheckRequestCards() {
     if (!actor) return;
     for (const message of (game.messages?.contents ?? []).slice(-REDRAW_DEPTH)) {
       const request = recordOf(message);
-      if (!request?.traits?.length) continue;
+      // A request with a trait says whether its target is immune; one that names two Defenses
+      // disables the button of a Defense the target cannot use (0.38.0: through 0.37.0 only the
+      // first was drawn again, so a button stayed disabled after Escape had freed the target).
+      if (!request || !(request.traits?.length || ((request.defenses?.length ?? 0) > 1))) continue;
       const target = resolveActor(request.targetUuid);
       if (target && sameBody(target, actor)) redraw(message);
     }

@@ -215,6 +215,13 @@ registerKind(check);
 import cost from "./cost.mjs";
 registerKind(cost);
 
+// 0.38.0: Grabbed's `CANNOT: evade` on a Condition's row: a creature that has the Condition
+// cannot answer with that Defense. `cannot` has no hook point either: the two Defense passes ask
+// `unusableDefenses` in ../cannot.mjs and write the answer onto the Defense, where every reader of
+// an unusable Defense already looks. The kind's own file imports nothing that reaches this registry.
+import cannot from "./cannot.mjs";
+registerKind(cannot);
+
 // 0.16.0: the feature kinds, what owning a Talent does to the character, each read from a
 // `[KEYWORD data]` block (../features.mjs); none has an engine hook.
 import { FEATURE_KINDS } from "./features.mjs";

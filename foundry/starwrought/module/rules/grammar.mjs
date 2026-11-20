@@ -144,8 +144,9 @@ export function parseAutomation(text, context = {}) {
       let effect;
       try {
         effect = readEffectLine(effectText, { context });
-        // A Condition's row (0.33.0): bonuses and penalties to rolls and Thresholds, and no
-        // other tag yet. Each other word comes with the release that gives it a meaning there.
+        // A Condition's row (0.33.0): the tags `CONDITION_ROW_TAGS` lists and no other yet
+        // (bonuses and penalties; since then IMMUNE, COST and CANNOT). Each other word comes
+        // with the release that gives it a meaning there.
         if (onConditionRow && !CONDITION_ROW_TAGS.includes(effect.tag)) {
           throw new RuleSyntaxError(`${effect.tag.toUpperCase()} is not read on a Condition's row yet: a Condition's lines are ${CONDITION_ROW_TAGS.map(t => t.toUpperCase()).join(", ")}`);
         }

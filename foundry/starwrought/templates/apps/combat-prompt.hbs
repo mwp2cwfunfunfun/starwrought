@@ -31,13 +31,14 @@
     {{#if task.isDefend}}
     {{!-- The two Defenses the Threat permits (PHB v4.21, The Four Threats: Evade or Guard for a
           Blow, a spell's own pair). Nothing is pre-selected (0.12.0): the choice is the defender's.
-          An unavailable Defense (Evade while Grabbed) is shown and never enforced; the table decides. --}}
+          A Defense the defender cannot use (0.38.0; a Condition's CANNOT line, as Grabbed's) is
+          disabled while the other one can be used; with neither usable both stay pickable, marked. --}}
     <div class="sw-prompt-defenses" role="radiogroup" aria-label="{{localize 'STARWROUGHT.Prompt.defense'}}">
       <span class="sw-prompt-label">{{localize "STARWROUGHT.Prompt.defense"}}</span>
       <div class="sw-prompt-options">
         {{#each task.defenses as |d|}}
-        <label class="sw-prompt-option {{#if d.active}}sw-active{{/if}} {{#if d.unavailable}}sw-unavailable{{/if}}" data-tooltip="{{d.hint}}">
-          <input type="radio" name="defense-{{task.index}}" data-field="defense" value="{{d.key}}" {{#if d.active}}checked{{/if}}>
+        <label class="sw-prompt-option {{#if d.active}}sw-active{{/if}} {{#if d.unavailable}}sw-unavailable{{/if}} {{#if d.disabled}}sw-disabled{{/if}}" data-tooltip="{{d.hint}}">
+          <input type="radio" name="defense-{{task.index}}" data-field="defense" value="{{d.key}}" {{#if d.active}}checked{{/if}} {{#if d.disabled}}disabled{{/if}}>
           <span>{{d.label}}{{#if d.unavailable}} <i class="fa-solid fa-triangle-exclamation sw-prompt-warn"></i>{{/if}}</span>
           {{#if d.threshold}}<em>{{d.threshold}}</em>{{/if}}
         </label>

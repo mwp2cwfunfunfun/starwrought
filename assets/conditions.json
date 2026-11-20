@@ -52,7 +52,7 @@
    "name": "Controlled",
    "takes": "x",
    "description": "Your foe forces your weapon out of line, opening a dangerous gap in your defenses.",
-   "effect": "X Controls your weapon. You have an Exposed Zone of X’s choice while the Bind lasts, and your attacks with that weapon take a −2 Situation penalty. Recenter ❶, Move, or Step to end it.",
+   "effect": "[X] Controls your weapon. You have an Exposed Zone of [X]’s choice while the Bind lasts, and your attacks with that weapon take a -2 Situation penalty. Recenter ❶, Move, or Step to end it.",
    "includes": [],
    "automation": "N/A",
    "rules": [],
@@ -67,7 +67,7 @@
    "name": "Controlling",
    "takes": "x",
    "description": "You hold your foe’s weapon out of line, keeping their defenses open to attack.",
-   "effect": "You Control X’s weapon: X has an Exposed Zone of your choice. You may Close ❶ on X. The Bind ends if a third party attacks you.",
+   "effect": "You Control [X]’s weapon: [X] has an Exposed Zone of your choice. You may Close ❶ on [X]. The Bind ends if a third party attacks you.",
    "includes": [],
    "automation": "N/A",
    "rules": [],
@@ -141,7 +141,7 @@
    "name": "Fatigued",
    "takes": "n",
    "description": "Weariness drags at your limbs, making each attack and defense an effort.",
-   "effect": "You suffer a -N Condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack checks (checks with the Attack trait). You can Travel, but you may take no other Exploration Mode Activity. You cannot Sustain spells.\n\nReduce by 1 after every ten minutes of uninterrupted rest, unless otherwise specified.",
+   "effect": "You suffer a -N condition (maximum of 3) penalty to all Defense (Awareness, Endure, Evade, Guard) and Attack checks (checks with the Attack trait). You can Travel, but you may take no other Exploration Mode Activity. You cannot Sustain spells.\n\nReduce by 1 after every ten minutes of uninterrupted rest, unless otherwise specified.",
    "includes": [],
    "automation": "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]",
    "rules": [
@@ -199,7 +199,7 @@
    "name": "Frightened",
    "takes": "n",
    "description": "Fear tightens its grip, making every danger loom larger and every decision harder.",
-   "effect": "You suffer a -N penalty to all checks.\n\nReduce by 1 at the end of each round.",
+   "effect": "You suffer a -N condition penalty to all checks.\n\nReduce by 1 at the end of each round.",
    "includes": [],
    "automation": "[EFFECT CHECK: -N condition]",
    "rules": [
@@ -243,12 +243,20 @@
      "against": false
     }
    ],
-   "automation": "N/A",
-   "rules": [],
+   "automation": "[EFFECT CANNOT: evade]",
+   "rules": [
+    {
+     "defense": "evade",
+     "name": "Evade",
+     "kind": "cannot",
+     "line": 1,
+     "text": "[EFFECT CANNOT: evade]"
+    }
+   ],
    "system": false,
    "listed": true,
    "icon": "",
-   "notes": "Off-Guard comes through Includes. Evade is marked unavailable by the system; \"can't Move or Step\" is the table's.",
+   "notes": "Evade is marked unavailable by the system; \"can't Move or Step\" is the table's.",
    "builtIn": true
   },
   {
@@ -256,10 +264,19 @@
    "name": "Heedless",
    "takes": "",
    "description": "Your commitment overwhelms caution, leaving little room for careful thought.",
-   "effect": "Commitment so complete that you have stopped thinking. Maneuvers with Concentrate take 1 extra action.",
+   "effect": "You have commitment so complete that you have stopped thinking. Maneuvers with the Concentrate trait take 1 extra action.",
    "includes": [],
-   "automation": "N/A",
-   "rules": [],
+   "automation": "[EFFECT COST: 1; IF: TRAIT(Concentrate)]",
+   "rules": [
+    {
+     "value": 1,
+     "trait": "concentrate",
+     "name": "Concentrate",
+     "kind": "cost",
+     "line": 1,
+     "text": "[EFFECT COST: 1; IF: TRAIT(Concentrate)]"
+    }
+   ],
    "system": false,
    "listed": true,
    "icon": "",

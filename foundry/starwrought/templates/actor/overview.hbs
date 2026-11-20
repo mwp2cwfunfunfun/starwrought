@@ -37,10 +37,10 @@
     <h3 class="sw-panel-title">{{localize "STARWROUGHT.Section.defenses"}}</h3>
     <div class="sw-defense-grid">
       {{#each defenses as |def|}}
-      <div class="sw-defense {{#unless def.trained}}sw-untrained{{/unless}}">
+      <div class="sw-defense {{#unless def.trained}}sw-untrained{{/unless}}{{#if def.cannotTip}} sw-defense-cannot{{/if}}">
         <a class="sw-defense-roll" data-action="rollDefense" data-defense="{{def.key}}"
            data-tooltip="{{def.hint}}">
-          <span class="sw-defense-name">{{def.label}}</span>
+          <span class="sw-defense-name">{{def.label}}{{#if def.cannotTip}} <i class="fa-solid fa-ban sw-defense-cannot-mark" data-tooltip="{{def.cannotTip}}"></i>{{/if}}</span>
           <span class="sw-defense-mod">{{swSigned def.mod}}</span>
         </a>
         <div class="sw-defense-meta">

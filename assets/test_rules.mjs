@@ -74,7 +74,7 @@ import {
 // Foundry globals at module scope, so the rule "no Defense is ever chosen by the system" has
 // checks the build runs.
 import { AttackWorkflow, ACTIONS, OUTSTANDING_KINDS } from "../foundry/starwrought/module/combat/attack-workflow.mjs";
-import { legalAnswers, isLegalAnswer } from "../foundry/starwrought/module/helpers/answers.mjs";
+import { legalAnswers, isLegalAnswer, unusableReason, usableAnswers, refusedDefense } from "../foundry/starwrought/module/helpers/answers.mjs";
 // The Bind's rules (0.27.0): pure, so every decision the callers write is checked here.
 import {
   usesBoundImplement, attackBindPlan, movementBindPlan, bindOffer, gainControlOutcome,
@@ -105,6 +105,7 @@ import { spawnSync } from "node:child_process";
 // 0.37.0: a cost raised by a Condition.
 import { COST_RAISE_MAX } from "../foundry/starwrought/module/rules/kinds/cost.mjs";
 import { costRaise, carriesTrait, raiseWords, raiseReason, costRoad, rowRaise, raisedCosts, costCensus, builtInTraitNotes, paidElsewhere } from "../foundry/starwrought/module/rules/cost.mjs";
+import { unusableDefenses, reasonOf, EVADE_BY_HAND } from "../foundry/starwrought/module/rules/cannot.mjs";
 import { BUILT_IN_TRAITS, RAISED_BUILT_INS } from "../foundry/starwrought/module/documents/maneuvers.mjs";
 import { fileURLToPath } from "node:url";
 import { closeConditions, conditionSetOf, holdsCondition, heldIds, heldIdsFor } from "../foundry/starwrought/module/rules/condition-set.mjs";
@@ -127,7 +128,7 @@ Number.isNumeric ??= n => (typeof n === "number") && !Number.isNaN(n);
  * since 0.10.0, Mike's first (Humanity's "+1 Condition bonus on checks to Aid"), with its own
  * checks below. Each kind that lands adds its id here and its section of checks.
  */
-const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "check", "choice", "cost", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
+const SHIPPED_KINDS = ["alter", "apply", "aura", "bonus", "cannot", "check", "choice", "cost", "give", "grant", "ignore", "language", "maneuver", "mark", "permit", "prevent", "reach", "requires", "reroll", "sense", "size", "speed", "subordinate", "substitute", "talent", "trait", "vigor"];
 
 /**
  * The word every "unknown kind" check uses. Reserved: no kind may ever register it, and the check
@@ -777,7 +778,7 @@ check("effects: readEffectLine sorts the tag, the value and type, the descriptor
   throws(() => readEffectLine("CHECK: 1 situation; IF: SEEN(yes)"), /SEEN takes nothing in parentheses/, "a flag with contents");
   throws(() => readEffectLine("CHECK: 1 situation; IF:"), /IF: names a condition/, "an empty IF");
   throws(() => readEffectLine("CHECK: 1 situation; DEF: 1 situation"), /"DEF" is a tag and begins its own line/, "a second tag on the line");
-  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, COST$/, "a bad tag");
+  throws(() => readEffectLine("FOO: 1 situation"), /"FOO" is not an effect tag: write CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, COST, CANNOT$/, "a bad tag");
   throws(() => readEffectLine("CHECK: 1 condition aid"), /the value and its type, then a comma before any descriptor/, "three words before the comma");
   throws(() => readEffectLine("CHECK: 1 condition, (aid"), /a \( has no closing \)/, "an unclosed parenthesis");
 });
@@ -2477,7 +2478,7 @@ check("0.17.0: the 0.13.0 operator form is one error naming the retirement, what
 check("0.17.0: the EFFECT block's own refusals, the keyword list, and blocks of both layers on one line", () => {
   const err = cell => { const p = parseAutomation(cell, { resolve }); must((p.rules.length === 0) && (p.errors.length === 1), `"${cell}" should be one error`); return p.errors[0]; };
   const nonsense = err("[EFFECT nonsense: 1]");
-  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, COST", `a word that is no tag: "${nonsense.message}"`);
+  must(nonsense.message === "EFFECT wraps an effect line, `[EFFECT <tag>: ...]`: CHECK, SKILL, ATK, DEF, INIT, SPEED, IMMUNE, MARK, REROLL, IGNORE, USE, GIVE, ALTER, PERMIT, SUBORDINATE, APPLY, REMOVE, COST, CANNOT", `a word that is no tag: "${nonsense.message}"`);
   must(nonsense.text === "[EFFECT nonsense: 1]", "under the block's text");
   must(err("[EFFECT]").message === "EFFECT is written `[EFFECT <tag>: ...]`, as in `[EFFECT IMMUNE: prone; LIMIT: encounter]`", "an empty EFFECT");
   // A tag with its colon lost is told the colon (0.36.0, the review), not the list of tags.
@@ -4898,7 +4899,7 @@ check("conditions: a row the registry cannot take is refused in words, and nothi
 });
 
 check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` for its own value (ruling 326)", () => {
-  same(CONDITION_ROW_TAGS, ["check", "skill", "atk", "def", "init", "immune", "cost"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone; SKILL since 0.36.0; COST since 0.37.0)");
+  same(CONDITION_ROW_TAGS, ["check", "skill", "atk", "def", "init", "immune", "cost", "cannot"], "the tags a row may carry (IMMUNE since 0.35.0, in its TRAIT form alone; SKILL since 0.36.0; COST since 0.37.0; CANNOT since 0.38.0)");
   const frightened = conditionCell("Frightened", "n", "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]\n[EFFECT INIT: N situation]");
   same(frightened.map(r => [r.kind, r.value, r.scale, r.type, r.to.slug]), [["bonus", -1, "N", "condition", "defenses"], ["bonus", -1, "N", "condition", "rolls"], ["bonus", -1, "N", "condition", "attacks"], ["bonus", 1, "N", "situation", "initiative"]], "N is stored as a sign and a scale");
   same(frightened.map(summarize), ["-N Condition penalty to Defenses", "-N Condition penalty to every roll and Threshold", "-N Condition penalty to Attacks", "+N Situation bonus to Initiative"], "and said as N");
@@ -4921,7 +4922,7 @@ check("conditions: a Condition's row reads CHECK, ATK, DEF and INIT, with `-N` f
     const message = conditionRowError(cell);
     must(/on a Condition's row does not take/.test(message) && message.includes(what), `${what} is refused on a Condition's row: ${message}`);
   }
-  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
+  must(/is not read on a Condition's row yet: a Condition's lines are CHECK, SKILL, ATK, DEF, INIT, IMMUNE, COST, CANNOT$/.test(conditionRowError("[EFFECT APPLY: prone]")), "another tag");
   // IMMUNE on a Condition's row (0.35.0): a trait, alone.
   const immune = conditionCell("Blinded", "", "[EFFECT IMMUNE: TRAIT(Visual)]");
   same(immune, [{ effect: "trait", trait: "visual", name: "Visual", kind: "prevent", line: 1, text: "[EFFECT IMMUNE: TRAIT(Visual)]" }], "the stored rule: the trait's key and its name as written");
@@ -5104,6 +5105,8 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     Frightened: { takes: "N", automation: "[EFFECT CHECK: -N condition]" },
     Fatigued: { takes: "N", automation: "[EFFECT DEF: -N condition]\n[EFFECT ATK: -N condition]" },
     Prone: { includes: ["Off-Guard"], automation: PRONE_CELL, effect: "Off-Guard.\nStand to clear.", description: "Face in the dirt." },
+    // 0.38.0: Grabbed takes Evade away by its row, and Restrained counts as Grabbed.
+    Grabbed: { includes: ["Off-Guard"], automation: "[EFFECT CANNOT: evade]" }, Restrained: { includes: ["Grabbed"] },
     "Wrong-Footed": { takes: "X", includes: ["Off-Guard against X"] },
     Stunned: { takes: "N" }, Slowed: { takes: "N" }, Dying: { system: true }, Wounded: { takes: "Zone", system: true },
     Dead: { system: true, listed: false }, Concealed: { listed: false }
@@ -5115,11 +5118,11 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
   };
   try {
     const built = buildConditions({ staged: sheet() });
-    same([built.errors, built.warnings, built.created, built.rules, built.cells], [[], [], ["Supine"], 9, 5], `the seed sheet reads: ${built.errors.join(" | ")}`);
+    same([built.errors, built.warnings, built.created, built.rules, built.cells], [[], [], ["Supine"], 10, 6], `the seed sheet reads: ${built.errors.join(" | ")}`);
     same(built.json.conditions.length, 26, "every row is written");
     const byName = Object.fromEntries(built.json.conditions.map(c => [c.name, c]));
-    same([byName.Supine.id, byName.Supine.builtIn, byName.Supine.statusId, byName.Blinded.id, byName.Blinded.builtIn, "statusId" in byName.Blinded, byName.Exposed.id, byName.Frightened.rules.length, byName.Grabbed.rules, byName.Prone.includes],
-      ["supine", false, newStatusId("supine"), "blinded", true, false, "exposed", 1, [], [{ name: "Off-Guard", against: false }]], "what each record carries: a new Condition's status id is fixed by the build");
+    same([byName.Supine.id, byName.Supine.builtIn, byName.Supine.statusId, byName.Blinded.id, byName.Blinded.builtIn, "statusId" in byName.Blinded, byName.Exposed.id, byName.Frightened.rules.length, byName.Grabbed.rules.map(r => r.kind), byName.Prone.includes],
+      ["supine", false, newStatusId("supine"), "blinded", true, false, "exposed", 1, ["cannot"], [{ name: "Off-Guard", against: false }]], "what each record carries: a new Condition's status id is fixed by the build");
     // The roster's block: the Listed rows alone, named as the tables print them, paragraphs kept apart.
     const block = Object.fromEntries(built.block);
     same([built.block.length, "Frightened N" in block, "Exposed [Zone]" in block, "Wrong-Footed [X]" in block, "Wounded [Zone]" in block, "Dead" in block, "Concealed" in block, block.Prone, block.Supine],
@@ -5173,7 +5176,7 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     // The sheet as Mike saved it: Blinded's line reads, and is one more rule in one more cell.
     const withImmune = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Blinded") ? { ...r, includes: ["Off-Guard"], automation: "[EFFECT IMMUNE: TRAIT(Visual)]" } : r)) });
     same([withImmune.errors, withImmune.warnings, withImmune.rules, withImmune.cells, withImmune.json.conditions.find(c => c.name === "Blinded").rules.map(r => [r.kind, r.effect, r.trait, r.name])],
-      [[], [], 10, 6, [["prevent", "trait", "visual", "Visual"]]], "Blinded's IMMUNE line builds");
+      [[], [], 11, 7, [["prevent", "trait", "visual", "Visual"]]], "Blinded's IMMUNE line builds");
     // Two lines of one row that reach one roll (0.36.0): one Condition counts once, so the weaker
     // does nothing there. Said in one warning for the row, and the sheet still builds.
     const trapped = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT CHECK: -N condition]\n[EFFECT INIT: -N condition]\n[EFFECT DEF: -N condition]\n[EFFECT DEF: -N condition, evade]" } : r)) });
@@ -5186,7 +5189,7 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     must(/Frightened: lines 1 and 2 both reach Initiative rolled with a Skill\. A Condition counts once on a roll, so only the stronger of two such lines applies there$/.test(narrowPair.warnings[0]), `no line is called spare: ${narrowPair.warnings[0]}`);
     // The sheet as it stood through 0.35.1, rebuilt unchanged: said, and it builds.
     const threeLines = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Frightened") ? { ...r, automation: "[EFFECT DEF: -N condition]\n[EFFECT CHECK: -N condition]\n[EFFECT ATK: -N condition]" } : r)) });
-    same([threeLines.errors, threeLines.warnings.length, threeLines.rules], [[], 1, 11], "Frightened's three lines still build");
+    same([threeLines.errors, threeLines.warnings.length, threeLines.rules], [[], 1, 12], "Frightened's three lines still build");
     must(/lines 1 and 2 both reach Defenses; lines 2 and 3 both reach attacks/.test(threeLines.warnings[0]), `and the row is told its narrower lines can go: ${threeLines.warnings[0]}`);
     // `[X]` (0.35.1): the creature a Condition is about. A row that takes one and still writes it
     // as a bare X is told to write [X]; a row that takes none and writes [X] is told it prints as
@@ -5201,6 +5204,17 @@ check("conditions: the build reads the staged rows, refuses a sheet with a slip,
     same([noCreature.errors, noCreature.warnings.length], [[], 1], "[X] on a row that takes no creature still builds");
     must(/Grabbed: the text writes \[X\], and this Condition's Takes is not X/.test(noCreature.warnings[0]), `and is said: ${noCreature.warnings[0]}`);
     same(buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Grabbed") ? { ...r, effect: "Mark the X on the map. eXtra." } : r)) }).warnings, [], "a bare X on a row that takes no creature is only a letter");
+    // 0.38.0: a sheet in which no CANNOT line takes Evade away while Grabbed or Restrained says so,
+    // once, naming whichever it is; and a CANNOT on a Condition that takes X is said to reach everyone.
+    const noLine = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Grabbed") ? { ...r, automation: "N/A" } : r)) });
+    same([noLine.errors, noLine.warnings.length], [[], 1], "Grabbed with no line still builds, with one warning");
+    must(/Conditions: no CANNOT line takes Evade away while Restrained or Grabbed\. Through 0\.37\.0 the system did that in its own code; the row says it now, so as built Restrained and Grabbed take no Defense away\. Write \[EFFECT CANNOT: evade\] in the Grabbed row's Automation cell/.test(noLine.warnings[0]), `and says what was lost: ${noLine.warnings[0]}`);
+    const loose = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Restrained") ? { ...r, includes: [] } : r)) });
+    must((loose.warnings.length === 1) && /while Restrained\. .*as built Restrained takes no Defense away/.test(loose.warnings[0]), `a Restrained that no longer counts as Grabbed: ${loose.warnings[0]}`);
+    const viaAnother = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Grabbed") ? { ...r, automation: "N/A" } : (r.name === "Off-Guard") ? { ...r, automation: `${r.automation}\n[EFFECT CANNOT: evade]` } : r)) });
+    same(viaAnother.warnings, [], "a line that reaches Grabbed through what it counts as is enough");
+    const takesX = buildConditions({ staged: sheet(rows => rows.map(r => (r.name === "Wrong-Footed") ? { ...r, automation: "[EFFECT CANNOT: guard]" } : r)) });
+    must((takesX.errors.length === 0) && takesX.warnings.some(w => /Wrong-Footed: a CANNOT line on a Condition that takes X takes the Defense away against everyone/.test(w)), "CANNOT on a Condition that takes X is said to reach everyone");
     // A row that makes a second new Condition, and a new one that takes a value.
     const more = buildConditions({ staged: sheet(rows => [...rows, row("Dazed", { takes: "N", automation: "[EFFECT ATK: -N condition]" })]) });
     same([more.errors, more.created, CONDITION_REGISTRY.dazed?.numeric], [[], ["Supine", "Dazed"], true], "a new Condition may take a value of its own");
@@ -6019,6 +6033,172 @@ check("cost: the build says what a COST line cannot reach, and holds Recenter's 
   must(!!file, "the Recenter row ships");
   const shipped = JSON.parse(readFileSync(`${folder}${file}`, "utf8"));
   same(builtInTraitNotes([shipped]), [], `BUILT_IN_TRAITS.recenter (${BUILT_IN_TRAITS.recenter.join(", ")}) is level with the shipped row (${(shipped.system?.traits ?? []).join(", ")})`);
+});
+
+/* -------------------------------------------- */
+/*  A Defense a Condition takes away (0.38.0)   */
+/* -------------------------------------------- */
+
+console.log("\nA Defense a Condition takes away (0.38.0)");
+
+const GRABBED_CELL = "[EFFECT CANNOT: evade]";
+/** The workbook's rows with a cell on Grabbed's (the row replaced: the seed has one already), and any others a check adds. */
+const grabbedRows = (extra = [], cell = GRABBED_CELL) => [
+  ...seedRows().map(row => (row.name === "Grabbed") ? { ...row, rules: conditionCell("Grabbed", "", cell) } : row),
+  ...extra
+];
+/** No Defense taken away, in the order the config lists the four. */
+const NO_DEFENSE = Object.freeze({ awareness: null, evade: null, guard: null, endure: null });
+
+check("cannot: the kind is registered with no hook and read on a Condition's row (rulings 385 and 388)", () => {
+  const kind = KINDS.get("cannot");
+  must(!!kind && (Object.keys(kind.hooks ?? {}).length === 0), "registered, with no hook: the two Defense passes ask `unusableDefenses`");
+  same([EFFECT_TAGS.cannot, CONDITION_ROW_TAGS.includes("cannot")], ["cannot", true], "the tag, on a Condition's row");
+  const rule = conditionCell("Grabbed", "", GRABBED_CELL)[0];
+  same(rule, { defense: "evade", name: "Evade", kind: "cannot", line: 1, text: GRABBED_CELL }, "Grabbed's line, stored flat: the whole rule");
+  same(summarize(rule), "cannot use Evade", "As read");
+  same(["Guard", "endure", " AWARENESS ", "evade"].map(word => conditionCell("Row", "", `[EFFECT CANNOT: ${word}]`)[0].defense), ["guard", "endure", "awareness", "evade"], "each of the four, in any case");
+  same(conditionCell("Row", "", "[EFFECT CANNOT: evade]\n[EFFECT CANNOT: guard]").map(r => r.name), ["Evade", "Guard"], "a second Defense is a second line");
+});
+
+check("cannot: every slip is told what to write", () => {
+  const row = cell => conditionRowError(cell);
+  must(/^CANNOT is written `CANNOT: <Defense>`, as in `\[EFFECT CANNOT: evade\]`: name the Defense, /.test(row("[EFFECT CANNOT: ]")), "no Defense");
+  // WHAT WAS WRITTEN DECIDES THE MESSAGE, never the number of commas (the review of 0.38.0).
+  // Two Defenses however they are joined, or all at once: one to a line.
+  for (const words of ["evade, guard", "evade or guard", "evade and guard", "evade guard", "evade/guard", "evade & guard", "evade + guard", "\"evade, guard\"", "(evade, guard)", "all", "defenses", "all defenses", "any Defense", "both"]) {
+    must(/^CANNOT names one Defense to a line: write `\[EFFECT CANNOT: evade\]` and a second line for a second Defense$/.test(row(`[EFFECT CANNOT: ${words}]`)), `"${words}" is told one Defense to a line: ${row(`[EFFECT CANNOT: ${words}]`)}`);
+  }
+  // Nothing that is a Defense: not read yet, with the whole of what was written quoted.
+  for (const words of ["move", "sidestep", "reactions", "stealth", "move, step", "evad", "gaurd"]) {
+    const message = row(`[EFFECT CANNOT: ${words}]`);
+    must(/^CANNOT names a Defense for now \(Evade, Guard, Endure or Awareness\), as in `\[EFFECT CANNOT: evade\]`: /.test(message) && message.includes(`"${words}" is not read yet`), `"${words}" is no Defense: ${message}`);
+  }
+  // One Defense with words beside it, and the shape of a bonus line.
+  for (const words of ["evade 2", "use, evade", "evade (while held, see Notes)"]) {
+    same(row(`[EFFECT CANNOT: ${words}]`), "CANNOT takes one Defense and nothing beside it: write `[EFFECT CANNOT: evade]`", `"${words}" is told to write the Defense alone`);
+  }
+  same([row("[EFFECT CANNOT: -2 situation, evade]"), row("[EFFECT CANNOT: 1 situation, guard]"), row("[EFFECT CANNOT: N]")],
+    ["CANNOT takes no value and no type, only the Defense: write `[EFFECT CANNOT: evade]`", "CANNOT takes no value and no type, only the Defense: write `[EFFECT CANNOT: guard]`", "CANNOT takes no value and no type, only the Defense: write `[EFFECT CANNOT: evade]`"], "a value first is told there is none");
+  // Every component, by its own name.
+  same(["[EFFECT CANNOT: evade; IFT: MELEE]", "[EFFECT CANNOT: evade; LIMIT: round]", "[EFFECT CANNOT: evade; FOR: allies 10]", "[EFFECT CANNOT: evade; IF: RANK(Origin >= trained)]", "[EFFECT CANNOT: evade; UNTIL: encounter]", "[EFFECT CANNOT: evade; VALUE: nothing]"].map(row),
+    ["CANNOT does not take IFT: <Threat>", "CANNOT does not take LIMIT", "CANNOT does not take FOR", "CANNOT does not take IF", "CANNOT does not take UNTIL", "CANNOT does not take VALUE"], "a component is refused by its name");
+  // Inside an aura's block, and as a block of its own.
+  must(parseAutomation("[AURA 10 allies; CANNOT: evade]", onConditionRow("Grabbed")).errors.length === 1, "an aura cannot carry it");
+  must(/^"CANNOT" is an effect tag, and an effect goes in an EFFECT block with a colon after the tag: write `\[EFFECT CANNOT: /.test(bonusError("[CANNOT evade]", onConditionRow("Grabbed"))), `a block of its own is told the EFFECT block: ${bonusError("[CANNOT evade]", onConditionRow("Grabbed"))}`);
+  for (const cell of ["[EFFECT CANNOT: evade, ]", "[EFFECT CANNOT: , evade]", "[EFFECT CANNOT: evade,]"]) {
+    must(/^CANNOT: a comma with nothing beside it/.test(row(cell)), `"${cell}" is refused`);
+  }
+  // Anywhere but a Condition's row.
+  for (const itemType of ["talent", "action"]) {
+    must(/^`CANNOT:` says what a creature cannot use and is read on a Condition's row for now/.test(bonusError(GRABBED_CELL, { resolve, itemType })), `on a ${itemType}'s cell`);
+  }
+  must(/is read on a Condition's row for now/.test(bonusError("CANNOT: evade", { resolve, itemType: "effect" })), "as a custom effect");
+  must(/^CANNOT is an effect tag and takes a colon/.test(bonusError("[EFFECT CANNOT evade]", onConditionRow("Grabbed"))), "the tag with its colon lost");
+});
+
+check("cannot: the kind's file, the reader's and the answers' may each be the first module imported", () => {
+  const url = path => new URL(`../foundry/starwrought/module/${path}`, import.meta.url).href;
+  const first = path => spawnSync(process.execPath, ["--input-type=module", "-e", `const m = await import(${JSON.stringify(url(path))}); console.log(Object.keys(m).sort().join(","));`], { encoding: "utf8" });
+  for (const path of ["rules/kinds/cannot.mjs", "rules/cannot.mjs", "helpers/answers.mjs"]) {
+    const run = first(path);
+    must(run.status === 0, `${path} imported first: ${String(run.stderr ?? "").trim().split("\n").find(line => /Error/.test(line)) ?? "exit " + run.status}`);
+  }
+  same(first("rules/kinds/cannot.mjs").stdout.trim(), "default", "the kind's file exports the kind alone, and reads no actor");
+});
+
+check("cannot: the Defenses a creature cannot use, each with the Condition that takes it away (rulings 386 and 392)", () => {
+  seeded(() => {
+    same(unusableDefenses(creature({})), NO_DEFENSE, "no Condition");
+    same(unusableDefenses(creature({ statuses: ["grabbed"] })), { ...NO_DEFENSE, evade: "grabbed" }, "Grabbed, with the line on its row");
+    same(unusableDefenses(creature({ statuses: ["restrained"] })).evade, "restrained", "Restrained alone counts as Grabbed, and is the Condition named");
+    same(unusableDefenses(creature({ statuses: ["grabbed", "restrained"] })).evade, "grabbed", "both: the one the creature has itself");
+    same(unusableDefenses(creature({ statuses: ["prone", "frightened"] })), NO_DEFENSE, "other Conditions take nothing away");
+    same(unusableDefenses(null), NO_DEFENSE, "nobody");
+    // An adversary is read the same way: the reader asks nothing of the creature's type.
+    const bandit = creature({ statuses: ["grabbed"] });
+    bandit.type = "npc";
+    bandit.system.rules = collectRules(bandit);
+    same(unusableDefenses(bandit).evade, "grabbed", "an adversary");
+    // Only a Condition's lines are read: the same rule on a Talent or a custom effect is nobody's.
+    const stray = rulesActor([{ type: "talent", name: "Stray", id: "s38", system: { rules: [{ kind: "cannot", line: 1, text: GRABBED_CELL, defense: "evade", name: "Evade" }] } }]);
+    same(unusableDefenses(stray), NO_DEFENSE, "a stored rule on a Talent takes nothing away");
+    // An actor whose rules were never indexed is indexed on the way.
+    const bare = creature({ statuses: ["grabbed"] });
+    delete bare.system.rules;
+    same(unusableDefenses(bare).evade, "grabbed", "an actor with no rule index yet");
+  }, grabbedRows());
+  // THE ROW IS THE WORD: with no line on its row, Grabbed takes nothing away, and neither does Restrained.
+  seeded(() => {
+    same([unusableDefenses(creature({ statuses: ["grabbed"] })).evade, unusableDefenses(creature({ statuses: ["restrained"] })).evade], [null, null], "no line on the row: no Defense is taken away");
+  });
+  // Any of the four, two on one row, and two Conditions on one Defense.
+  seeded(() => {
+    same(unusableDefenses(creature({ statuses: ["grabbed"] })), { ...NO_DEFENSE, evade: "grabbed", guard: "grabbed" }, "two lines on one row");
+    same(unusableDefenses(creature({ statuses: ["pinned"] })), { ...NO_DEFENSE, endure: "pinned", awareness: "pinned" }, "a new Condition taking Endure and Awareness");
+    same(unusableDefenses(creature({ statuses: ["grabbed", "pinned"] })), { ...NO_DEFENSE, evade: "grabbed", guard: "grabbed", endure: "pinned", awareness: "pinned" }, "all four");
+    same([unusableDefenses(creature({ statuses: ["grabbed", "held"] })).evade, unusableDefenses(creature({ statuses: ["held", "grabbed"] })).evade], ["grabbed", "held"], "two Conditions on one Defense: the first the creature has is named");
+  }, grabbedRows([
+    { name: "Pinned", rules: conditionCell("Pinned", "", "[EFFECT CANNOT: endure]\n[EFFECT CANNOT: awareness]") },
+    { name: "Held", rules: conditionCell("Held", "", "[EFFECT CANNOT: evade]") }
+  ], "[EFFECT CANNOT: evade]\n[EFFECT CANNOT: guard]"));
+  // Held only against one creature: the sheet's answer has no other party, so it is passed over.
+  seeded(() => {
+    same(unusableDefenses(creature({ statuses: ["rattled"], appliedBy: { rattled: "Actor.x" } })), NO_DEFENSE, "a Condition held only against one creature takes nothing away");
+  }, grabbedRows([{ name: "Rattled [X]", takes: "X", includes: ["Grabbed against X"] }]));
+  // The Condition named: the one the creature has; what it comes through may be no Condition at all.
+  seeded(() => {
+    same([reasonOf({ condition: { id: "grabbed", direct: true, via: ["restrained"] } }), reasonOf({ condition: { id: "grabbed", direct: false, via: ["restrained"] } }), reasonOf({ condition: { id: "grabbed", direct: false, via: ["torso"] } }), reasonOf({ condition: { id: "grabbed", direct: false, via: [] } })],
+      ["grabbed", "restrained", "grabbed", "grabbed"], "held itself; through Restrained; through a Torso Wound, which is no Condition; through nothing named");
+    same([reasonOf({ condition: { id: "grabbed", direct: false, via: "restrained" } }), reasonOf({ condition: null }), reasonOf(null)], ["grabbed", "", ""], "a carrier of a shape nobody builds is read without a throw");
+  }, grabbedRows());
+  // A chain of three: the Condition named is the one the creature has itself, however many rows lie between.
+  seeded(() => {
+    same([unusableDefenses(creature({ statuses: ["entombed"] })).evade, unusableDefenses(creature({ statuses: ["chained"] })).evade, unusableDefenses(creature({ statuses: ["entombed", "restrained"] })).evade],
+      ["entombed", "chained", "restrained"], "through two and three inclusions; and the nearest one the creature has itself");
+  }, grabbedRows([{ name: "Chained", includes: ["Restrained"] }, { name: "Entombed", includes: ["Chained"] }]));
+  // Nothing the index can hold makes the reader throw: it runs inside both Defense passes.
+  seeded(() => {
+    const odd = creature({ statuses: ["grabbed"] });
+    odd.system.rules.byKind.cannot = [null, {}, { rule: { kind: "cannot", defense: ["evade"] }, item: null }, { rule: { kind: "cannot", defense: "nothing" }, item: { type: "condition", condition: { id: "grabbed", direct: true } } }, ...odd.system.rules.byKind.cannot];
+    same(unusableDefenses(odd), { ...NO_DEFENSE, evade: "grabbed" }, "entries of no known shape are passed over");
+  }, grabbedRows());
+});
+
+check("cannot: the old rule stands only for a Condition no row describes (the guard)", () => {
+  same([...EVADE_BY_HAND], ["restrained", "grabbed"], "the two the code named, in its order");
+  // No workbook registered: the Conditions file could not be read. What the system always did.
+  must(!conditionsRegistered(), "nothing registered");
+  same([unusableDefenses(creature({ statuses: ["grabbed"] })), unusableDefenses(creature({ statuses: ["restrained"] })).evade, unusableDefenses(creature({ statuses: ["grabbed", "restrained"] })).evade, unusableDefenses(creature({ statuses: ["prone"] })).evade],
+    [{ ...NO_DEFENSE, evade: "grabbed" }, "restrained", "restrained", null], "Evade, while Grabbed or Restrained, as through 0.37.0");
+  // Grabbed has a row and Restrained has none: each is judged by its own row.
+  seeded(() => {
+    same([unusableDefenses(creature({ statuses: ["grabbed"] })).evade, unusableDefenses(creature({ statuses: ["restrained"] })).evade], [null, "restrained"], "Grabbed's row says nothing, so nothing; Restrained has no row, so the old rule");
+  }, seedRows().filter(row => row.name !== "Restrained"));
+});
+
+const answering = (unusable = { evade: "grabbed" }) => {
+  const actor = answerer();
+  actor.system.defenses = Object.fromEntries(["evade", "guard", "endure", "awareness"].map(key => [key, { unavailable: unusable[key] ?? null }]));
+  return actor;
+};
+
+check("answers: a Defense that cannot be used is refused while another can be, and answers alone when none can (rulings 387 and 390)", () => {
+  const one = answering();
+  same([unusableReason(one, "evade"), unusableReason(one, "guard"), unusableReason(answerer(), "evade"), unusableReason(null, "evade")], ["grabbed", null, null, null], "why a Defense cannot be used");
+  same([usableAnswers(one), usableAnswers(one, ["evade", "endure"]), usableAnswers(one, ["endure", "awareness"]), usableAnswers(answerer())], [["guard"], ["endure"], ["endure", "awareness"], ["evade", "guard"]], "the Defenses left, for a Blow, a Blast, a Blight and a creature that can use both");
+  same([refusedDefense(one, "evade"), refusedDefense(one, "guard"), refusedDefense(one, "evade", ["evade", "endure"]), refusedDefense(answerer(), "evade")], ["grabbed", null, "grabbed", null], "refused while another can be used");
+  must(!isLegalAnswer(one, "evade", {}) && !isLegalAnswer(one, "evade", { reaction: "sidestep" }) && isLegalAnswer(one, "guard", {}) && isLegalAnswer(one, "guard", { reaction: "parry" }), "the commitment: Evade refused, Guard and its Parry stand");
+  same(legalAnswers(one, "evade"), { none: true, reactions: [], postures: [] }, "nothing is built on a Defense that cannot be used");
+  same(legalAnswers(one, "guard").reactions, ["parry"], "and the other Defense keeps its answers");
+  // A Reaction Strike, and a spell whose pair does not include the Defense taken away.
+  must(!isLegalAnswer(one, "evade", {}, { basicOnly: true }) && isLegalAnswer(one, "guard", {}, { basicOnly: true }), "a Reaction Strike: the basic Defense, and not the one that cannot be used");
+  must(isLegalAnswer(one, "endure", {}, { permitted: ["endure", "awareness"] }) && isLegalAnswer(one, "awareness", {}, { permitted: ["endure", "awareness"] }), "a Blight is answered as ever");
+  // NONE USABLE: every one stands, basic and alone.
+  const both = answering({ evade: "grabbed", guard: "pinned" });
+  same([usableAnswers(both), refusedDefense(both, "evade"), refusedDefense(both, "guard")], [["evade", "guard"], null, null], "with none usable every one permitted stands");
+  must(isLegalAnswer(both, "evade", {}) && isLegalAnswer(both, "guard", {}), "either may be the answer");
+  must(!isLegalAnswer(both, "evade", { reaction: "sidestep" }) && !isLegalAnswer(both, "guard", { reaction: "parry" }) && !isLegalAnswer(both, "evade", { posture: { talentId: "r1", zone: "arms" } }), "with no Reaction and no Posture");
 });
 
 /* -------------------------------------------- */

@@ -72,7 +72,7 @@ NOTES = {
     "Fatigued": "The numbers are this row's lines. The maximum of 3, the Wind check, the rests that lower it (ten minutes, by 1) and end it (a night), and the lock to Travel are the system's.",
     "Prone": "The numbers are this row's lines; Off-Guard comes through Includes. Stand takes it off. The second paragraph reads \"Roll Over to become Prone\", which looks like a slip for Supine.",
     "Supine": "A new Condition, made by this row. Its -2 has no exception for melee Attacks against adjacent creatures yet (the grammar has no word for it), and it does not stop movement yet.",
-    "Grabbed": "Off-Guard comes through Includes. Evade is marked unavailable by the system; \"can't Move or Step\" is the table's.",
+    "Grabbed": "Off-Guard comes through Includes. Evade is taken away by this row's CANNOT line; \"can't Move or Step\" is the table's.",
     "Restrained": "Counts as Grabbed (and so as Off-Guard) through Includes. \"No action other than Escape\" is the table's.",
     "Blind": "Off-Guard comes through Includes. The system reads it for sight (SEEN, who is near). Its id in the system is `blinded`; Blind and Blinded both read.",
     "Unconscious": "Counts as Prone (and so as Off-Guard) through Includes. The system reads it for who is conscious.",
@@ -119,6 +119,7 @@ ABOUT = [
     "and may ask about the attack answered (IFT: RANGED, MELEE, BLOW, BLAST, BLIGHT, BEGUILEMENT, TRAIT(...)). "
     "It also reads [EFFECT IMMUNE: TRAIT(Visual)], written alone: whoever has the Condition is immune to anything with that trait. "
     "And [EFFECT COST: 1; IF: TRAIT(Concentrate)]: while a creature has the Condition, a Maneuver that carries the trait costs that many more actions. "
+    "And [EFFECT CANNOT: evade]: whoever has the Condition cannot answer an attack, or a Maneuver's check, with that Defense. "
     "-N is the Condition's own value: [EFFECT DEF: -N condition] on Frightened is -2 at Frightened 2. N/A is a row that needs none.",
     "System: Yes for the Conditions the system itself puts on and takes off (Dying, Wounded, Spent, Preparing, the Bind's three, Exposed, Dead). Their rows hold the text; the system runs them.",
     "Listed?: Yes prints the row in the reference tables. Anything else keeps it in the system and out of the tables.",

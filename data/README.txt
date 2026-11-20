@@ -93,6 +93,13 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
                  costs that many more actions (a cost that reaches three is Prepared). A whole
                  number from 1 to 6, one trait named by one word, and on a Condition's row alone
                  for now. It reaches Maneuvers paid from their own row, and Recenter.
+                 A DEFENSE TAKEN AWAY (0.38.0): [EFFECT CANNOT: evade] on Grabbed. Whoever has
+                 the Condition cannot answer an attack, or a Maneuver's check, with that Defense:
+                 it is greyed out in the Combat window and struck through on the sheet. One
+                 Defense to a line (evade, guard, endure, awareness), nothing after it, and on a
+                 Condition's row alone for now. A Condition that counts as another inherits its
+                 line: Restrained counts as Grabbed, so it needs none. A Defense rolled for its
+                 own sake (a Wind check, Initiative) is not refused.
     System       Yes for the Conditions the system itself puts on and takes off (Dying, Wounded,
                  Spent, Preparing, the Bind's three, Exposed, Dead): the row holds their text.
     Listed?      Yes prints the row in the reference tables. A sheet without the column lists all.
@@ -103,7 +110,9 @@ THE CONDITIONS WORKBOOK (Mike, 2026-11-18; system 0.33.0)
   the next build, except the Conditions the system itself has: the build refuses to go without
   one of those. THE ROW IS THE WORD: a row whose Automation cell is N/A (or blank) means the
   Condition changes no number, Off-Guard, Frightened and Fatigued included; the numbers the
-  system had for those three come back only when this workbook cannot be read at all.
+  system had for those three come back only when this workbook cannot be read at all. The same
+  holds for Grabbed and Evade since 0.38.0: with no CANNOT line on its row, Grabbed takes no
+  Defense away, and the build says so.
   BUILD IT ALONE: double-click sync_conditions.cmd, or run
     node assets/build_all.mjs --conditions
   It converts conditions.xlsx ALONE, reads its cells, and writes assets/conditions.json and the

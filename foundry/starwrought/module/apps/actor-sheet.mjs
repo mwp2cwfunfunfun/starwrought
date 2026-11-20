@@ -398,6 +398,10 @@ export class SwCharacterSheet extends HandlebarsApplicationMixin(ActorSheetV2) {
       label: game.i18n.localize(def.label),
       hint: game.i18n.localize(def.hint),
       rankLabel: game.i18n.localize(def.rankLabel),
+      // A Defense a Condition takes away (0.38.0): marked, with the reason under the hint.
+      cannotTip: def.unavailable
+        ? game.i18n.format("STARWROUGHT.Defense.cannotUse", { defense: game.i18n.localize(def.label), reason: game.i18n.localize(SW.conditionNameKey(def.unavailable)) })
+        : "",
       thresholdTip: [
         game.i18n.localize("STARWROUGHT.Field.thresholdHint"),
         ...conditional.filter(r => r.every || (r.slug === def.slug)).map(r => `${r.talent}: ${r.summary}`)

@@ -7,6 +7,230 @@ handbook on the shelf is newer than `data/SYNC.json`.
 
 ---
 
+## 0.38.0 (2026-11-19): a Condition may take a Defense away: the `CANNOT` word, for Grabbed
+
+Built from **Player's Handbook v4.25**, which did not move. Mike: "Grabbed currently is
+hard-coded to 'cannot Evade' ... I would like to make that an automation grammar to prevent the
+use of a Defense." Planned first; his decisions, by question: the word is `CANNOT`; Grabbed keeps
+taking Evade away, by its row; and in the Combat window a Defense that cannot be used is
+disabled, not just warned about. **One rule kind is new, `cannot`, the twenty-seventh, with the
+tag `CANNOT`; no hook point is.** His four workbooks in progress were not converted, built,
+staged or written.
+
+**Grabbed's line is in the sheet.** Through 0.37.0 the system's own code made Evade unusable
+while Grabbed or Restrained. The row says it now. Mike pasted the cell below on the day (saved
+20:11), and it is built into this release, so Grabbed and Restrained take Evade away as they
+did. A sheet in which no such line reaches Grabbed or Restrained has lost that rule, and the
+Conditions build warns of it every time.
+
+**The cell**, as it stands in `data/conditions.xlsx`:
+
+```
+  Grabbed
+      [EFFECT CANNOT: evade]
+```
+
+Run Sync content in Foundry to bring an open world up to it.
+
+- **One Defense to a line**: `evade`, `guard`, `endure` or `awareness`. A second Defense is a
+  second line.
+- **Nothing after it**, and on a Condition's row only, for now.
+- **Restrained needs no line.** It counts as Grabbed through Includes, so it inherits this one.
+- **Grabbed's Notes cell** still says "Evade is marked unavailable by the system". A sentence to put
+  there instead: "Off-Guard comes through Includes. Evade is taken away by this row's CANNOT
+  line; \"can't Move or Step\" is the table's."
+
+**What changes at the table.**
+
+- **The Combat window.** A Defense the defender cannot use is greyed out and cannot be picked,
+  with the reason on hover ("Evade cannot be used while Grabbed."). This holds for a player, for
+  the GM answering for an adversary, and for the GM answering for an absent player. Through
+  0.37.0 the option was only marked, and picking it had the system answer with the other
+  Defense.
+- **If no Defense the attack allows can be used**, all stay pickable with the warning. The
+  basic Defense answers alone: no Reaction and no Posture is offered on it.
+- **Reactions and Postures go with their Defense.** Sidestep and Give Ground are not offered
+  while Evade cannot be used.
+- **The sheets say it.** On the character's Overview and the adversary's stat block the
+  Defense's name is struck through, with the reason on its mark.
+- **The window follows the Condition.** If Escape frees the defender while the window is open,
+  Evade comes back at once; if Grabbed arrives, a draft on Evade is cleared with its answer and
+  its Zone.
+- **A Maneuver's check** already worked this way (0.34.0: the request card's button is
+  disabled, and with one usable Defense nobody is asked). It now reads the row, not the code.
+
+**The rulings** (385 to 387 are Mike's; the rest are Claude's readings and his to overrule).
+
+- **385. `CANNOT` says a creature cannot use a Defense** (Mike): `[EFFECT CANNOT: evade]`.
+- **386. Grabbed keeps taking Evade away, by its row** (Mike, by question).
+- **387. In the Combat window an unusable Defense cannot be picked** while another Defense the
+  attack allows can (Mike, by question: "Disable it").
+- **388. On a Condition's row only, one Defense to a line, nothing after it**, as
+  `IMMUNE: TRAIT` and `COST` began.
+- **389. It is about answering.** `CANNOT` takes a Defense away as the answer to an attack, or
+  to a Maneuver's check read against it. A Defense rolled for its own sake is untouched: the
+  Wind check's Endure, Initiative with Awareness, a Search, a Recovery, a roll from the sheet.
+- **390. With no usable Defense, the basic Defense answers alone**, and the card says so.
+- **391. An answer is judged when the answers are revealed, and stands from then on.** At the
+  reveal, a committed Defense that has since become unusable is answered with the other one,
+  basic, and the card says so. After the reveal nothing takes the answer away: not a new
+  Condition, and not a Head Wound from another attack. A reroll meets the Defense and the
+  answer the first die met.
+- **392. The reason shown is the Condition the creature has**: "Restrained" for a creature that
+  is only Restrained, though the line is Grabbed's.
+
+**Mended beside it, older than the release.** Four faults on the path the new word uses, found
+by the second reader of the design before anything was built:
+
+- **The attack card never said why a Defense was switched.** The note ("Evade is unavailable
+  while Grabbed; answered with Guard") was stored at the reveal and printed nowhere. It is
+  printed under the defender's answer.
+- **A Reaction on the unusable Defense was kept.** A Grabbed defender who committed Evade with
+  Sidestep was read against Guard, yet paid for Sidestep, and a Posture's Zone was still
+  Exposed. The revealed answer now follows what the Threshold read kept.
+- **A reroll could be read against Awareness.** When the defender had become unable to use the
+  Defense since the first die, the reroll moved to the first other Defense of the four and
+  lost its Reaction's bonus. A reroll now meets the Defense the first die met.
+- **The warned option showed the other Defense's number** in the Combat window.
+
+And two smaller, found by the review of the finished change:
+
+- **A Head Wound that landed between the reveal and the die took the Reaction's +2 off the
+  Threshold while the Reaction was still charged and printed**, and a reroll of a Hit that had
+  itself Wounded the Head met a Threshold 2 lower than the first die did. A revealed answer is
+  read as revealed.
+- **A request card that names two Defenses** is drawn again when a Condition comes to its
+  target or goes, so a disabled button no longer outlives the Condition.
+
+**Worth knowing.**
+
+- **Unconscious does not take Evade away**, before or after. A comment in the code said it did.
+- **A Defense rolled from the sheet is not refused** (389).
+- **The numbers still move after the reveal.** A Condition that arrives then may change the
+  Threshold (Grabbed makes a creature Off-Guard); it no longer changes which Defense answers.
+- **A card from before 0.38.0** of a defender who had committed a Defense it could not use is
+  rerolled against the Defense the card names. The card did not record what its die met.
+
+**Not built.**
+
+- `CANNOT` for anything but a Defense: movement, a Maneuver, Reactions, "no action other than
+  Escape". Each is refused as not read yet. The word was chosen so that they can follow.
+- `CANNOT` on a Talent, a Maneuver or a custom effect, and any condition after it.
+- A Condition held only against one creature (Wrong-Footed's kind of inclusion) taking a
+  Defense away against that creature alone. Such a carrier is passed over, and a `CANNOT` line
+  on a Condition that takes X reaches everyone: the build says so.
+
+**The Conditions sheet as built** (`node assets/build_all.mjs --conditions`, on the file as
+saved at 20:11 on 2026-11-19): 26 Conditions, 13 rules on 9 rows.
+
+- **Heedless carries its line**, `[EFFECT COST: 1; IF: TRAIT(Concentrate)]`, as he pasted it,
+  and its Effect is reworded. Heedless is live after a Sync content.
+- **Controlled and Controlling write `[X]`**, so the build's two warnings about them are gone.
+- **Grabbed carries its line**, `[EFFECT CANNOT: evade]`, as he pasted it, and Restrained
+  inherits it. The build's warning is gone.
+
+**In the code.** The kind is `module/rules/kinds/cannot.mjs`: its parse and its summary, with
+no hook and no import that reaches the registry. What was written decides the message, never
+the number of commas. `module/rules/cannot.mjs` is the reader, `unusableDefenses(actor)`: the
+Condition carriers through `rulesOfKind`, `reasonOf` for the Condition named, and the old rule
+as a guard (`EVADE_BY_HAND`), which stands for Grabbed and for Restrained only while that
+Condition has no row. It runs inside both Defense passes and never throws. The two passes
+(`data/character/defenses.mjs`, the adversary's model in `data/actor.mjs`) write its answer
+onto `system.defenses[key].unavailable` for all four Defenses, where every reader already
+looked; `unavailableEvade` and `heldConditions` left `data/character/shared.mjs`. The one rule
+for "may this Defense answer" is in `helpers/answers.mjs` (`unusableReason`, `usableAnswers`,
+`refusedDefense`), read by `legalAnswers` and `isLegalAnswer`, so the Combat window
+(`apps/combat-prompt.mjs`) and the coordinator (`combat/attack-coordinator.mjs`,
+`#commitDefense`, reason `unusableDefense`) cannot disagree. `defenseThresholdFor`
+(`documents/actor/defense.mjs`) takes `frozen`: a revealed answer and a resolved card are read
+with the Defense, the Reaction and the Posture as given. `#reveal` reads unfrozen and stores
+what the read kept; `#thresholdFor` hands the answer back; `#resolvePairing` and
+`thresholdForCard` read frozen, with the one Defense permitted. The attack card prints
+`revealed.note` (`combat/attack-card.mjs`, `templates/chat/attack-workflow-card.hbs`). The
+window reads its draft before it draws again, and redraws on the three ActiveEffect hooks, by
+a timer. `assets/lib/conditions_build.mjs` carries the two warnings; `assets/build_report.py`
+and `assets/highlight_automation.py` their rows and hints, a misspelt Defense among them.
+
+**The review.** Two independent readers of the finished change, before it was called done. One
+read the runtime and drove the real attack coordinator and the real Combat window in Node; the
+other read the grammar, the build, the tests and the documents. Neither found a wrong stored
+rule or a fault in how the flow refuses a Defense. Both put the same thing first: as first
+built, with Grabbed's cell still `N/A`, Grabbed took no Defense away. The review added the
+build's warning, and Mike pasted the line before the release was committed. Fifteen findings between them, two of them shared, the rest low; all
+mended but four stated.
+
+- **A revealed answer kept its Defense but not its Reaction** (the Head Wound case above).
+- **The window read its draft after drawing again**, which now clears a refused draft. A
+  Commit pressed in that moment went out with no Defense, and an accepted one was remembered as
+  "Your choice: null". The draft is read first.
+- **A reroll of a card with no Defense a reader knows threw.** It is read as the result card
+  reads it: the Reaction's own Defense, else Evade.
+- **The Condition named was the nearest includer**, not the one on the creature, across two
+  inclusions. The chain is walked.
+- **A misspelt Defense** (`evad`) was reported as a wish for a new word. It is told "did you
+  mean Evade?".
+- **Two messages were chosen by the number of commas.** `move, step` was told to write a second
+  line for a second Defense, and `evade guard` that it was not read yet. Each is told what it
+  is; a value first (`-2 situation, evade`) and a Defense with words beside it have messages of
+  their own.
+- **A comma inside quotes or parentheses** was called a comma with nothing beside it.
+- **The reader could throw** on a carrier of a shape nobody builds, inside both Defense passes.
+- **A `CANNOT` line on a Condition that takes X** reaches everyone: the build warns.
+- Smaller: the note under an answer had no style; the order of the four Defenses in a message;
+  six comments that still described the old rule; a test assertion that tested nothing.
+
+**Stated, not changed.**
+
+- A Defense's name is read loosely (`"evade"`, `Evade!`); the stored rule is the same.
+- On a Talent's cell a slip in a component is told before the cell is told it belongs on a
+  Condition's row, as with `COST`.
+- As read stays "cannot use Evade", the words Mike was shown, though the Wind check still rolls
+  an Endure a row takes away (389).
+- With no workbook read, a creature both Grabbed and Restrained reads "Restrained"; with the
+  rows it reads "Grabbed".
+
+**Checked.**
+
+- `node assets/test_rules.mjs`: 271 checks, six of them for the kind (the line and every slip;
+  each new file imported first; the Defenses a creature cannot use and the Condition named; the
+  guard; the answering rule), and the Conditions build's two warnings.
+- `node --check` on every module; `node assets/build_all.mjs --check`; the style check (one
+  failure, the em-dash in Dwarf Lore B13 of his uncommitted workbook); the smoke test on the
+  rebuilt app; `node assets/build_all.mjs --conditions` on the sheet as saved.
+- **Live in the test world, a GM tab and a player tab**, Foundry restarted first, the line
+  given to the open world's registry in memory (no file was written), before the review and
+  again for its mends:
+  - No line: a Grabbed Tess can use Evade. With it: Evade is taken away; Restrained alone reads
+    "Restrained"; both sheets strike the name through.
+  - Tess Grabbed, the Bandit Strikes: Evade disabled on the absent player's row with its own
+    number, a forced Evade refused by name ("Tess cannot use Evade while Grabbed. Choose
+    another Defense."), Guard commits, she rolls Guard.
+  - The Bandit Grabbed, on the GM's row: Evade disabled.
+  - The window open: Grabbed taken off, Evade is back; Grabbed put on, the draft and Commit are
+    cleared. A draft of Evade with Give Ground and a Zone: all three cleared.
+  - Grabbed arrives after the reveal: the die and a reroll meet Evade, where the old read went
+    to Awareness.
+  - Two defenders: Tess commits Evade with Sidestep, then becomes Grabbed. The card reads
+    "Guard, No Reaction" with the note, and nothing is paid.
+  - A second line taking Guard too: both pickable with the warning, only the basic Defense
+    offered, and the card says it stands.
+  - As the player: Evade disabled in her own window, a forced Evade refused by name, Guard
+    commits and she rolls it.
+  - Trip, "vs Evade or Guard", against the Grabbed Bandit: nobody asked, Guard read.
+  - Heedless from the built sheet: Seek pays ❷.
+  - After the review: a revealed Evade with Sidestep keeps its +2 under a Head Critical Hit
+    effect; a card with no Defense rerolls without error; a Commit shows "You chose Guard".
+  - With the line from the built sheet, and nothing given in memory: a Grabbed Tess cannot use
+    Evade, a Restrained one reads "Restrained", and her sheet strikes Evade through.
+- **Not driven live**: a Blast's pair of Defenses and a Reaction Strike against a Grabbed
+  defender (the self-test's, and the reviewer's run of the real coordinator); a table with no
+  GM.
+- The test world was left as found but for one "Content synced" card: its content is level
+  with these sources, Grabbed's line live there, Mike's Combat with testpc8 active at
+  round 4, the Bandit Prone as found.
+
+---
+
 ## 0.37.0 (2026-11-19): a Condition may raise what a thing costs: the `COST` word, for Heedless
 
 Built from **Player's Handbook v4.25**, which did not move. Mike, of the Heedless row

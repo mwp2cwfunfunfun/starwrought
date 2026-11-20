@@ -157,10 +157,12 @@ export const DefenseMixin = Base => class extends Base {
    * +2). The bonus goes into the Defense's own modifiers through SW.resolveModifiers, where it
    * adds (v4.21's stacking), and a commitment is a Reaction or a Posture, never both. An
    * adversary's Defenses carry no modifier stack, so its bonus is added arithmetically to the
-   * GM's Threshold. When the Defense is unavailable (Evade while Grabbed or Restrained) the other
-   * basic Defense answers and anything built on the lost one falls away; a Head Wound removes
-   * every Reaction and Posture; a Reaction the character does not own falls back; a Parry without
-   * a rigid implement is noted, not enforced.
+   * GM's Threshold. When the Defense cannot be used (0.38.0: a Condition's row says so, as
+   * Grabbed's `[EFFECT CANNOT: evade]`; module/rules/cannot.mjs) the other Defense the Threat
+   * permits answers and anything built on the lost one falls away; a Head Wound removes every
+   * Reaction and Posture; a Reaction the character does not own falls back; a Parry without a
+   * rigid implement is noted, not enforced. NONE OF THAT IS JUDGED AGAIN ONCE `frozen` (ruling
+   * 391): the answer was revealed and stands.
    *
    * @param {object} answer
    * @param {string} answer.defense               A key of SW.DEFENSES (evade or guard for a Blow).
@@ -177,13 +179,17 @@ export const DefenseMixin = Base => class extends Base {
    * @param {number|null} [answer.conditionShift]  The total the defender's Conditions put on the
    *                                              first reading (0.33.0): a reroll's, used in
    *                                              place of the Conditions it has now.
+   * @param {boolean} [answer.frozen]             The answer was revealed, or a resolved card is
+   *                                              read again (0.38.0; ruling 391): the Defense,
+   *                                              the Reaction and the Posture stand as given,
+   *                                              and only the numbers are read as they are now.
    * @returns {{key: string, threshold: number, bonus: number, label: string, reaction: string|null,
    *            posture: object|null, note: string|null, unavailable: string|null,
    *            marks: Array<{key: string, per: string}>, conditionShift: number|null}}
    *          `conditionShift`: what the defender's Conditions put on this reading, for the card to keep.
    * @throws {Error} when both a Reaction and a Posture are given.
    */
-  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null, attacker = null, conditionShift = null } = {}) {
+  defenseThresholdFor({ defense, reaction = null, posture = null, permitted = BLOW_DEFENSES, threat = null, attacker = null, conditionShift = null, frozen = false } = {}) {
     const sys = this.system;
     // The other party (0.15.0, `MARKED`): the attacker whose Blow this Threshold answers, or the
     // roller whose check reads it; an Actor, a Token or a TokenDocument, as the caller has it.
@@ -201,7 +207,13 @@ export const DefenseMixin = Base => class extends Base {
     let key = SW.REACTIONS[reaction]?.defense ?? (SW.DEFENSES[defense] ? defense : allowed[0]);
     const named = key;
 
-    const blocked = sys.defenses?.[key]?.unavailable ?? null;
+    // `frozen` (0.38.0; ruling 391): the answer was REVEALED, or a resolved card is being read
+    // again for a reroll. An answer is judged once, when the answers are revealed, and stands
+    // from then on: a Condition that has come since takes nothing away from it, and the read
+    // stays on the Defense given. (Through 0.37.0 a reroll handed over all four Defenses, so a
+    // Defense that had become unusable moved to the first other one, Awareness; and a
+    // resolution could move after the card had said which Defense answered.)
+    const blocked = frozen ? null : (sys.defenses?.[key]?.unavailable ?? null);
     if (blocked) {
       // The other Defense the Threat permits answers (Guard for a Blow's Evade while Grabbed); a
       // Threat with no other stays on the one named, noted.
@@ -214,7 +226,11 @@ export const DefenseMixin = Base => class extends Base {
 
     let note = null;
     // No Reactions at all: a Head Wound, a Head critical. The basic Defense still rolls.
-    const noReactions = sys.reactions?.blocked;
+    // NOT ONCE THE ANSWER IS REVEALED (`frozen`; the review of 0.38.0): a Head Wound from another
+    // attack, landing between the reveal and this die, used to take the +2 off the Threshold
+    // while the revealed Reaction was still charged and printed, and a reroll of a Hit that had
+    // itself Wounded the Head met a Threshold 2 lower than the first die did.
+    const noReactions = frozen ? null : sys.reactions?.blocked;
     if ((reaction || posture) && noReactions) {
       reaction = null;
       posture = null;
@@ -224,7 +240,7 @@ export const DefenseMixin = Base => class extends Base {
     }
     // A Reaction the character does not own falls back to the basic Defense: a Talent since
     // removed. The roll has to read what is true now; an adversary owns them all (the GM's call).
-    if (reaction && (this.type === "character") && !(reaction in (sys.reactions?.owned ?? {}))) {
+    if (!frozen && reaction && (this.type === "character") && !(reaction in (sys.reactions?.owned ?? {}))) {
       note = game.i18n.format("STARWROUGHT.Reaction.needsTalent", {
         reaction: game.i18n.localize(SW.REACTIONS[reaction].label),
         talent: game.i18n.localize(SW.REACTIONS[reaction].label)
@@ -312,8 +328,10 @@ export const DefenseMixin = Base => class extends Base {
       note,
       marks,
       conditionShift: conditionTotal,
+      // The other Defense answered, or (ruling 390) nothing else the attack permits could and
+      // the one named stands, basic and alone.
       unavailable: blocked
-        ? game.i18n.format("STARWROUGHT.Defense.answeringInstead", {
+        ? game.i18n.format((key === named) ? "STARWROUGHT.Defense.unusableStands" : "STARWROUGHT.Defense.answeringInstead", {
             named: game.i18n.localize(SW.DEFENSES[named].label),
             reason: game.i18n.localize(SW.conditionNameKey(blocked)),
             defense: defenseLabel

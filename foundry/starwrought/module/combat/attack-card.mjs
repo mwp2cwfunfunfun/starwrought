@@ -374,6 +374,9 @@ export function attackCardContext(state, { forUser = null } = {}) {
       committed: target.committed,
       status,
       answer: revealed ? answerText(revealed) : "",
+      // Why the answer is not what was committed (0.38.0): the Defense could not be used, a
+      // Reaction was dropped. Written at the reveal since 0.5.0 and printed nowhere until now.
+      note: revealed?.note ? String(revealed.note) : "",
       // The pairing's own die (0.26.0): the attacker's Attack roll at this defender, or the
       // defender's Defense roll. (A card from before 0.26.0 carries the attacker's one total as a
       // summary on each row, which reads the same here.)
