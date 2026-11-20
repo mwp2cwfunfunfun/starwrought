@@ -3398,7 +3398,9 @@ Casts, movement, Reactions and the other Maneuvers the system runs itself; `COST
 cost made cheaper. The release carries the kind alone: Heedless's cell is his to paste. The
 Conditions sheet was built as he saved it at 16:58 (Frightened one line, Grabbed reworded); his
 four workbooks in progress were not converted, built, staged or written. No handbook moved and
-`data/SYNC.json` is untouched. Not committed: commit and push are his word.
+`data/SYNC.json` is untouched. Committed on 2026-11-19 at his word as `b552497` and tagged
+`v0.37.0`, his edits to the four workbooks and the v4.24 draft left out; not pushed until he
+says.
 
 Cleared 2026-11-19 (ten minutes' rest lowers Fatigued by 1, folded into system 0.36.0; rulings
 372 to 374 in the 0.36.0 changelog entry; planned in `dazzling-floating-simon.md`, Mike's
